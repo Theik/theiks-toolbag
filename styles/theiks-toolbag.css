@@ -1,0 +1,9 @@
+.theiks-toolbag.breakable-wall file-picker {
+  flex: 1;
+  min-width: 0;
+}
+
+.theiks-toolbag.breakable-wall .multiple-values {
+  outline: 1px dashed var(--color-border-highlight, #ff9829);
+  outline-offset: 2px;
+}

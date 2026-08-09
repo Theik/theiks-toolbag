@@ -1,0 +1,35 @@
+{
+  "id": "theiks-toolbag",
+  "title": "Theik's Toolbag",
+  "description": "A collection of helpful tools for Foundry Virtual Tabletop.",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "Theik",
+      "url": "https://github.com/Theik"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14",
+    "maximum": "14"
+  },
+  "esmodules": [
+    "scripts/theiks-toolbag.js"
+  ],
+  "styles": [
+    "styles/theiks-toolbag.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "url": "https://github.com/Theik/theiks-toolbag",
+  "manifest": "https://github.com/Theik/theiks-toolbag/releases/latest/download/module.json",
+  "download": "https://github.com/Theik/theiks-toolbag/releases/download/v0.1.0/theiks-toolbag.zip",
+  "bugs": "https://github.com/Theik/theiks-toolbag/issues",
+  "readme": "https://github.com/Theik/theiks-toolbag/blob/main/README.md"
+}

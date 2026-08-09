@@ -1,0 +1,27 @@
+<fieldset class="theiks-toolbag breakable-wall">
+    <legend>{{localize "THEIKS_TOOLBAG.BreakableWalls.Config.Legend"}}</legend>
+
+    <div class="form-group">
+        <label for="{{rootId}}-enabled">{{localize "THEIKS_TOOLBAG.BreakableWalls.Config.Enabled"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-enabled" type="checkbox" name="{{fields.enabled}}" {{checked enabled}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableWalls.Config.EnabledHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label for="{{rootId}}-both">{{localize "THEIKS_TOOLBAG.BreakableWalls.Config.BothImage"}}</label>
+        <div class="form-fields">
+            <file-picker id="{{rootId}}-both" name="{{fields.both}}" type="image" value="{{bothImage}}"></file-picker>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableWalls.Config.BothImageHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label for="{{rootId}}-single">{{localize "THEIKS_TOOLBAG.BreakableWalls.Config.SingleImage"}}</label>
+        <div class="form-fields">
+            <file-picker id="{{rootId}}-single" name="{{fields.single}}" type="image" value="{{singleImage}}"></file-picker>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableWalls.Config.SingleImageHint"}}</p>
+    </div>
+</fieldset>

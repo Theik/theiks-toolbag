@@ -1,0 +1,51 @@
+{
+  "THEIKS_TOOLBAG": {
+    "BreakableWalls": {
+      "Config": {
+        "Legend": "Breakable Wall",
+        "Enabled": "Destructible",
+        "EnabledHint": "Show this wall in Wall Destruction Mode.",
+        "BothImage": "Both-sides image",
+        "BothImageHint": "Use a 1:2 ratio image with the wall crossing its center and rubble spilling to both sides of the wall.",
+        "SingleImage": "Single-side image",
+        "SingleImageHint": "Use a 1:2 ratio image with the wall crossing its center and rubble spilling downward from the wall."
+      },
+      "Tool": {
+        "Title": "Wall Destruction Mode"
+      },
+      "Dialog": {
+        "Title": "Destroy Wall",
+        "Prompt": "Where should the destroyed wall spill?",
+        "Both": "Both sides",
+        "Toward": "Toward {direction}"
+      },
+      "Directions": {
+        "Up": "up",
+        "UpRight": "upper-right",
+        "Right": "right",
+        "DownRight": "lower-right",
+        "Down": "down",
+        "DownLeft": "lower-left",
+        "Left": "left",
+        "UpLeft": "upper-left"
+      },
+      "DestroyedTileName": "Destroyed Wall",
+      "Errors": {
+        "GmOnly": "Only a GM can destroy walls.",
+        "InvalidWall": "A valid Wall document is required.",
+        "WallUnavailable": "That wall is no longer available in the current scene.",
+        "NotBreakable": "That wall is not configured as destructible.",
+        "ZeroLength": "A zero-length wall cannot be destroyed.",
+        "NoImages": "This wall has no destruction images configured.",
+        "MissingBothImage": "This wall has no both-sides destruction image configured.",
+        "MissingSingleImage": "This wall has no single-side destruction image configured.",
+        "ImageLoad": "The destruction image could not be loaded: {src}",
+        "InvalidKind": "The destruction kind must be either 'both' or 'single'.",
+        "InvalidSide": "Single-sided destruction requires a positive or negative side.",
+        "InProgress": "That wall is already being destroyed.",
+        "TileCreation": "Foundry did not create the rubble Tile.",
+        "WallDeletion": "The rubble Tile was rolled back because the wall could not be deleted."
+      }
+    }
+  }
+}
