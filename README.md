@@ -9,8 +9,14 @@ and select rubble images. The same fields are available in Foundry v14's Wall
 Palette for bulk editing and for setting defaults on newly drawn walls.
 
 GMs can then select **Wall Destruction Mode** from the Walls controls and click
-the explosion marker over a configured wall. The created rubble Tile is centered
-on the wall, locked, and sized to one wall-length by two wall-lengths.
+the explosion marker over a configured wall. The wall becomes nonblocking and
+its rubble artwork is rendered directly on the canvas, centered on the wall and
+sized to one wall-length by two wall-lengths. No Tile is created and the Wall
+document is retained.
+
+Destroyed walls show a green repair marker in the same mode. Click it once to
+restore the wall's exact original movement, sight, light, sound, door type, and
+door state. Rubble Tiles created by older versions are left unchanged.
 
 Macros can invoke the same feature without duplicating its placement logic:
 
@@ -27,7 +33,14 @@ await game.modules.get("theiks-toolbag").api.breakableWalls.destroy(wall, {
   kind: "single",
   side: "positive"
 });
+
+// The same Wall document remains available and can be repaired later.
+await game.modules.get("theiks-toolbag").api.breakableWalls.repair(wall);
 ```
+
+`destroy` resolves to that updated `WallDocument`, rather than a rubble Tile.
+`toggle` opens the destruction prompt for an intact wall and immediately repairs
+a destroyed wall.
 
 ## Visible lights
 

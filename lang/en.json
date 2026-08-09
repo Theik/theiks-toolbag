@@ -29,9 +29,8 @@
         "Left": "left",
         "UpLeft": "upper-left"
       },
-      "DestroyedTileName": "Destroyed Wall",
       "Errors": {
-        "GmOnly": "Only a GM can destroy walls.",
+        "GmOnly": "Only a GM can destroy or repair walls.",
         "InvalidWall": "A valid Wall document is required.",
         "WallUnavailable": "That wall is no longer available in the current scene.",
         "NotBreakable": "That wall is not configured as destructible.",
@@ -42,9 +41,12 @@
         "ImageLoad": "The destruction image could not be loaded: {src}",
         "InvalidKind": "The destruction kind must be either 'both' or 'single'.",
         "InvalidSide": "Single-sided destruction requires a positive or negative side.",
-        "InProgress": "That wall is already being destroyed.",
-        "TileCreation": "Foundry did not create the rubble Tile.",
-        "WallDeletion": "The rubble Tile was rolled back because the wall could not be deleted."
+        "AlreadyDestroyed": "That wall is already destroyed.",
+        "NotDestroyed": "That wall is not destroyed.",
+        "InvalidRestore": "That wall has no valid original state to restore.",
+        "StateChanged": "The wall changed before destruction completed. Try again.",
+        "InProgress": "That wall is already being changed.",
+        "UpdateFailed": "Foundry did not update the wall."
       }
     },
     "VisibleLights": {

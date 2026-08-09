@@ -8,21 +8,49 @@ const FLAG_FIELDS = {
   single: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.images.single`
 };
 
+const DESTRUCTION_KINDS = new Set(["both", "single"]);
+const DESTRUCTION_SIDES = new Set(["positive", "negative"]);
+const RESTORE_FIELDS = ["light", "sight", "sound", "move", "door", "ds"];
+
 /**
  * Read and normalize this module's data from a Wall document.
  *
  * @param {WallDocument} wall
- * @returns {{enabled: boolean, images: {both: string, single: string}}}
+ * @returns {{
+ *   enabled: boolean,
+ *   images: {both: string, single: string},
+ *   destroyed: boolean,
+ *   destruction: null|{kind: "both"|"single", side: null|"positive"|"negative"},
+ *   restore: null|{light: number, sight: number, sound: number, move: number, door: number, ds: number}
+ * }}
  */
 export function getBreakableWallData(wall) {
-  const data = wall?.getFlag(MODULE_ID, BREAKABLE_WALL_FLAG) ?? {};
+  const data = wall?.getFlag?.(MODULE_ID, BREAKABLE_WALL_FLAG) ?? {};
   return {
     enabled: data.enabled === true,
     images: {
       both: typeof data.images?.both === "string" ? data.images.both : "",
       single: typeof data.images?.single === "string" ? data.images.single : ""
-    }
+    },
+    destroyed: data.destroyed === true,
+    destruction: normalizeDestruction(data.destruction),
+    restore: normalizeRestore(data.restore)
   };
+}
+
+/** Normalize the artwork selection saved when the wall was destroyed. */
+function normalizeDestruction(destruction) {
+  if (!destruction || !DESTRUCTION_KINDS.has(destruction.kind)) return null;
+  if (destruction.kind === "both") return {kind: "both", side: null};
+  if (!DESTRUCTION_SIDES.has(destruction.side)) return null;
+  return {kind: "single", side: destruction.side};
+}
+
+/** Normalize an exact, complete snapshot of Foundry's mechanical Wall fields. */
+function normalizeRestore(restore) {
+  if (!restore || typeof restore !== "object" || Array.isArray(restore)) return null;
+  if (!RESTORE_FIELDS.every(field => Number.isInteger(restore[field]))) return null;
+  return Object.fromEntries(RESTORE_FIELDS.map(field => [field, restore[field]]));
 }
 
 /** Register the WallConfig render hook used by both the normal sheet and Wall Palette. */

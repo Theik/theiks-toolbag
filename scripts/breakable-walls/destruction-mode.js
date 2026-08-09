@@ -1,11 +1,15 @@
 import { MODULE_ID, getBreakableWallData } from "./wall-config.js";
-import { promptWallDestruction } from "./wall-destruction.js";
+import { promptWallDestruction, repairWall } from "./wall-destruction.js";
 
 const TOOL_NAME = "theiksToolbagDestroyWalls";
-const MARKER_TEXTURE = "icons/svg/explosion.svg";
+const DESTROY_MARKER_TEXTURE = "icons/svg/explosion.svg";
+const REPAIR_MARKER_TEXTURE = "icons/svg/regen.svg";
+const DESTROY_MARKER_COLOR = 0xFF9829;
+const REPAIR_MARKER_COLOR = 0x4CAF50;
 
 let active = false;
 let markerContainer = null;
+const markersByWallId = new Map();
 let refreshId = 0;
 let refreshQueued = false;
 
@@ -17,6 +21,7 @@ export function registerWallDestructionMode() {
   Hooks.on("createWall", refreshForWallChange);
   Hooks.on("updateWall", refreshForWallChange);
   Hooks.on("deleteWall", refreshForWallChange);
+  Hooks.on("refreshWall", refreshMarkerPosition);
 }
 
 /** @param {Record<string, foundry.SceneControl>} controls */
@@ -60,7 +65,7 @@ function queueMarkerRefresh() {
   });
 }
 
-/** Draw one destruction marker for each breakable Wall on the viewed level. */
+/** Draw an action marker for each intact breakable or destroyed Wall on the viewed level. */
 async function refreshMarkers() {
   const currentRefresh = ++refreshId;
   destroyMarkerContainer();
@@ -72,7 +77,10 @@ async function refreshMarkers() {
   canvas.controls.addChild(container);
   markerContainer = container;
 
-  const walls = canvas.walls.placeables.filter(wall => getBreakableWallData(wall.document).enabled);
+  const walls = canvas.walls.placeables.filter(wall => {
+    const data = getBreakableWallData(wall.document);
+    return isWallOnViewedLevel(wall.document) && (data.destroyed || data.enabled);
+  });
   await Promise.all(walls.map(async wall => {
     try {
       const marker = await createMarker(wall);
@@ -81,10 +89,21 @@ async function refreshMarkers() {
         return;
       }
       container.addChild(marker);
+      markersByWallId.set(wall.id, marker);
     } catch (error) {
       console.error(`${MODULE_ID} | Failed to draw a wall destruction marker`, error);
     }
   }));
+}
+
+/** A Wall with no assigned levels is visible everywhere; assigned Walls only belong to the viewed level. */
+function isWallOnViewedLevel(wall) {
+  const levels = wall.levels;
+  if (!levels || levels.size === 0 || levels.length === 0) return true;
+
+  const levelId = canvas.level?.id ?? canvas.level?._id;
+  if (!levelId) return false;
+  return levels.has?.(levelId) ?? levels.includes?.(levelId) ?? false;
 }
 
 /**
@@ -92,25 +111,30 @@ async function refreshMarkers() {
  * @returns {Promise<foundry.canvas.containers.ControlIcon>}
  */
 async function createMarker(wall) {
+  const destroyed = getBreakableWallData(wall.document).destroyed;
+  const color = destroyed ? REPAIR_MARKER_COLOR : DESTROY_MARKER_COLOR;
+  const idleTint = destroyed ? color : 0xFFFFFF;
   const size = 32 * canvas.dimensions.uiScale;
   const marker = new foundry.canvas.containers.ControlIcon({
-    texture: MARKER_TEXTURE,
+    texture: destroyed ? REPAIR_MARKER_TEXTURE : DESTROY_MARKER_TEXTURE,
     size,
-    borderColor: 0xFF9829
+    borderColor: color,
+    tint: idleTint
   });
   await marker.draw();
   marker.position.set(...wall.midpoint);
+  marker.icon.tint = idleTint;
   marker.alpha = 0.8;
 
   marker.on("pointerover", event => {
     event.stopPropagation();
     marker.alpha = 1;
-    marker.icon.tint = 0xFF9829;
+    marker.icon.tint = color;
   });
   marker.on("pointerout", event => {
     event.stopPropagation();
     marker.alpha = 0.8;
-    marker.icon.tint = 0xFFFFFF;
+    marker.icon.tint = idleTint;
   });
   marker.on("pointerdown", event => {
     event.stopPropagation();
@@ -131,7 +155,11 @@ async function activateMarker(marker, wallId) {
 
   try {
     const wall = canvas.scene?.walls.get(wallId);
-    await promptWallDestruction(wall);
+    if (getBreakableWallData(wall).destroyed) await repairWall(wall);
+    else await promptWallDestruction(wall);
+  } catch (error) {
+    ui.notifications.error(error.message);
+    console.error(`${MODULE_ID} | Wall destruction-mode action failed`, error);
   } finally {
     if (marker.parent) {
       marker.eventMode = "static";
@@ -140,12 +168,22 @@ async function activateMarker(marker, wallId) {
   }
 }
 
+/** Keep a marker attached to the midpoint of a Wall or its drag-preview clone. */
+function refreshMarkerPosition(wall) {
+  if (!active || !markerContainer) return;
+  const wallId = (wall._original ?? wall).id;
+  const marker = markersByWallId.get(wallId);
+  if (!marker || marker.parent !== markerContainer) return;
+  marker.position.set(...wall.midpoint);
+}
+
 function clearMarkers() {
   ++refreshId;
   destroyMarkerContainer();
 }
 
 function destroyMarkerContainer() {
+  markersByWallId.clear();
   if (!markerContainer) return;
   markerContainer.removeFromParent();
   markerContainer.destroy({children: true});

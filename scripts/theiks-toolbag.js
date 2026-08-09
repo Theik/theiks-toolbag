@@ -1,9 +1,13 @@
 import { registerBreakableWallConfig } from "./breakable-walls/wall-config.js";
 import {
   destroyWall,
-  promptWallDestruction
+  promptWallDestruction,
+  registerBreakableWallState,
+  repairWall,
+  toggleWall
 } from "./breakable-walls/wall-destruction.js";
 import { registerWallDestructionMode } from "./breakable-walls/destruction-mode.js";
+import { registerDestroyedWallArt } from "./breakable-walls/wall-art.js";
 import { registerVisibleLightConfig } from "./visible-lights/light-config.js";
 import { registerVisibleLightArt } from "./visible-lights/light-art.js";
 import {
@@ -16,7 +20,9 @@ export const MODULE_ID = "theiks-toolbag";
 
 Hooks.once("init", () => {
   registerBreakableWallConfig();
+  registerBreakableWallState();
   registerWallDestructionMode();
+  registerDestroyedWallArt();
   registerVisibleLightConfig();
   registerVisibleLightArt();
   registerVisibleLightControls();
@@ -26,7 +32,9 @@ Hooks.once("init", () => {
     ...module.api,
     breakableWalls: {
       prompt: promptWallDestruction,
-      destroy: destroyWall
+      destroy: destroyWall,
+      repair: repairWall,
+      toggle: toggleWall
     },
     visibleLights: {
       toggle: toggleVisibleLight,
