@@ -29,6 +29,29 @@ await game.modules.get("theiks-toolbag").api.breakableWalls.destroy(wall, {
 });
 ```
 
+## Visible lights
+
+Edit an Ambient Light and use the **Visible Light** fieldset to choose square
+artwork for its on, off, and destroyed states. The current artwork is centered
+on the light and rendered at one grid space in each direction. It follows the
+light when the light is moved without creating extra Tile documents.
+
+While the normal Token controls are active, a light control appears over each
+configured fixture. A GM can left-click it to switch the light on or off from
+anywhere, or right-click it to destroy the fixture and switch it off. A player
+only sees the left-click control when one of their selected, owned tokens is
+next to the light. Destroyed lights cannot be toggled by players; a GM can clear
+the **Destroyed** checkbox in the Light configuration to repair one.
+
+Macros can use the same state-changing services:
+
+```js
+const light = canvas.lighting.controlled[0]?.document;
+await game.modules.get("theiks-toolbag").api.visibleLights.toggle(light);
+// Or, as a GM:
+await game.modules.get("theiks-toolbag").api.visibleLights.destroy(light);
+```
+
 ## Development installation
 
 Clone this repository into Foundry's `Data/modules/theiks-toolbag` directory, restart

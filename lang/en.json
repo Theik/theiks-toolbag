@@ -46,6 +46,39 @@
         "TileCreation": "Foundry did not create the rubble Tile.",
         "WallDeletion": "The rubble Tile was rolled back because the wall could not be deleted."
       }
+    },
+    "VisibleLights": {
+      "Config": {
+        "Legend": "Visible Light",
+        "Destroyed": "Destroyed",
+        "DestroyedHint": "The current fixture state. Clear this option to repair the light; repaired lights remain switched off.",
+        "OnImage": "On image",
+        "OnImageHint": "Use a square (1:1 ratio) image for the switched-on fixture.",
+        "OffImage": "Off image",
+        "OffImageHint": "Use a square (1:1 ratio) image for the switched-off fixture.",
+        "DestroyedImage": "Destroyed image",
+        "DestroyedImageHint": "Use a square (1:1 ratio) image for the destroyed fixture. Leave this empty to show no artwork when destroyed."
+      },
+      "Errors": {
+        "InvalidLight": "A valid Ambient Light is required.",
+        "LightUnavailable": "That light is no longer available in its Scene.",
+        "NotConfigured": "That light has no visible-light artwork configured.",
+        "Destroyed": "That light is destroyed and cannot be switched on.",
+        "AlreadyDestroyed": "That light is already destroyed.",
+        "GmDestroyOnly": "Only a GM can destroy lights.",
+        "InactiveUser": "The requesting user is not active.",
+        "TokenRequired": "Select an adjacent token to toggle this light.",
+        "TokenNotOwned": "You do not own the selected token.",
+        "NotAdjacent": "The selected token is not next to this light.",
+        "StateChanged": "The light changed before the request was processed. Try again.",
+        "InProgress": "That light is already being changed.",
+        "UpdateFailed": "Foundry did not update the light.",
+        "InvalidRequest": "The light toggle request was invalid.",
+        "InvalidRequester": "The light toggle requester was invalid.",
+        "RequestRejected": "The GM rejected the light toggle request.",
+        "NoActiveGm": "An active GM is required to toggle this light.",
+        "RequestTimeout": "The GM did not process the light toggle request in time."
+      }
     }
   }
 }

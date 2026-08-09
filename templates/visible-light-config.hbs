@@ -1,0 +1,35 @@
+<fieldset class="theiks-toolbag visible-light">
+    <legend>{{localize "THEIKS_TOOLBAG.VisibleLights.Config.Legend"}}</legend>
+
+    <div class="form-group">
+        <label for="{{rootId}}-destroyed">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.Destroyed"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-destroyed" type="checkbox" name="{{fields.destroyed}}" {{checked destroyed}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.DestroyedHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label for="{{rootId}}-on">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.OnImage"}}</label>
+        <div class="form-fields">
+            <file-picker id="{{rootId}}-on" name="{{fields.on}}" type="image" value="{{onImage}}"></file-picker>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.OnImageHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label for="{{rootId}}-off">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.OffImage"}}</label>
+        <div class="form-fields">
+            <file-picker id="{{rootId}}-off" name="{{fields.off}}" type="image" value="{{offImage}}"></file-picker>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.OffImageHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label for="{{rootId}}-destroyed-image">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.DestroyedImage"}}</label>
+        <div class="form-fields">
+            <file-picker id="{{rootId}}-destroyed-image" name="{{fields.destroyedImage}}" type="image" value="{{destroyedImage}}"></file-picker>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.VisibleLights.Config.DestroyedImageHint"}}</p>
+    </div>
+</fieldset>

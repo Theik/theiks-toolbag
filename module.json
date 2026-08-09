@@ -14,6 +14,7 @@
     "verified": "14",
     "maximum": "14"
   },
+  "socket": true,
   "esmodules": [
     "scripts/theiks-toolbag.js"
   ],
