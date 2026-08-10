@@ -42,6 +42,39 @@ await game.modules.get("theiks-toolbag").api.breakableWalls.repair(wall);
 `toggle` opens the destruction prompt for an intact wall and immediately repairs
 a destroyed wall.
 
+## Breakable terrain
+
+Edit a Tile and use the **Breakable Terrain** fieldset to make it destroyable,
+make its opaque artwork block movement, and/or make it block light and vision.
+Add one or more destroyed-state images in order; the final image represents
+fully destroyed terrain. A state may have an empty image, which hides the Tile
+at that stage. For the best effect, use images with the same dimensions for
+every state. The same settings are available in Foundry v14's Tile Palette for
+defaults and bulk editing.
+
+GMs can select **Terrain Destruction Mode** from the Tiles controls, or use the
+top-level **Destruction Mode** control to show both terrain and wall markers.
+Left-click an orange explosion marker to advance the Tile by one destroyed
+state, and right-click to move back by one state. The Tile's blocking silhouette
+follows the opaque pixels of every image. Movement uses the exact opaque
+contours. Vision uses one terrain-wall envelope around the whole image, so all
+of the Tile remains visible while light and sight are blocked behind it. At the
+final state all movement, light, and vision blocking is removed and the marker turns green.
+Left-click the green marker to restore the exact original image immediately.
+
+Blocking is implemented with transient Foundry canvas edges. No helper Wall or
+Tile documents are created, and Tile rotation, anchors, scaling, texture fit,
+and Scene Levels are respected.
+
+Macros can invoke the same transitions:
+
+```js
+const tile = canvas.tiles.controlled[0]?.document;
+await game.modules.get("theiks-toolbag").api.breakableTerrain.advance(tile);
+await game.modules.get("theiks-toolbag").api.breakableTerrain.retreat(tile);
+await game.modules.get("theiks-toolbag").api.breakableTerrain.restore(tile);
+```
+
 ## Visible lights
 
 Edit an Ambient Light and use the **Visible Light** fieldset to choose square

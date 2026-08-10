@@ -15,6 +15,15 @@ import {
   registerVisibleLightControls,
   toggleVisibleLight
 } from "./visible-lights/light-controls.js";
+import {registerBreakableTerrainConfig} from "./breakable-terrain/terrain-config.js";
+import {
+  advanceTerrainDestruction,
+  restoreTerrain,
+  retreatTerrainDestruction
+} from "./breakable-terrain/terrain-destruction.js";
+import {registerBreakableTerrainEdges} from "./breakable-terrain/terrain-edges.js";
+import {registerTerrainDestructionMode} from "./breakable-terrain/destruction-mode.js";
+import {registerCombinedDestructionMode} from "./combined-destruction-mode.js";
 
 export const MODULE_ID = "theiks-toolbag";
 
@@ -26,6 +35,10 @@ Hooks.once("init", () => {
   registerVisibleLightConfig();
   registerVisibleLightArt();
   registerVisibleLightControls();
+  registerBreakableTerrainConfig();
+  registerBreakableTerrainEdges();
+  registerTerrainDestructionMode();
+  registerCombinedDestructionMode();
 
   const module = game.modules.get(MODULE_ID);
   module.api = {
@@ -39,6 +52,11 @@ Hooks.once("init", () => {
     visibleLights: {
       toggle: toggleVisibleLight,
       destroy: destroyVisibleLight
+    },
+    breakableTerrain: {
+      advance: advanceTerrainDestruction,
+      retreat: retreatTerrainDestruction,
+      restore: restoreTerrain
     }
   };
 

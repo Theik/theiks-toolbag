@@ -1,0 +1,67 @@
+<fieldset class="theiks-toolbag breakable-terrain">
+    <legend>{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.Legend"}}</legend>
+
+    <div class="form-group">
+        <label for="{{rootId}}-enabled">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.Enabled"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-enabled" type="checkbox" name="{{fields.enabled}}" {{checked enabled}}
+                {{disabled definitionLocked}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.EnabledHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label for="{{rootId}}-movement">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.BlocksMovement"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-movement" type="checkbox" name="{{fields.blocksMovement}}"
+                {{checked blocksMovement}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.BlocksMovementHint"}}</p>
+    </div>
+
+    <div class="form-group">
+        <label for="{{rootId}}-vision">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.BlocksVision"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-vision" type="checkbox" name="{{fields.blocksVision}}"
+                {{checked blocksVision}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.BlocksVisionHint"}}</p>
+    </div>
+
+    <div class="terrain-states-header">
+        <label>{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.States"}}</label>
+        <button type="button" class="icon fa-solid fa-plus" data-terrain-state-action="add"
+            aria-label="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.AddState"}}"
+            data-tooltip="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.AddState"}}"
+            {{disabled definitionLocked}}></button>
+    </div>
+    <p class="hint">{{#if definitionLocked}}
+        {{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.RestoreBeforeDefinitionChange"}}
+        {{else}}{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.StatesHint"}}{{/if}}
+    </p>
+    <div class="terrain-states" data-terrain-states>
+        {{#each states}}
+        <div class="terrain-state-row" data-terrain-state-row>
+            <label for="{{../rootId}}-state-{{@index}}">
+                {{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.State" number=number}}
+            </label>
+            <div class="form-fields">
+                <file-picker id="{{../rootId}}-state-{{@index}}" name="{{../fields.states}}" type="image"
+                    value="{{src}}" {{disabled ../definitionLocked}}></file-picker>
+                <button type="button" class="icon fa-solid fa-arrow-up" data-terrain-state-action="up"
+                    aria-label="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.MoveUp"}}"
+                    data-tooltip="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.MoveUp"}}"
+                    {{#if ../definitionLocked}}data-definition-locked disabled{{/if}}></button>
+                <button type="button" class="icon fa-solid fa-arrow-down" data-terrain-state-action="down"
+                    aria-label="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.MoveDown"}}"
+                    data-tooltip="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.MoveDown"}}"
+                    {{#if ../definitionLocked}}data-definition-locked disabled{{/if}}></button>
+                <button type="button" class="icon fa-solid fa-trash" data-terrain-state-action="remove"
+                    aria-label="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.RemoveState"}}"
+                    data-tooltip="{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.RemoveState"}}"
+                    {{disabled ../definitionLocked}}></button>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+</fieldset>

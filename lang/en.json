@@ -81,6 +81,47 @@
         "NoActiveGm": "An active GM is required to toggle this light.",
         "RequestTimeout": "The GM did not process the light toggle request in time."
       }
+    },
+    "BreakableTerrain": {
+      "Config": {
+        "Legend": "Breakable Terrain",
+        "Enabled": "Destroyable",
+        "EnabledHint": "Show this tile in Terrain Destruction Mode and allow it to cycle through destroyed states.",
+        "BlocksMovement": "Block movement",
+        "BlocksMovementHint": "Prevent token movement across the opaque silhouette while the tile is not fully destroyed.",
+        "BlocksVision": "Block light and vision",
+        "BlocksVisionHint": "Use one terrain-wall envelope for light, darkness, and sight so the entire tile remains visible while blocking what is behind it.",
+        "States": "Destroyed states",
+        "StatesHint": "Add images in damage order. For the best effect, use images with the same dimensions. The last image is the fully destroyed state. Leave an image empty to hide the tile at that stage.",
+        "State": "Destroyed state {number}",
+        "AddState": "Add destroyed state",
+        "RemoveState": "Remove destroyed state",
+        "MoveUp": "Move state up",
+        "MoveDown": "Move state down",
+        "RestoreBeforeDefinitionChange": "Restore damaged tiles before changing their base image or destruction sequence."
+      },
+      "Tool": {
+        "Title": "Terrain Destruction Mode"
+      },
+      "Errors": {
+        "GmOnly": "Only a GM can damage or restore terrain.",
+        "InvalidTile": "A valid Tile document is required.",
+        "TileUnavailable": "That tile is no longer available in the current scene.",
+        "NotDestroyable": "That tile is not configured as destroyable terrain.",
+        "StateRequired": "Destroyable terrain requires at least one destroyed state.",
+        "FullyDestroyed": "That terrain is already fully destroyed.",
+        "NotDamaged": "That terrain is already restored.",
+        "InvalidRestore": "That terrain has no valid original image to restore.",
+        "ImageLoad": "The terrain image could not be loaded: {src}",
+        "StateChanged": "The terrain changed before the action completed. Try again.",
+        "InProgress": "That terrain is already being changed.",
+        "UpdateFailed": "Foundry did not update the terrain tile.",
+        "ManagedState": "Terrain damage state can only be changed through Terrain Destruction Mode or its API.",
+        "RestoreBeforeDefinitionChange": "Restore this terrain before changing its base image or destruction sequence."
+      }
+    },
+    "DestructionMode": {
+      "Title": "Destruction Mode"
     }
   }
 }

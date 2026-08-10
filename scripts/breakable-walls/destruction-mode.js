@@ -35,12 +35,12 @@ function addSceneControlTool(controls) {
     visible: game.user.isGM,
     interaction: false,
     control: false,
-    onChange: (_event, isActive) => setActive(isActive)
+    onChange: (_event, isActive) => setWallDestructionModeActive(isActive)
   };
 }
 
 /** @param {boolean} isActive */
-function setActive(isActive) {
+export function setWallDestructionModeActive(isActive) {
   active = isActive && game.user.isGM;
   if (active) queueMarkerRefresh();
   else clearMarkers();

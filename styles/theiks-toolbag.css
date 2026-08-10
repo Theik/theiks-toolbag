@@ -1,11 +1,47 @@
 .theiks-toolbag.breakable-wall file-picker,
-.theiks-toolbag.visible-light file-picker {
+.theiks-toolbag.visible-light file-picker,
+.theiks-toolbag.breakable-terrain file-picker {
   flex: 1;
   min-width: 0;
 }
 
 .theiks-toolbag.breakable-wall .multiple-values,
-.theiks-toolbag.visible-light .multiple-values {
+.theiks-toolbag.visible-light .multiple-values,
+.theiks-toolbag.breakable-terrain .multiple-values {
   outline: 1px dashed var(--color-border-highlight, #ff9829);
   outline-offset: 2px;
+}
+
+.theiks-toolbag.breakable-terrain .terrain-states-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.theiks-toolbag.breakable-terrain .terrain-states-header > label {
+  font-weight: bold;
+}
+
+.theiks-toolbag.breakable-terrain > .form-group > label {
+  white-space: nowrap;
+}
+
+.theiks-toolbag.breakable-terrain .terrain-state-row {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(7rem, 1fr) minmax(0, 3fr);
+  margin: 0.35rem 0;
+}
+
+.theiks-toolbag.breakable-terrain .terrain-state-row .form-fields {
+  display: flex;
+  min-width: 0;
+}
+
+.theiks-toolbag.breakable-terrain .terrain-state-row button.icon,
+.theiks-toolbag.breakable-terrain .terrain-states-header button.icon {
+  flex: 0 0 var(--input-height, 2rem);
+  margin: 0;
 }
