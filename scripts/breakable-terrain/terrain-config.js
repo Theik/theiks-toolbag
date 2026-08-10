@@ -11,6 +11,8 @@ const TEMPLATE_PATH = `modules/${MODULE_ID}/templates/breakable-terrain-config.h
 const FLAG_ROOT = `flags.${MODULE_ID}.${BREAKABLE_TERRAIN_FLAG}`;
 export const TERRAIN_FIELDS = Object.freeze({
   enabled: `${FLAG_ROOT}.enabled`,
+  platform: `${FLAG_ROOT}.platform`,
+  platformMessage: `${FLAG_ROOT}.platformMessage`,
   blocksMovement: `${FLAG_ROOT}.blocksMovement`,
   blocksVision: `${FLAG_ROOT}.blocksVision`,
   states: `${FLAG_ROOT}.states`,
@@ -27,6 +29,8 @@ const transitionAuthorizations = new Map();
  * @param {TileDocument} tile
  * @returns {{
  *   enabled: boolean,
+ *   platform: boolean,
+ *   platformMessage: string,
  *   blocksMovement: boolean,
  *   blocksVision: boolean,
  *   states: string[],
@@ -45,10 +49,14 @@ export function getBreakableTerrainData(tile) {
   const damaged = stage > 0;
   const fullyDestroyed = damaged && stage >= states.length;
   const enabled = data.enabled === true;
+  const platform = data.platform === true;
+  const platformMessage = typeof data.platformMessage === "string" ? data.platformMessage.trim() : "";
   const blocksMovement = data.blocksMovement === true;
   const blocksVision = data.blocksVision === true;
   return {
     enabled,
+    platform,
+    platformMessage,
     blocksMovement,
     blocksVision,
     states,
@@ -82,8 +90,13 @@ export function registerBreakableTerrainConfig() {
   Hooks.on("preCreateTile", validateTerrainCreation);
   Hooks.on("preUpdateTile", validateTerrainUpdate);
   Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
-    if (feature !== FEATURES.breakableTerrain || enabled) return;
-    globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-terrain").forEach(element => element.remove());
+    if (enabled) return;
+    if (feature === FEATURES.breakableTerrain) {
+      globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-terrain").forEach(element => element.remove());
+    } else if (feature === FEATURES.levelTools) {
+      globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-terrain .breakable-platform")
+        .forEach(element => element.remove());
+    }
   });
 }
 
@@ -116,8 +129,10 @@ async function renderBreakableTerrainConfig(application, element, context) {
     rootId: `${application.id}-breakable-terrain`,
     fields: TERRAIN_FIELDS,
     ...data,
+    levelToolsEnabled: isFeatureEnabled(FEATURES.levelTools),
     states: states.map((src, index) => ({src, number: index + 1})),
-    definitionLocked
+    definitionLocked,
+    platformMessageDisabled: !data.platform
   });
 
   if (!isFeatureEnabled(FEATURES.breakableTerrain) || !application.rendered || !target.isConnected) return;
@@ -133,6 +148,7 @@ async function renderBreakableTerrainConfig(application, element, context) {
   }
   if (definitionLocked) lockNativeTextureSource(element);
   applyMultipleValueState(application, root);
+  updatePlatformMessageState(fieldset);
   updateStateRowControls(fieldset);
   application.setPosition({height: "auto"});
 }
@@ -144,9 +160,20 @@ function serializeTerrainStates(event, fieldset, definitionLocked) {
 }
 
 function handleStateFieldChange(event, application, fieldset) {
+  if (event.target.matches?.(`[name="${TERRAIN_FIELDS.platform}"]`)) {
+    updatePlatformMessageState(fieldset);
+    return;
+  }
   const picker = event.target.closest?.(`file-picker[name="${TERRAIN_FIELDS.states}"]`);
   if (!picker) return;
   markStatesDirty(application, fieldset);
+}
+
+function updatePlatformMessageState(fieldset) {
+  const platform = fieldset?.querySelector(`[name="${TERRAIN_FIELDS.platform}"]`);
+  const message = fieldset?.querySelector(`[name="${TERRAIN_FIELDS.platformMessage}"]`);
+  if (!message) return;
+  message.disabled = platform?.checked !== true;
 }
 
 function isPlaceablePalette(application) {
@@ -247,6 +274,9 @@ function applyMultipleValueState(application, root) {
   if (!application.isSelect || application.controlled?.length < 2) return;
   const documents = application.controlled;
   setMultipleState(root, TERRAIN_FIELDS.enabled, documents.map(tile => getBreakableTerrainData(tile).enabled));
+  setMultipleState(root, TERRAIN_FIELDS.platform, documents.map(tile => getBreakableTerrainData(tile).platform));
+  setMultipleState(root, TERRAIN_FIELDS.platformMessage,
+    documents.map(tile => getBreakableTerrainData(tile).platformMessage));
   setMultipleState(root, TERRAIN_FIELDS.blocksMovement,
     documents.map(tile => getBreakableTerrainData(tile).blocksMovement));
   setMultipleState(root, TERRAIN_FIELDS.blocksVision,
@@ -290,7 +320,12 @@ function validateTerrainUpdate(tile, changes, options = {}) {
     if (runtimeChanged) throw new Error(localize("Errors.ManagedState"));
 
     if (current.damaged) {
-      const definitionChanged = [TERRAIN_FIELDS.enabled, TERRAIN_FIELDS.states, "texture.src"]
+      const definitionChanged = [
+        TERRAIN_FIELDS.enabled,
+        TERRAIN_FIELDS.platform,
+        TERRAIN_FIELDS.states,
+        "texture.src"
+      ]
         .some(path => getChangedValue(changes, path).present);
       if (definitionChanged || requestsFlagDeletion(changes)) {
         throw new Error(localize("Errors.RestoreBeforeDefinitionChange"));
@@ -307,6 +342,8 @@ function validateTerrainUpdate(tile, changes, options = {}) {
 function getProspectiveData(tile, changes) {
   const current = getBreakableTerrainData(tile);
   const enabled = getChangedValue(changes, TERRAIN_FIELDS.enabled);
+  const platform = getChangedValue(changes, TERRAIN_FIELDS.platform);
+  const platformMessage = getChangedValue(changes, TERRAIN_FIELDS.platformMessage);
   const blocksMovement = getChangedValue(changes, TERRAIN_FIELDS.blocksMovement);
   const blocksVision = getChangedValue(changes, TERRAIN_FIELDS.blocksVision);
   const states = getChangedValue(changes, TERRAIN_FIELDS.states);
@@ -315,6 +352,10 @@ function getProspectiveData(tile, changes) {
   return {
     ...current,
     enabled: enabled.present ? enabled.value === true : current.enabled,
+    platform: platform.present ? platform.value === true : current.platform,
+    platformMessage: platformMessage.present && typeof platformMessage.value === "string"
+      ? platformMessage.value.trim()
+      : current.platformMessage,
     blocksMovement: blocksMovement.present ? blocksMovement.value === true : current.blocksMovement,
     blocksVision: blocksVision.present ? blocksVision.value === true : current.blocksVision,
     states: states.present ? normalizeTerrainStates(states.value) : current.states,

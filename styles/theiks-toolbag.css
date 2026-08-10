@@ -45,3 +45,51 @@
   flex: 0 0 var(--input-height, 2rem);
   margin: 0;
 }
+
+.theiks-toolbag.platform-collapse-dialog .platform-token-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.theiks-toolbag.platform-collapse-dialog .platform-level-group {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.theiks-toolbag.platform-collapse-dialog .platform-token-list .checkbox {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.theiks-toolbag.level-fall-message h2,
+.theiks-toolbag.platform-collapse-message h2 {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+.theiks-toolbag.platform-collapse-message h2 {
+  font-size: 1.25rem;
+}
+
+.theiks-toolbag.platform-collapse-message h2 i {
+  flex: 0 0 auto;
+  font-size: 1em;
+}
+
+.theiks-toolbag.level-fall-message ul,
+.theiks-toolbag.platform-collapse-message ul {
+  margin-bottom: 0.5rem;
+}
+
+.form-group:has([name="theiks-toolbag.enableFallingMessages"]) {
+  border-left: 2px solid var(--color-border-light-tertiary);
+  box-sizing: border-box;
+  margin-left: 1rem;
+  padding-left: 0.75rem;
+  width: calc(100% - 1rem);
+}

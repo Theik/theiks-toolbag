@@ -24,6 +24,8 @@ assert.equal(getBreakableTerrainData(hiddenState).canAdvance, true, "an empty im
 
 const flag = {
   enabled: true,
+  platform: false,
+  platformMessage: "",
   blocksMovement: true,
   blocksVision: false,
   states: ["cracked.webp", "rubble.webp"],
@@ -34,6 +36,8 @@ const tile = {getFlag: () => flag};
 
 assert.deepEqual(getBreakableTerrainData(tile), {
   enabled: true,
+  platform: false,
+  platformMessage: "",
   blocksMovement: true,
   blocksVision: false,
   states: ["cracked.webp", "rubble.webp"],
@@ -44,6 +48,11 @@ assert.deepEqual(getBreakableTerrainData(tile), {
   canAdvance: true,
   blocks: true
 });
+
+flag.platform = true;
+assert.equal(getBreakableTerrainData(tile).platform, true);
+flag.platformMessage = "  The bridge snaps!  ";
+assert.equal(getBreakableTerrainData(tile).platformMessage, "The bridge snaps!");
 
 flag.stage = 1;
 flag.restoreSrc = "statue.webp";
@@ -63,6 +72,7 @@ assert.equal(getBreakableTerrainData(tile).fullyDestroyed, true, "a damaged tile
 const malformed = {
   getFlag: () => ({
     enabled: "yes",
+    platformMessage: 7,
     blocksMovement: 1,
     blocksVision: null,
     states: "broken.webp",
@@ -72,6 +82,8 @@ const malformed = {
 };
 assert.deepEqual(getBreakableTerrainData(malformed), {
   enabled: false,
+  platform: false,
+  platformMessage: "",
   blocksMovement: false,
   blocksVision: false,
   states: ["broken.webp"],

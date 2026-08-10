@@ -3,7 +3,9 @@ export const MODULE_ID = "theiks-toolbag";
 export const FEATURES = Object.freeze({
   breakableWalls: "breakableWalls",
   breakableTerrain: "breakableTerrain",
-  visibleLights: "visibleLights"
+  visibleLights: "visibleLights",
+  levelTools: "levelTools",
+  fallingMessages: "fallingMessages"
 });
 
 export const FEATURE_SETTING_CHANGED_HOOK = `${MODULE_ID}.featureSettingChanged`;
@@ -23,6 +25,16 @@ const DEFINITIONS = Object.freeze({
     key: "enableVisibleLights",
     name: "THEIKS_TOOLBAG.Settings.VisibleLights.Name",
     hint: "THEIKS_TOOLBAG.Settings.VisibleLights.Hint"
+  },
+  [FEATURES.levelTools]: {
+    key: "enableLevelTools",
+    name: "THEIKS_TOOLBAG.Settings.LevelTools.Name",
+    hint: "THEIKS_TOOLBAG.Settings.LevelTools.Hint"
+  },
+  [FEATURES.fallingMessages]: {
+    key: "enableFallingMessages",
+    name: "THEIKS_TOOLBAG.Settings.FallingMessages.Name",
+    hint: "THEIKS_TOOLBAG.Settings.FallingMessages.Hint"
   }
 });
 

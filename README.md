@@ -4,11 +4,15 @@ A collection of helpful tools for Foundry Virtual Tabletop v14.
 
 ## Settings
 
-The module's **Breakable Walls**, **Breakable Terrain**, and **Visible Lights**
+The module's **Breakable Walls**, **Breakable Terrain**, **Visible Lights**, and **Level Tools**
 features can each be enabled or disabled from **Game Settings → Theik's
-Toolbag**. All three are enabled by default. Disabling a feature hides its
+Toolbag**. All four are enabled by default. Disabling a feature hides its
 configuration and controls, removes its runtime canvas elements, and prevents
 its macro actions without deleting any saved document flags.
+
+The **Falling Chat messages** subsection beneath **Level Tools** controls both
+manual Token-fall summaries and breakable-platform collapse cards. Disabling it
+does not prevent movement or platform destruction.
 
 ## Breakable walls
 
@@ -97,6 +101,18 @@ Blocking is implemented with transient Foundry canvas edges. No helper Wall or
 Tile documents are created, and Tile rotation, anchors, scaling, texture fit,
 and Scene Levels are respected.
 
+When **Level Tools** is enabled, a destroyable Tile can also be marked as a
+**Breakable platform**. The Tile can be assigned to one or more Scene Levels.
+On the transition to its final destroyed state, the GM chooses which Tokens on
+the Tile fall from every assigned Level to each nearest Level below. The
+confirmation also identifies Tokens already underneath the platform, and the
+result is summarized in one Chat message. An optional **Destroyed message** on
+the Tile adds an introductory sentence; leaving it blank shows only the falling
+and underneath details. Moving backward through damage states never moves Tokens
+back up.
+If Level Tools is disabled, the Tile behaves as ordinary breakable terrain and
+no fall is applied retroactively when the feature is enabled again.
+
 Macros can safely invoke any transition by changing `action` to `"advance"`,
 `"retreat"`, or `"restore"`:
 
@@ -120,6 +136,30 @@ if (!terrainApi) {
     ui.notifications.error(error?.message ?? String(error));
   }
 }
+```
+
+`advance` resolves to `null` if a final-stage platform confirmation is canceled.
+
+## Level tools
+
+Right-click a Token and use **Make tokens fall**, directly underneath Foundry's
+native Level control, to move every currently selected Token to another Scene
+Level. The dialog updates each Token's native Level, sets its elevation to that
+Level's bottom elevation, and posts one combined Chat message listing every
+Token that moved downward and its fall distance. The control is available only
+to GMs and only in Scenes that contain Levels.
+
+Macros can open the same prompt or perform the change directly:
+
+```js
+const levelApi = game.modules.get("theiks-toolbag")?.api?.levelTools;
+const tokens = canvas.tokens.controlled.map(token => token.document);
+
+// Interactive:
+await levelApi.prompt(tokens);
+
+// Direct:
+await levelApi.change(tokens, {levelId: canvas.level.id});
 ```
 
 ## Visible lights

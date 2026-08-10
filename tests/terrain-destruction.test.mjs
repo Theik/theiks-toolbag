@@ -82,6 +82,9 @@ function createTile({
       if (Object.hasOwn(changes, "flags.theiks-toolbag.breakableTerrain.states")) {
         flag.states = changes["flags.theiks-toolbag.breakableTerrain.states"];
       }
+      if (Object.hasOwn(changes, "flags.theiks-toolbag.breakableTerrain.platformMessage")) {
+        flag.platformMessage = changes["flags.theiks-toolbag.breakableTerrain.platformMessage"];
+      }
       if (Object.hasOwn(changes, "flags.theiks-toolbag.breakableTerrain.stage")) {
         flag.stage = changes["flags.theiks-toolbag.breakableTerrain.stage"];
       }
@@ -158,6 +161,12 @@ await assert.rejects(
   () => damaged.tile.update({"flags.theiks-toolbag.breakableTerrain.stage": 2}),
   /ManagedState/
 );
+await assert.rejects(
+  () => damaged.tile.update({"flags.theiks-toolbag.breakableTerrain.platform": true}),
+  /RestoreBeforeDefinitionChange/
+);
+await damaged.tile.update({"flags.theiks-toolbag.breakableTerrain.platformMessage": "It crumbles!"});
+assert.equal(damaged.flag.platformMessage, "It crumbles!", "collapse text remains editable while damaged");
 await damaged.tile.update({"flags.theiks-toolbag.breakableTerrain.blocksMovement": false});
 await assert.rejects(
   () => damaged.tile.update({"flags.-=theiks-toolbag": null}),

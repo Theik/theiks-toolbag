@@ -25,6 +25,11 @@ import {registerBreakableTerrainEdges} from "./breakable-terrain/terrain-edges.j
 import {registerTerrainDestructionMode} from "./breakable-terrain/destruction-mode.js";
 import {registerCombinedDestructionMode} from "./combined-destruction-mode.js";
 import {registerFeatureSettings} from "./settings.js";
+import {
+  changeTokenLevels,
+  promptTokenLevelChange,
+  registerLevelTools
+} from "./levels/level-tools.js";
 
 export const MODULE_ID = "theiks-toolbag";
 
@@ -41,6 +46,7 @@ Hooks.once("init", () => {
   registerBreakableTerrainEdges();
   registerTerrainDestructionMode();
   registerCombinedDestructionMode();
+  registerLevelTools();
 
   const module = game.modules.get(MODULE_ID);
   module.api = {
@@ -59,6 +65,10 @@ Hooks.once("init", () => {
       advance: advanceTerrainDestruction,
       retreat: retreatTerrainDestruction,
       restore: restoreTerrain
+    },
+    levelTools: {
+      prompt: promptTokenLevelChange,
+      change: changeTokenLevels
     }
   };
 

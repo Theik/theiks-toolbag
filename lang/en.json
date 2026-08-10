@@ -13,6 +13,14 @@
         "Name": "Visible Lights",
         "Hint": "Enable visible-light configuration, artwork, controls, and interactions."
       },
+      "LevelTools": {
+        "Name": "Level Tools",
+        "Hint": "Enable GM Token Level changes and breakable-platform collapse effects."
+      },
+      "FallingMessages": {
+        "Name": "Falling Chat messages",
+        "Hint": "Post combined Chat messages when Tokens fall manually or when a breakable platform collapses."
+      },
       "Disabled": "{feature} is disabled in Theik's Toolbag settings."
     },
     "BreakableWalls": {
@@ -102,6 +110,10 @@
         "Legend": "Breakable Terrain",
         "Enabled": "Destroyable",
         "EnabledHint": "Show this tile in Terrain Destruction Mode and allow it to cycle through destroyed states.",
+        "Platform": "Breakable platform",
+        "PlatformHint": "On the final destroyed state, choose Tokens on every Level assigned to this Tile to fall to each Level below.",
+        "PlatformMessage": "Destroyed message",
+        "PlatformMessageHint": "Optional text shown in Chat when this platform reaches its final destroyed state. Leave blank to omit this sentence.",
         "BlocksMovement": "Block movement",
         "BlocksMovementHint": "Prevent token movement across the opaque silhouette while the tile is not fully destroyed.",
         "BlocksVision": "Block light and vision",
@@ -113,7 +125,7 @@
         "RemoveState": "Remove destroyed state",
         "MoveUp": "Move state up",
         "MoveDown": "Move state down",
-        "RestoreBeforeDefinitionChange": "Restore damaged tiles before changing their base image or destruction sequence."
+        "RestoreBeforeDefinitionChange": "Restore damaged tiles before changing their base image, platform settings, or destruction sequence."
       },
       "Tool": {
         "Title": "Terrain Destruction Mode"
@@ -132,7 +144,62 @@
         "InProgress": "That terrain is already being changed.",
         "UpdateFailed": "Foundry did not update the terrain tile.",
         "ManagedState": "Terrain damage state can only be changed through Terrain Destruction Mode or its API.",
-        "RestoreBeforeDefinitionChange": "Restore this terrain before changing its base image or destruction sequence."
+        "RestoreBeforeDefinitionChange": "Restore this terrain before changing its base image, platform settings, or destruction sequence."
+      },
+      "Platform": {
+        "Dialog": {
+          "Title": "Collapse Platform",
+          "Prompt": "Collapse {tile} and send selected Tokens on every assigned Level to the Level below?",
+          "SelectTokens": "Select Tokens that fall",
+          "Underneath": "Tokens underneath",
+          "NoCandidates": "No Tokens are on this platform.",
+          "NoUnderneath": "No Tokens are underneath this platform.",
+          "Collapse": "Collapse"
+        },
+        "Chat": {
+          "Title": "Platform Collapse",
+          "Falls": "Falling Tokens",
+          "Fell": "{name} falls {distance} feet.",
+          "NoFalls": "No one falls.",
+          "Underneath": "Underneath",
+          "Caught": "{name} is caught underneath the collapsing platform.",
+          "NoUnderneath": "No one is caught underneath."
+        },
+        "Errors": {
+          "PlatformLevelRequired": "A breakable platform must be assigned to at least one Scene Level.",
+          "NoLevelBelow": "Every assigned platform Level must have a Scene Level below it. Missing below: {levels}",
+          "PlatformStateChanged": "The platform's Level configuration changed before it collapsed. Try again.",
+          "TokenMoveFailed": "The platform collapsed, but these Tokens could not be moved: {names}",
+          "UpdateFailed": "Foundry did not update a falling Token.",
+          "ChatFailed": "The platform collapsed, but its Chat message could not be created."
+        }
+      }
+    },
+    "LevelTools": {
+      "Hud": {
+        "Title": "Make tokens fall"
+      },
+      "Dialog": {
+        "Title": "Make tokens fall",
+        "SelectedTokens": "Selected Tokens",
+        "TargetLevel": "Target Level",
+        "To": "to",
+        "Apply": "Apply"
+      },
+      "Chat": {
+        "Title": "Tokens Fall",
+        "Target": "The selected Tokens descend to {level}.",
+        "Fell": "{name} falls {distance} feet."
+      },
+      "Errors": {
+        "GmOnly": "Only a GM can change Token Levels.",
+        "SceneUnavailable": "The current Scene is not available.",
+        "NoLevels": "This Scene has no Levels.",
+        "NoTokensSelected": "No Tokens are selected.",
+        "TokenUnavailable": "A selected Token is no longer available in the current Scene.",
+        "InvalidLevel": "The selected Level is no longer available.",
+        "UpdateFailed": "Foundry did not update every selected Token.",
+        "ChatFailed": "The Tokens changed Level, but the falling Chat message could not be created."
       }
     },
     "DestructionMode": {

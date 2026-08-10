@@ -10,6 +10,27 @@
         <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.EnabledHint"}}</p>
     </div>
 
+    {{#if levelToolsEnabled}}
+    <div class="form-group breakable-platform">
+        <label for="{{rootId}}-platform">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.Platform"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-platform" type="checkbox" name="{{fields.platform}}" {{checked platform}}
+                {{disabled definitionLocked}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.PlatformHint"}}</p>
+    </div>
+    <div class="form-group breakable-platform breakable-platform-message">
+        <label for="{{rootId}}-platform-message">
+            {{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.PlatformMessage"}}
+        </label>
+        <div class="form-fields">
+            <input id="{{rootId}}-platform-message" type="text" name="{{fields.platformMessage}}"
+                value="{{platformMessage}}" {{disabled platformMessageDisabled}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.PlatformMessageHint"}}</p>
+    </div>
+    {{/if}}
+
     <div class="form-group">
         <label for="{{rootId}}-movement">{{localize "THEIKS_TOOLBAG.BreakableTerrain.Config.BlocksMovement"}}</label>
         <div class="form-fields">

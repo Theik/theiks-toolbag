@@ -7,7 +7,12 @@ import {
   revokeTerrainTransition
 } from "./terrain-config.js";
 import {prepareTerrainTexture} from "./terrain-edges.js";
-import {FEATURES, assertFeatureEnabled} from "../settings.js";
+import {FEATURES, assertFeatureEnabled, isFeatureEnabled} from "../settings.js";
+import {
+  completePlatformCollapse,
+  promptPlatformCollapse,
+  validatePlatformCollapsePlan
+} from "./platform-collapse.js";
 
 const inProgress = new Set();
 let transitionSequence = 0;
@@ -16,7 +21,7 @@ let transitionSequence = 0;
  * Advance a destroyable Tile by exactly one configured image state.
  *
  * @param {TileDocument} tile
- * @returns {Promise<TileDocument>}
+ * @returns {Promise<TileDocument|null>}
  */
 export async function advanceTerrainDestruction(tile) {
   validateTile(tile);
@@ -35,6 +40,12 @@ export async function advanceTerrainDestruction(tile) {
     const restoreSrc = initial.stage === 0 ? initialSrc : initial.restoreSrc;
     if (!restoreSrc) throw new Error(localize("Errors.InvalidRestore"));
 
+    const collapsesPlatform = initial.platform
+      && targetStage >= initial.states.length
+      && isFeatureEnabled(FEATURES.levelTools);
+    const platformPlan = collapsesPlatform ? await promptPlatformCollapse(tile) : null;
+    if (collapsesPlatform && !platformPlan) return null;
+
     if (targetSrc) {
       await prepareTerrainTexture(targetSrc, {extractAlpha: targetStage < initial.states.length});
     }
@@ -43,11 +54,13 @@ export async function advanceTerrainDestruction(tile) {
     const current = getBreakableTerrainData(tile);
     if (!current.enabled
       || current.stage !== initial.stage
+      || current.platform !== initial.platform
       || !sameStates(current.states, initial.states)
       || getTextureSrc(tile) !== initialSrc
       || current.restoreSrc !== initial.restoreSrc) {
       throw new Error(localize("Errors.StateChanged"));
     }
+    if (platformPlan) validatePlatformCollapsePlan(tile, platformPlan);
 
     const nonce = createNonce();
     const updateOptions = authorizeTerrainTransition(tile, nonce);
@@ -58,6 +71,14 @@ export async function advanceTerrainDestruction(tile) {
         [TERRAIN_FIELDS.restoreSrc]: restoreSrc
       }, updateOptions);
       if (!updated) throw new Error(localize("Errors.UpdateFailed"));
+      if (platformPlan) {
+        try {
+          await completePlatformCollapse(updated, platformPlan);
+        } catch (error) {
+          ui.notifications.error(error.message);
+          console.error(`${MODULE_ID} | Platform collapse follow-up failed after terrain destruction`, error);
+        }
+      }
       return updated;
     } finally {
       revokeTerrainTransition(tile, nonce);

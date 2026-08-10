@@ -30,7 +30,7 @@ const {
 } = await import("../scripts/settings.js");
 
 registerFeatureSettings();
-assert.equal(registrations.size, 3);
+assert.equal(registrations.size, 5);
 for (const definition of registrations.values()) {
   assert.equal(definition.scope, "world");
   assert.equal(definition.config, true);
@@ -40,6 +40,15 @@ for (const definition of registrations.values()) {
 assert.equal(isFeatureEnabled(FEATURES.breakableWalls), true);
 assert.equal(isFeatureEnabled(FEATURES.breakableTerrain), true);
 assert.equal(isFeatureEnabled(FEATURES.visibleLights), true);
+assert.equal(isFeatureEnabled(FEATURES.levelTools), true);
+assert.equal(isFeatureEnabled(FEATURES.fallingMessages), true);
+
+const settingKeys = Array.from(registrations.keys());
+assert.equal(
+  settingKeys.indexOf("theiks-toolbag.enableFallingMessages"),
+  settingKeys.indexOf("theiks-toolbag.enableLevelTools") + 1,
+  "falling messages are registered directly beneath Level Tools"
+);
 
 const visibleLightsKey = "theiks-toolbag.enableVisibleLights";
 values.set(visibleLightsKey, false);

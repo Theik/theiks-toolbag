@@ -4,7 +4,8 @@ const hooks = new Map();
 const featureSettings = {
   enableBreakableWalls: false,
   enableBreakableTerrain: false,
-  enableVisibleLights: false
+  enableVisibleLights: false,
+  enableLevelTools: false
 };
 let templateRenders = 0;
 let removedFieldsets = 0;
