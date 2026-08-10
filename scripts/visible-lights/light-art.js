@@ -3,6 +3,11 @@ import {
   getVisibleLightImage,
   isVisibleLightConfigured
 } from "./light-config.js";
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
 
 const artwork = new Map();
 let refreshId = 0;
@@ -34,10 +39,15 @@ export function registerVisibleLightArt() {
   Hooks.on("deleteAmbientLight", refreshForLightChange);
   Hooks.on("refreshAmbientLight", updateArtworkPosition);
   Hooks.on("updateScene", refreshForSceneChange);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, handleFeatureSettingChange);
 }
 
 /** Coalesce bulk Ambient Light updates into one artwork redraw. */
 export function queueArtworkRefresh() {
+  if (!isFeatureEnabled(FEATURES.visibleLights)) {
+    clearArtwork();
+    return;
+  }
   if (refreshQueued) return;
   refreshQueued = true;
   queueMicrotask(() => {
@@ -59,7 +69,7 @@ function refreshForSceneChange(scene) {
 /** Draw state artwork for every configured Ambient Light in the viewed Scene. */
 async function refreshArtwork() {
   const currentRefresh = ++refreshId;
-  if (!canvas.ready || !canvas.primary || !canvas.lighting) {
+  if (!isFeatureEnabled(FEATURES.visibleLights) || !canvas.ready || !canvas.primary || !canvas.lighting) {
     clearArtwork();
     return;
   }
@@ -85,7 +95,8 @@ async function refreshArtwork() {
     }
   }));
 
-  if (currentRefresh !== refreshId || !canvas.ready || !canvas.primary) {
+  if (currentRefresh !== refreshId || !isFeatureEnabled(FEATURES.visibleLights)
+    || !canvas.ready || !canvas.primary) {
     for (const entry of meshes) destroyMesh(entry?.mesh);
     return;
   }
@@ -140,6 +151,7 @@ function updateArtworkPosition(light) {
 
 function clearArtwork() {
   ++refreshId;
+  refreshQueued = false;
   destroyAllMeshes();
   if (canvas.primary && canvas.ready) canvas.primary.update();
 }
@@ -155,4 +167,10 @@ function destroyMesh(mesh) {
   if (!mesh || mesh.destroyed) return;
   mesh.removeFromParent();
   mesh.destroy({children: true, texture: false, baseTexture: false});
+}
+
+function handleFeatureSettingChange(feature, enabled) {
+  if (feature !== FEATURES.visibleLights) return;
+  if (enabled) queueArtworkRefresh();
+  else clearArtwork();
 }

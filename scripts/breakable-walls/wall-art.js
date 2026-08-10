@@ -1,5 +1,10 @@
 import {MODULE_ID, getBreakableWallData} from "./wall-config.js";
 import {calculateRubbleGeometry} from "./wall-destruction.js";
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
 
 const artwork = new Map();
 let refreshId = 0;
@@ -15,10 +20,15 @@ export function registerDestroyedWallArt() {
   Hooks.on("updateScene", refreshForSceneChange);
   Hooks.on("refreshWall", refreshWallArtwork);
   Hooks.on("drawWall", reapplyVisibilityAfterDraw);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, handleFeatureSettingChange);
 }
 
 /** Coalesce bulk Wall changes into one artwork redraw. */
 export function queueDestroyedWallArtRefresh() {
+  if (!isFeatureEnabled(FEATURES.breakableWalls)) {
+    disableDestroyedWallArt();
+    return;
+  }
   if (refreshQueued) return;
   refreshQueued = true;
   queueMicrotask(() => {
@@ -28,6 +38,10 @@ export function queueDestroyedWallArtRefresh() {
 }
 
 function handleCanvasReady() {
+  if (!isFeatureEnabled(FEATURES.breakableWalls)) {
+    disableDestroyedWallArt();
+    return;
+  }
   synchronizeAllNativeWalls();
   queueDestroyedWallArtRefresh();
 }
@@ -49,7 +63,7 @@ function refreshForSceneChange(scene) {
 /** Draw destroyed-state artwork for every eligible Wall in the viewed Scene and level. */
 async function refreshArtwork() {
   const currentRefresh = ++refreshId;
-  if (!canvas.ready || !canvas.primary || !canvas.walls) {
+  if (!isFeatureEnabled(FEATURES.breakableWalls) || !canvas.ready || !canvas.primary || !canvas.walls) {
     clearArtwork();
     return;
   }
@@ -71,7 +85,8 @@ async function refreshArtwork() {
     }
   }));
 
-  if (currentRefresh !== refreshId || !canvas.ready || !canvas.primary) {
+  if (currentRefresh !== refreshId || !isFeatureEnabled(FEATURES.breakableWalls)
+    || !canvas.ready || !canvas.primary) {
     for (const entry of meshes) destroyMesh(entry?.mesh);
     return;
   }
@@ -236,6 +251,10 @@ function synchronizeAllNativeWalls() {
  */
 function synchronizeNativeWall(wall, {document = wall?.document, restore = false} = {}) {
   if (!wall || wall.destroyed || !document) return;
+  if (!isFeatureEnabled(FEATURES.breakableWalls)) {
+    restoreNativeWallVisibility(wall);
+    return;
+  }
   const destroyed = getBreakableWallData(document).destroyed;
 
   if (destroyed) {
@@ -271,6 +290,25 @@ function clearArtwork() {
   refreshQueued = false;
   destroyAllMeshes();
   if (canvas.primary && canvas.ready) canvas.primary.update?.();
+}
+
+function handleFeatureSettingChange(feature, enabled) {
+  if (feature !== FEATURES.breakableWalls) return;
+  if (enabled) handleCanvasReady();
+  else disableDestroyedWallArt();
+}
+
+function disableDestroyedWallArt() {
+  clearArtwork();
+  for (const wall of canvas.walls?.placeables ?? []) restoreNativeWallVisibility(wall);
+}
+
+function restoreNativeWallVisibility(wall) {
+  queueMicrotask(() => {
+    if (wall?.destroyed) return;
+    if (typeof wall?.refreshVisibility === "function") wall.refreshVisibility();
+    else if (typeof wall?.refresh === "function") wall.refresh();
+  });
 }
 
 function destroyAllMeshes() {

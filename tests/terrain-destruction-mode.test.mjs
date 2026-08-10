@@ -92,8 +92,10 @@ globalThis.foundry = {
 };
 
 const notifications = [];
+const featureSettings = {enableBreakableTerrain: true};
 globalThis.game = {
   user: {id: "gm", isGM: true},
+  settings: {get: (_namespace, key) => featureSettings[key]},
   i18n: {
     localize: key => key,
     format: (key, data) => `${key}:${JSON.stringify(data)}`
@@ -280,8 +282,15 @@ await new Promise(resolve => setTimeout(resolve, 0));
 assert.equal(partial.updateCalls.length, partialCalls, "right-click does nothing on a restored tile");
 assert.deepEqual(notifications, []);
 
-tool.onChange(null, false);
-assert.equal(controlsLayer.children.length, 0, "leaving destruction mode removes every marker");
+featureSettings.enableBreakableTerrain = false;
+for (const callback of registeredHooks.get("theiks-toolbag.featureSettingChanged") ?? []) {
+  callback("breakableTerrain", false);
+}
+assert.equal(controlsLayer.children.length, 0, "disabling breakable terrain removes every marker");
+
+const disabledControls = {tiles: {tools: {}}};
+for (const callback of registeredHooks.get("getSceneControlButtons") ?? []) callback(disabledControls);
+assert.equal(disabledControls.tiles.tools.theiksToolbagDestroyTerrain, undefined);
 
 const nonGmControls = {tiles: {tools: {}}};
 game.user.isGM = false;

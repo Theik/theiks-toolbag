@@ -53,6 +53,10 @@ const scene = {
 };
 let perceptionRefreshes = 0;
 let movementRefreshes = 0;
+const featureSettings = {enableBreakableTerrain: true};
+globalThis.game = {
+  settings: {get: (_namespace, key) => featureSettings[key]}
+};
 globalThis.canvas = {
   ready: true,
   scene,
@@ -145,6 +149,19 @@ ground.edges.clear();
 upper.edges.clear();
 for (const callback of hooks.get("initializeEdges")) callback(scene);
 assert.equal(ground.edges.size, 4, "cached alpha contours reattach synchronously after Scene edge reset");
+
+featureSettings.enableBreakableTerrain = false;
+for (const callback of hooks.get("theiks-toolbag.featureSettingChanged") ?? []) {
+  callback("breakableTerrain", false);
+}
+assert.equal(ground.edges.size, 0, "disabling breakable terrain immediately removes its runtime edges");
+assert.equal(upper.edges.size, 0);
+
+featureSettings.enableBreakableTerrain = true;
+for (const callback of hooks.get("theiks-toolbag.featureSettingChanged") ?? []) {
+  callback("breakableTerrain", true);
+}
+assert.equal(ground.edges.size, 4, "re-enabling breakable terrain restores configured runtime edges");
 
 await Promise.resolve();
 assert.ok(perceptionRefreshes > 0);

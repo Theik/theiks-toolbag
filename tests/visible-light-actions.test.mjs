@@ -9,6 +9,7 @@ const readyHooks = [];
 const registeredHooks = new Map();
 let socketListener = null;
 let authenticatedRequestHandled = false;
+const featureSettings = {enableVisibleLights: true};
 globalThis.Hooks = {
   once: (name, callback) => {
     if (name === "ready") readyHooks.push(callback);
@@ -21,7 +22,11 @@ globalThis.Hooks = {
 };
 globalThis.game = {
   user: null,
-  i18n: {localize: key => key},
+  settings: {get: (_namespace, key) => featureSettings[key]},
+  i18n: {
+    localize: key => key,
+    format: (key, data) => `${key}:${data.feature}`
+  },
   scenes: new Map(),
   users: new Map(),
   socket: {
@@ -245,5 +250,13 @@ try {
   console.warn = originalWarn;
 }
 assert.equal(forgedStateFixture.light.hidden, false);
+
+featureSettings.enableVisibleLights = false;
+game.user = gm;
+await assert.rejects(
+  () => toggleVisibleLight(createFixture().light),
+  /Settings\.Disabled/,
+  "configured lights cannot be used through the public API while the feature is disabled"
+);
 
 console.log("visible light action tests passed");

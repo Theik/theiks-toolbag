@@ -3,6 +3,12 @@ import {
   MODULE_ID,
   getBreakableWallData
 } from "./wall-config.js";
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  assertFeatureEnabled,
+  isFeatureEnabled
+} from "../settings.js";
 
 const DESTRUCTION_KINDS = new Set(["both", "single"]);
 const DESTRUCTION_SIDES = new Set(["positive", "negative"]);
@@ -24,6 +30,9 @@ export function registerBreakableWallState() {
   Hooks.on("canvasReady", reconcileCurrentScene);
   Hooks.on("createWall", reconcileChangedWall);
   Hooks.on("updateWall", reconcileChangedWall);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
+    if (feature === FEATURES.breakableWalls && enabled) void reconcileCurrentScene();
+  });
 }
 
 /**
@@ -218,6 +227,7 @@ export async function toggleWall(wall, options = {}) {
 
 /** @param {WallDocument} wall */
 function validateWall(wall) {
+  assertFeatureEnabled(FEATURES.breakableWalls);
   if (!game.user?.isGM) throw new Error(localize("Errors.GmOnly"));
   if (wall?.documentName !== "Wall") throw new Error(localize("Errors.InvalidWall"));
   if (!canvas.ready || !canvas.scene || wall.parent !== canvas.scene || canvas.scene.walls.get(wall.id) !== wall) {
@@ -265,6 +275,7 @@ function getDisabledWallChanges() {
 
 /** Keep the destroyed flag and core nonblocking state authoritative until repairWall authorizes restoration. */
 function keepDestroyedWallDisabled(wall, changes, options = {}) {
+  if (!isFeatureEnabled(FEATURES.breakableWalls)) return;
   const data = getBreakableWallData(wall);
   const current = data.destroyed;
   const requested = getChangedValue(changes, DESTROYED_FIELD);
@@ -293,6 +304,7 @@ function keepDestroyedWallDisabled(wall, changes, options = {}) {
 
 /** Reconcile a changed wall on the active GM without allowing update-hook recursion. */
 async function reconcileChangedWall(wall) {
+  if (!isFeatureEnabled(FEATURES.breakableWalls)) return;
   if (!isActiveGM() || wall?.parent !== canvas.scene || canvas.scene?.walls?.get?.(wall.id) !== wall) return;
   if (!getBreakableWallData(wall).destroyed || isWallDisabled(wall)) return;
 
@@ -327,6 +339,7 @@ function queueWallReconciliation(wall) {
 
 /** Reconcile every destroyed Wall in the current Scene when the canvas becomes ready. */
 async function reconcileCurrentScene() {
+  if (!isFeatureEnabled(FEATURES.breakableWalls)) return;
   if (!isActiveGM() || !canvas.ready || !canvas.scene) return;
   const walls = canvas.scene.walls?.contents ?? Array.from(canvas.scene.walls?.values?.() ?? []);
   await Promise.all(walls.map(wall => reconcileChangedWall(wall)));

@@ -82,6 +82,7 @@ globalThis.CONST = {
 let dialogCalls = 0;
 let resolveDialog;
 const notifications = [];
+const featureSettings = {enableBreakableWalls: true};
 globalThis.foundry = {
   applications: {
     api: {
@@ -100,6 +101,7 @@ globalThis.foundry = {
 };
 globalThis.game = {
   user: {isGM: true},
+  settings: {get: (_namespace, key) => featureSettings[key]},
   i18n: {
     localize: key => key,
     format: (key, data) => `${key}:${JSON.stringify(data)}`
@@ -272,8 +274,15 @@ assert.equal(corruptRepairMarker.eventMode, "static", "a failed repair re-enable
 assert.match(notifications.at(-1), /InvalidRestore/);
 assert.equal(loggedErrors.length, 1, "repair errors are logged as well as shown to the GM");
 
-tool.onChange(null, false);
-assert.equal(controlsLayer.children.length, 0, "leaving destruction mode removes every external marker");
+featureSettings.enableBreakableWalls = false;
+for (const callback of registeredHooks.get("theiks-toolbag.featureSettingChanged") ?? []) {
+  callback("breakableWalls", false);
+}
+assert.equal(controlsLayer.children.length, 0, "disabling breakable walls removes every external marker");
+
+const disabledControls = {walls: {tools: {}}};
+for (const callback of registeredHooks.get("getSceneControlButtons") ?? []) callback(disabledControls);
+assert.equal(disabledControls.walls.tools.theiksToolbagDestroyWalls, undefined);
 
 const nonGmControls = {walls: {tools: {}}};
 game.user.isGM = false;

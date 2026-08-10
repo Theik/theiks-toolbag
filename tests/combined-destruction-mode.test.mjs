@@ -62,7 +62,14 @@ class ControlIcon {
 
 globalThis.PIXI = {Container};
 globalThis.foundry = {canvas: {containers: {ControlIcon}}};
-globalThis.game = {user: {isGM: true}};
+const featureSettings = {
+  enableBreakableWalls: true,
+  enableBreakableTerrain: true
+};
+globalThis.game = {
+  user: {isGM: true},
+  settings: {get: (_namespace, key) => featureSettings[key]}
+};
 
 const controlsLayer = new Container();
 const wallFlag = {
@@ -140,5 +147,12 @@ game.user.isGM = false;
 const nonGmControls = {};
 for (const callback of registeredHooks.get("getSceneControlButtons") ?? []) callback(nonGmControls);
 assert.equal(nonGmControls.theiksToolbagDestruction, undefined);
+
+game.user.isGM = true;
+featureSettings.enableBreakableWalls = false;
+featureSettings.enableBreakableTerrain = false;
+const disabledControls = {};
+for (const callback of registeredHooks.get("getSceneControlButtons") ?? []) callback(disabledControls);
+assert.equal(disabledControls.theiksToolbagDestruction, undefined, "the combined mode is hidden when both features are off");
 
 console.log("combined destruction-mode tests passed");

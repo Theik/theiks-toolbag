@@ -1,5 +1,10 @@
 import { MODULE_ID, getBreakableWallData } from "./wall-config.js";
 import { promptWallDestruction, repairWall } from "./wall-destruction.js";
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
 
 const TOOL_NAME = "theiksToolbagDestroyWalls";
 const DESTROY_MARKER_TEXTURE = "icons/svg/explosion.svg";
@@ -22,11 +27,14 @@ export function registerWallDestructionMode() {
   Hooks.on("updateWall", refreshForWallChange);
   Hooks.on("deleteWall", refreshForWallChange);
   Hooks.on("refreshWall", refreshMarkerPosition);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
+    if (feature === FEATURES.breakableWalls && !enabled) setWallDestructionModeActive(false);
+  });
 }
 
 /** @param {Record<string, foundry.SceneControl>} controls */
 function addSceneControlTool(controls) {
-  if (!controls.walls || !game.user.isGM) return;
+  if (!controls.walls || !game.user.isGM || !isFeatureEnabled(FEATURES.breakableWalls)) return;
   controls.walls.tools[TOOL_NAME] = {
     name: TOOL_NAME,
     order: 12,
@@ -41,7 +49,7 @@ function addSceneControlTool(controls) {
 
 /** @param {boolean} isActive */
 export function setWallDestructionModeActive(isActive) {
-  active = isActive && game.user.isGM;
+  active = isActive && game.user.isGM && isFeatureEnabled(FEATURES.breakableWalls);
   if (active) queueMarkerRefresh();
   else clearMarkers();
 }
@@ -69,7 +77,8 @@ function queueMarkerRefresh() {
 async function refreshMarkers() {
   const currentRefresh = ++refreshId;
   destroyMarkerContainer();
-  if (!active || !canvas.ready || !canvas.controls || !game.user.isGM) return;
+  if (!active || !isFeatureEnabled(FEATURES.breakableWalls)
+    || !canvas.ready || !canvas.controls || !game.user.isGM) return;
 
   const container = new PIXI.Container();
   container.name = `${MODULE_ID}.breakableWallMarkers`;

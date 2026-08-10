@@ -5,6 +5,11 @@ import {
   retreatTerrainDestruction
 } from "./terrain-destruction.js";
 import {getTerrainMarkerPosition} from "./terrain-edges.js";
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
 
 const TOOL_NAME = "theiksToolbagDestroyTerrain";
 const DESTROY_MARKER_TEXTURE = "icons/svg/explosion.svg";
@@ -27,10 +32,13 @@ export function registerTerrainDestructionMode() {
   Hooks.on("updateTile", refreshForTileChange);
   Hooks.on("deleteTile", refreshForTileChange);
   Hooks.on("refreshTile", refreshMarkerPosition);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
+    if (feature === FEATURES.breakableTerrain && !enabled) setTerrainDestructionModeActive(false);
+  });
 }
 
 function addSceneControlTool(controls) {
-  if (!controls.tiles || !game.user.isGM) return;
+  if (!controls.tiles || !game.user.isGM || !isFeatureEnabled(FEATURES.breakableTerrain)) return;
   controls.tiles.tools[TOOL_NAME] = {
     name: TOOL_NAME,
     order: 5,
@@ -45,7 +53,7 @@ function addSceneControlTool(controls) {
 
 /** Allow the combined destruction control to activate or deactivate terrain markers. */
 export function setTerrainDestructionModeActive(isActive) {
-  active = isActive && game.user.isGM;
+  active = isActive && game.user.isGM && isFeatureEnabled(FEATURES.breakableTerrain);
   if (active) queueMarkerRefresh();
   else clearMarkers();
 }
@@ -70,7 +78,8 @@ function queueMarkerRefresh() {
 async function refreshMarkers() {
   const currentRefresh = ++refreshId;
   destroyMarkerContainer();
-  if (!active || !canvas.ready || !canvas.controls || !game.user.isGM) return;
+  if (!active || !isFeatureEnabled(FEATURES.breakableTerrain)
+    || !canvas.ready || !canvas.controls || !game.user.isGM) return;
 
   const container = new PIXI.Container();
   container.name = `${MODULE_ID}.breakableTerrainMarkers`;

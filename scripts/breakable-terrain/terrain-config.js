@@ -1,3 +1,9 @@
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
+
 export const MODULE_ID = "theiks-toolbag";
 export const BREAKABLE_TERRAIN_FLAG = "breakableTerrain";
 
@@ -75,6 +81,10 @@ export function registerBreakableTerrainConfig() {
   Hooks.on("renderTileConfig", renderBreakableTerrainConfig);
   Hooks.on("preCreateTile", validateTerrainCreation);
   Hooks.on("preUpdateTile", validateTerrainUpdate);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
+    if (feature !== FEATURES.breakableTerrain || enabled) return;
+    globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-terrain").forEach(element => element.remove());
+  });
 }
 
 /** Authorize one transition update without exposing its nonce outside this subsystem. */
@@ -91,6 +101,7 @@ export function revokeTerrainTransition(tile, nonce) {
 
 /** Add breakable-terrain fields to a TileConfig or TilePalette form. */
 async function renderBreakableTerrainConfig(application, element, context) {
+  if (!isFeatureEnabled(FEATURES.breakableTerrain)) return;
   const form = application.form ?? element.querySelector("form");
   const root = element.querySelector(".standard-form.scrollable") ?? form;
   if (!root || root.querySelector(".theiks-toolbag.breakable-terrain")) return;
@@ -109,7 +120,7 @@ async function renderBreakableTerrainConfig(application, element, context) {
     definitionLocked
   });
 
-  if (!application.rendered || !target.isConnected) return;
+  if (!isFeatureEnabled(FEATURES.breakableTerrain) || !application.rendered || !target.isConnected) return;
   target.insertAdjacentHTML("beforeend", html);
   const fieldset = target.querySelector(".theiks-toolbag.breakable-terrain");
   fieldset?.addEventListener("click", event => handleStateListAction(event, application, fieldset));
@@ -260,10 +271,12 @@ function setMultipleState(root, name, values) {
 }
 
 function validateTerrainCreation(tile) {
+  if (!isFeatureEnabled(FEATURES.breakableTerrain)) return;
   validateEnabledStates(getBreakableTerrainData(tile));
 }
 
 function validateTerrainUpdate(tile, changes, options = {}) {
+  if (!isFeatureEnabled(FEATURES.breakableTerrain)) return;
   const current = getBreakableTerrainData(tile);
   const authorized = transitionAuthorizations.get(getTerrainKey(tile));
   const isAuthorized = typeof authorized === "string" && options[TRANSITION_NONCE_OPTION] === authorized;

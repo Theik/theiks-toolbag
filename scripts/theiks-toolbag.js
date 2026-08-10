@@ -24,10 +24,12 @@ import {
 import {registerBreakableTerrainEdges} from "./breakable-terrain/terrain-edges.js";
 import {registerTerrainDestructionMode} from "./breakable-terrain/destruction-mode.js";
 import {registerCombinedDestructionMode} from "./combined-destruction-mode.js";
+import {registerFeatureSettings} from "./settings.js";
 
 export const MODULE_ID = "theiks-toolbag";
 
 Hooks.once("init", () => {
+  registerFeatureSettings();
   registerBreakableWallConfig();
   registerBreakableWallState();
   registerWallDestructionMode();

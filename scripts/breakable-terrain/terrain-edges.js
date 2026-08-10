@@ -1,4 +1,9 @@
 import {MODULE_ID, getBreakableTerrainData, getTerrainKey} from "./terrain-config.js";
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
 
 const ALPHA_RESOLUTION = 0.25;
 const MAX_EDGE_SEGMENTS = 256;
@@ -18,6 +23,7 @@ export function registerBreakableTerrainEdges() {
   Hooks.on("createTile", synchronizeChangedTile);
   Hooks.on("updateTile", synchronizeChangedTile);
   Hooks.on("deleteTile", removeDeletedTile);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, handleFeatureSettingChange);
 }
 
 /**
@@ -386,7 +392,7 @@ function removeDeletedTile(tile) {
 function synchronizeTileEdges(tile) {
   const key = getTerrainKey(tile);
   const data = getBreakableTerrainData(tile);
-  if (tile?.parent !== canvas.scene || !data.blocks) {
+  if (!isFeatureEnabled(FEATURES.breakableTerrain) || tile?.parent !== canvas.scene || !data.blocks) {
     cancelPending(tile);
     removeInstalledTerrainEdges(key, {notify: tile?.parent === canvas.scene});
     return;
@@ -490,6 +496,20 @@ function clearTerrainEdges() {
   alphaCache.clear();
   contourCache.clear();
   refreshQueued = false;
+}
+
+function handleFeatureSettingChange(feature, enabled) {
+  if (feature !== FEATURES.breakableTerrain) return;
+  if (enabled) {
+    synchronizeCurrentSceneTerrainEdges();
+    return;
+  }
+
+  pendingSequence += 1;
+  pendingByTile.clear();
+  const keys = Array.from(installedByTile.keys());
+  for (const key of keys) removeInstalledTerrainEdges(key, {notify: false});
+  if (keys.length) queueCanvasRestrictionRefresh();
 }
 
 function cancelPending(tile) {

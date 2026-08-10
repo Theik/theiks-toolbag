@@ -1,5 +1,6 @@
 import {setWallDestructionModeActive} from "./breakable-walls/destruction-mode.js";
 import {setTerrainDestructionModeActive} from "./breakable-terrain/destruction-mode.js";
+import {FEATURES, isFeatureEnabled} from "./settings.js";
 
 const CONTROL_NAME = "theiksToolbagDestruction";
 
@@ -9,7 +10,9 @@ export function registerCombinedDestructionMode() {
 }
 
 function addCombinedDestructionControl(controls) {
-  if (!game.user.isGM) return;
+  const wallsEnabled = isFeatureEnabled(FEATURES.breakableWalls);
+  const terrainEnabled = isFeatureEnabled(FEATURES.breakableTerrain);
+  if (!game.user.isGM || (!wallsEnabled && !terrainEnabled)) return;
   controls[CONTROL_NAME] = {
     name: CONTROL_NAME,
     order: 100,

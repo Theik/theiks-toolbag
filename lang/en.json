@@ -1,5 +1,20 @@
 {
   "THEIKS_TOOLBAG": {
+    "Settings": {
+      "BreakableWalls": {
+        "Name": "Breakable Walls",
+        "Hint": "Enable wall destruction configuration, controls, actions, and destroyed-wall artwork."
+      },
+      "BreakableTerrain": {
+        "Name": "Breakable Terrain",
+        "Hint": "Enable terrain destruction configuration, controls, actions, and Tile blocking edges."
+      },
+      "VisibleLights": {
+        "Name": "Visible Lights",
+        "Hint": "Enable visible-light configuration, artwork, controls, and interactions."
+      },
+      "Disabled": "{feature} is disabled in Theik's Toolbag settings."
+    },
     "BreakableWalls": {
       "Config": {
         "Legend": "Breakable Wall",

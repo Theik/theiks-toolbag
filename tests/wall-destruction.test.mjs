@@ -14,6 +14,7 @@ const DESTROYED_FIELD = `${FLAG_ROOT}.destroyed`;
 const DESTRUCTION_FIELD = `${FLAG_ROOT}.destruction`;
 const RESTORE_FIELD = `${FLAG_ROOT}.restore`;
 const NONE = 0;
+const featureSettings = {enableBreakableWalls: true};
 const ORIGINAL_STATE = {
   light: 11,
   sight: 12,
@@ -41,6 +42,7 @@ globalThis.CONST = {
 globalThis.game = {
   user: {id: "gm", active: true, isGM: true},
   users: null,
+  settings: {get: (_namespace, key) => featureSettings[key]},
   i18n: {
     localize: key => key,
     format: (key, data) => `${key}:${JSON.stringify(data)}`
@@ -446,5 +448,15 @@ game.user.isGM = false;
 const nonGm = createWall({id: "non-gm"});
 await assert.rejects(() => destroyWall(nonGm.wall, {kind: "both"}), /GmOnly/);
 assert.equal(nonGm.state.updateCalls.length, 0);
+
+featureSettings.enableBreakableWalls = false;
+game.user.isGM = true;
+const disabled = createWall({id: "disabled"});
+await assert.rejects(
+  () => destroyWall(disabled.wall, {kind: "both"}),
+  /Settings\.Disabled/,
+  "configured walls cannot be destroyed through the public API while the feature is disabled"
+);
+assert.equal(disabled.state.updateCalls.length, 0);
 
 console.log("wall destruction tests passed");

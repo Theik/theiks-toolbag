@@ -1,3 +1,9 @@
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
+
 export const MODULE_ID = "theiks-toolbag";
 export const VISIBLE_LIGHT_FLAG = "visibleLight";
 
@@ -48,6 +54,10 @@ export function getVisibleLightImage(light) {
 /** Register the AmbientLightConfig hook used by both the normal sheet and Light Palette. */
 export function registerVisibleLightConfig() {
   Hooks.on("renderAmbientLightConfig", renderVisibleLightConfig);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
+    if (feature !== FEATURES.visibleLights || enabled) return;
+    globalThis.document?.querySelectorAll?.(".theiks-toolbag.visible-light").forEach(element => element.remove());
+  });
 }
 
 /**
@@ -59,6 +69,7 @@ export function registerVisibleLightConfig() {
  * @returns {Promise<void>}
  */
 async function renderVisibleLightConfig(application, element, context) {
+  if (!isFeatureEnabled(FEATURES.visibleLights)) return;
   const form = application.form ?? element.querySelector("form");
   const root = element.querySelector(".standard-form.scrollable") ?? form;
   if (!root || root.querySelector(".theiks-toolbag.visible-light")) return;
@@ -79,7 +90,7 @@ async function renderVisibleLightConfig(application, element, context) {
     destroyedImage: data.images.destroyed
   });
 
-  if (!application.rendered || !target.isConnected) return;
+  if (!isFeatureEnabled(FEATURES.visibleLights) || !application.rendered || !target.isConnected) return;
   target.insertAdjacentHTML("beforeend", html);
   applyMultipleValueState(application, root);
   application.setPosition({height: "auto"});

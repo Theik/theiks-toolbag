@@ -7,6 +7,7 @@ import {
   revokeTerrainTransition
 } from "./terrain-config.js";
 import {prepareTerrainTexture} from "./terrain-edges.js";
+import {FEATURES, assertFeatureEnabled} from "../settings.js";
 
 const inProgress = new Set();
 let transitionSequence = 0;
@@ -163,6 +164,7 @@ export async function restoreTerrain(tile) {
 }
 
 function validateTile(tile) {
+  assertFeatureEnabled(FEATURES.breakableTerrain);
   if (!game.user?.isGM) throw new Error(localize("Errors.GmOnly"));
   if (tile?.documentName !== "Tile") throw new Error(localize("Errors.InvalidTile"));
   if (!canvas.ready || !canvas.scene || tile.parent !== canvas.scene || canvas.scene.tiles.get(tile.id) !== tile) {

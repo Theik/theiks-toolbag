@@ -5,6 +5,13 @@ import {
   getVisibleLightState,
   isVisibleLightConfigured
 } from "./light-config.js";
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  assertFeatureEnabled,
+  createFeatureDisabledError,
+  isFeatureEnabled
+} from "../settings.js";
 
 const SOCKET_CHANNEL = `module.${MODULE_ID}`;
 const SOCKET_REQUEST = "visibleLightToggleRequest";
@@ -40,6 +47,8 @@ export function registerVisibleLightControls() {
   Hooks.on("updateAmbientLight", reconcileDestroyedLight);
   Hooks.on("deleteAmbientLight", refreshForDocumentChange);
   Hooks.on("preUpdateAmbientLight", keepDestroyedLightOff);
+  Hooks.on("canvasReady", reconcileCurrentSceneDestroyedLights);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, handleFeatureSettingChange);
 }
 
 /**
@@ -213,6 +222,7 @@ async function runLightUpdate(light, changes) {
 
 /** @param {AmbientLightDocument} light */
 function validateLight(light) {
+  assertFeatureEnabled(FEATURES.visibleLights);
   if (light?.documentName !== "AmbientLight") throw new Error(localize("Errors.InvalidLight"));
   if (!light.parent || light.parent.lights?.get?.(light.id) !== light) {
     throw new Error(localize("Errors.LightUnavailable"));
@@ -432,6 +442,10 @@ function refreshForDocumentChange(document) {
 
 /** Draw toggle markers only while the normal Token layer is active. */
 function queueMarkerRefresh() {
+  if (!isFeatureEnabled(FEATURES.visibleLights)) {
+    clearMarkers();
+    return;
+  }
   if (markerRefreshQueued) return;
   markerRefreshQueued = true;
   queueMicrotask(() => {
@@ -444,7 +458,8 @@ function queueMarkerRefresh() {
 async function refreshMarkers() {
   const currentRefresh = ++markerRefreshId;
   destroyMarkerContainer();
-  if (!canvas.ready || !canvas.controls || canvas.activeLayer !== canvas.tokens) return;
+  if (!isFeatureEnabled(FEATURES.visibleLights)
+    || !canvas.ready || !canvas.controls || canvas.activeLayer !== canvas.tokens) return;
 
   const container = new PIXI.Container();
   container.name = `${MODULE_ID}.visibleLightMarkers`;
@@ -468,7 +483,8 @@ async function refreshMarkers() {
   await Promise.all(candidates.map(async light => {
     try {
       const marker = await createMarker(light);
-      if (currentRefresh !== markerRefreshId || markerContainer !== container || !container.parent) {
+      if (currentRefresh !== markerRefreshId || !isFeatureEnabled(FEATURES.visibleLights)
+        || markerContainer !== container || !container.parent) {
         marker.destroy({children: true});
         return;
       }
@@ -561,6 +577,7 @@ async function activateDestroy(marker, lightId) {
 
 /** Ensure checking Destroyed in the config also switches the source off. */
 function keepDestroyedLightOff(light, changes) {
+  if (!isFeatureEnabled(FEATURES.visibleLights)) return;
   const hasDestroyedChange = Object.hasOwn(changes, DESTROYED_FIELD)
     || foundry.utils.hasProperty(changes, DESTROYED_FIELD);
   const destroyedChange = Object.hasOwn(changes, DESTROYED_FIELD)
@@ -572,7 +589,8 @@ function keepDestroyedLightOff(light, changes) {
 
 /** Reconcile cross-client races so a destroyed light can never remain switched on. */
 function reconcileDestroyedLight(light) {
-  if (game.users.activeGM?.id !== game.user.id) return;
+  if (!isFeatureEnabled(FEATURES.visibleLights)) return;
+  if (game.users?.activeGM?.id !== game.user.id) return;
   if (!getVisibleLightData(light).destroyed || light.hidden) return;
 
   const progressKey = light.uuid ?? `${light.parent?.id}.${light.id}`;
@@ -583,9 +601,33 @@ function reconcileDestroyedLight(light) {
   }).finally(() => reconciliationInProgress.delete(progressKey));
 }
 
+function reconcileCurrentSceneDestroyedLights() {
+  if (!isFeatureEnabled(FEATURES.visibleLights) || game.users?.activeGM?.id !== game.user.id) return;
+  const lights = canvas.scene?.lights?.contents ?? Array.from(canvas.scene?.lights?.values?.() ?? []);
+  for (const light of lights) reconcileDestroyedLight(light);
+}
+
 function clearMarkers() {
   ++markerRefreshId;
+  markerRefreshQueued = false;
   destroyMarkerContainer();
+}
+
+function handleFeatureSettingChange(feature, enabled) {
+  if (feature !== FEATURES.visibleLights) return;
+  if (enabled) {
+    reconcileCurrentSceneDestroyedLights();
+    queueMarkerRefresh();
+    return;
+  }
+
+  clearMarkers();
+  const error = createFeatureDisabledError(FEATURES.visibleLights);
+  for (const pending of pendingRequests.values()) {
+    clearTimeout(pending.timeoutId);
+    pending.reject(error);
+  }
+  pendingRequests.clear();
 }
 
 function destroyMarkerContainer() {

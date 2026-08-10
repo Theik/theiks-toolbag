@@ -1,3 +1,9 @@
+import {
+  FEATURES,
+  FEATURE_SETTING_CHANGED_HOOK,
+  isFeatureEnabled
+} from "../settings.js";
+
 export const MODULE_ID = "theiks-toolbag";
 export const BREAKABLE_WALL_FLAG = "breakableWall";
 
@@ -56,6 +62,10 @@ function normalizeRestore(restore) {
 /** Register the WallConfig render hook used by both the normal sheet and Wall Palette. */
 export function registerBreakableWallConfig() {
   Hooks.on("renderWallConfig", renderBreakableWallConfig);
+  Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
+    if (feature !== FEATURES.breakableWalls || enabled) return;
+    globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-wall").forEach(element => element.remove());
+  });
 }
 
 /**
@@ -67,6 +77,7 @@ export function registerBreakableWallConfig() {
  * @returns {Promise<void>}
  */
 async function renderBreakableWallConfig(application, element, context) {
+  if (!isFeatureEnabled(FEATURES.breakableWalls)) return;
   const scrollable = element.querySelector(".standard-form.scrollable");
   if (!scrollable || scrollable.querySelector(".theiks-toolbag.breakable-wall")) return;
 
@@ -80,7 +91,7 @@ async function renderBreakableWallConfig(application, element, context) {
     singleImage: data.images.single
   });
 
-  if (!application.rendered || !scrollable.isConnected) return;
+  if (!isFeatureEnabled(FEATURES.breakableWalls) || !application.rendered || !scrollable.isConnected) return;
   scrollable.insertAdjacentHTML("beforeend", html);
   applyMultipleValueState(application, scrollable);
   application.setPosition({height: "auto"});
