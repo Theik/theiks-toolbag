@@ -29,27 +29,52 @@ const squareGrid = {
   getOffset: ({x, y}) => ({i: Math.floor(y / 125), j: Math.floor(x / 125)}),
   testAdjacency: (a, b) => Math.max(Math.abs(a.i - b.i), Math.abs(a.j - b.j)) === 1
 };
-const boundaryToken = {
-  _source: {x: 1000, y: 1375, width: 1, height: 1, elevation: 0},
-  getOccupiedGridSpaceOffsets: () => {
-    throw new Error("square grids must not use floor-biased cell adjacency");
-  }
+const getSquareTokenOffsets = geometry => [{
+  i: Math.floor((geometry.y + (squareGrid.size / 2)) / squareGrid.size),
+  j: Math.floor((geometry.x + (squareGrid.size / 2)) / squareGrid.size),
+  k: 0
+}];
+const gridSpaceToken = {
+  _source: {x: 1000, y: 1250, width: 1, height: 1, elevation: 0},
+  getOccupiedGridSpaceOffsets: getSquareTokenOffsets
 };
 assert.equal(
-  isTokenAdjacentToLight(boundaryToken, {x: 875, y: 1313, elevation: 0}, {grid: squareGrid}),
-  false,
-  "a light 1.5 tiles left of the Token center is out of range even on a grid boundary"
-);
-assert.equal(
-  isTokenAdjacentToLight(boundaryToken, {x: 1250, y: 1313, elevation: 0}, {grid: squareGrid}),
-  false,
-  "the symmetric right-hand light produces the same result"
-);
-assert.equal(
-  isTokenAdjacentToLight(boundaryToken, {x: 937.5, y: 1312.5, elevation: 0}, {grid: squareGrid}),
+  isTokenAdjacentToLight(gridSpaceToken, {x: 938, y: 1313, elevation: 0}, {grid: squareGrid}),
   true,
-  "a diagonally positioned light exactly one tile from the Token center remains in range"
+  "the live Scene's integer-rounded light in the left neighboring space is in range"
 );
+assert.equal(
+  isTokenAdjacentToLight(gridSpaceToken, {x: 1188, y: 1313, elevation: 0}, {grid: squareGrid}),
+  true,
+  "the live Scene's integer-rounded light in the right neighboring space is also in range"
+);
+assert.equal(
+  isTokenAdjacentToLight(gridSpaceToken, {x: 1249, y: 1374, elevation: 0}, {grid: squareGrid}),
+  true,
+  "pixel distance within a neighboring grid space does not affect reach"
+);
+assert.equal(
+  isTokenAdjacentToLight(gridSpaceToken, {x: 1313, y: 1313, elevation: 0}, {grid: squareGrid}),
+  false,
+  "a light two grid spaces away is out of range regardless of pixel distance"
+);
+
+for (const offset of [-1, 1]) {
+  const offsetToken = {
+    ...gridSpaceToken,
+    _source: {...gridSpaceToken._source, x: 1000 + offset, y: 1250 + offset}
+  };
+  assert.equal(
+    isTokenAdjacentToLight(offsetToken, {x: 938, y: 1313, elevation: 0}, {grid: squareGrid}),
+    true,
+    `a Token offset ${offset}px still reaches the left neighboring grid space`
+  );
+  assert.equal(
+    isTokenAdjacentToLight(offsetToken, {x: 1188, y: 1313, elevation: 0}, {grid: squareGrid}),
+    true,
+    `a Token offset ${offset}px still reaches the right neighboring grid space`
+  );
+}
 
 const gridToken = {
   getOccupiedGridSpaceOffsets: () => [{i: 4, j: 6}]

@@ -130,6 +130,10 @@ Blocking uses transient Foundry canvas edges. No helper Wall or Tile documents a
 
 When **Level Tools** is enabled, destroyable terrain can also become a **Breakable platform** assigned to one or more Scene Levels. When it reaches its final damage state:
 
+<p align="center">
+  <img src="assets/images/demos/breakable-platforms.gif" alt="Tokens falling to a lower Scene Level when a breakable platform is destroyed" width="900">
+</p>
+
 1. The GM chooses which creatures on the platform should fall.
 2. Each chosen creature moves from its assigned Level to the nearest Level below.
 3. Creatures already underneath are identified in the confirmation.
@@ -146,7 +150,7 @@ An optional **Destroyed message** adds an introductory sentence to that Chat car
 > Move a whole group between floors—or let gravity do the work.
 
 <p align="center">
-  <img src="assets/images/demos/level-tools.gif" alt="Tokens falling from a destroyed platform to a lower Scene Level" width="687">
+  <img src="assets/images/demos/level-tools.gif" alt="Selected tokens being moved between Scene Levels with the Level Tools dialog" width="900">
 </p>
 
 Right-click a Token and choose **Change Level + Elevation**, shown with a ladder directly beneath Foundry's native Level control, to move all currently selected Tokens to another Scene Level.
@@ -164,7 +168,7 @@ The **Falling Chat messages** setting controls both manual Token-fall summaries 
 > Put the torch, lantern, or magical fixture on the map—not just its glow.
 
 <p align="center">
-  <img src="assets/images/demos/visible-lights.gif" alt="A visible ambient light being toggled and destroyed" width="565">
+  <img src="assets/images/demos/visible-lights.gif" alt="A visible ambient light being toggled and destroyed" width="900">
 </p>
 
 Edit an Ambient Light and open the **Theik's Toolbag** tab to choose square artwork for its on, off, and destroyed states. The current artwork is centered on the light, rendered at one grid space in each direction, and follows the light when it moves or rotates without creating extra Tile documents.
@@ -176,13 +180,17 @@ While the normal Token controls are active, a control appears over every configu
 | GM | <kbd>Left click</kbd> | Toggles the light on or off from anywhere |
 | GM | <kbd>Right click</kbd> | Destroys the fixture and switches it off |
 | GM (destroyed) | <kbd>Left click</kbd> | Repairs the fixture; it remains switched off |
-| Player | <kbd>Left click</kbd> | Toggles the fixture when a selected, owned Token is next to it with no movement-blocking wall between them |
+| Player | <kbd>Left click</kbd> | Toggles the fixture when its grid space is the same as or adjacent to one occupied by a selected, owned Token, with no movement-blocking wall between them |
 
 Destroyed lights cannot be toggled by players. A GM can repair one by clicking its green repair marker or by clearing **Destroyed** in the Light configuration.
 
 <p align="right"><a href="#readme-top">Back to top ↑</a></p>
 
 ### ⚡ Script behaviors
+
+<p align="center">
+  <img src="assets/images/demos/script-chains.gif" alt="Script behaviors chaining successful Toolbag actions across destructible scene elements" width="900">
+</p>
 
 The **Theik's Toolbag** tab includes Region-style script behaviors for reacting to successful Toolbag actions. Add as many named behaviors as needed, enable or disable each one independently, and choose one or more triggers for every behavior:
 

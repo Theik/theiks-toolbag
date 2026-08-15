@@ -59,8 +59,9 @@ export function registerVisibleLightControls() {
 
 /**
  * Test whether a Token occupies the light's grid space or a directly adjacent one.
- * Square grids use continuous bounds so a light placed exactly on a grid line is not assigned
- * toward one Token and away from another. Foundry's grid API handles non-square grids.
+ * On gridded Scenes, reach is determined entirely from grid-space membership. Foundry snaps the
+ * Token footprint by its center before returning occupied spaces, so small pixel offsets do not
+ * change which neighboring spaces it can reach. Rectangular distance is only a gridless fallback.
  *
  * @param {TokenDocument|foundry.canvas.placeables.Token|object} token
  * @param {AmbientLightDocument|foundry.canvas.placeables.AmbientLight|object} light
@@ -94,14 +95,6 @@ export function isTokenAdjacentToLight(token, light, {grid = null, gridSize} = {
   const lightElevation = Number(lightSource.elevation ?? lightDocument.elevation ?? 0);
   if (Number.isFinite(tokenElevation) && Number.isFinite(lightElevation)
     && Math.abs(tokenElevation - lightElevation) > Number.EPSILON) return false;
-
-  // SquareGrid#getOffset uses floor(), which makes two fixtures at the same distance behave
-  // differently when one lies on the near edge of a grid line and the other on the far edge.
-  // Continuous bounds express the intended range: the light may be at most one grid space from
-  // the center of a 1x1 Token, extended naturally around the footprint of larger Tokens.
-  if (grid?.isSquare) {
-    return isWithinRectangularGridRange(tokenGeometry, lightX, lightY, grid.size ?? gridSize);
-  }
 
   if (grid?.getOffset && grid?.testAdjacency && tokenDocument.getOccupiedGridSpaceOffsets) {
     try {
