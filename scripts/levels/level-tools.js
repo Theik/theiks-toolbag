@@ -9,10 +9,13 @@ export const MODULE_ID = "theiks-toolbag";
 
 const HUD_CONTROL_CLASS = "theiks-toolbag-level-change";
 const FALLING_INPUT_ID = "theiks-toolbag-level-falling";
+const SYNC_ELEVATION_OPTION = "theiksToolbagSyncElevation";
+const pendingElevationRequests = new WeakMap();
 
 /** Register the GM-only Token HUD action for native Foundry Scene Levels. */
 export function registerLevelTools() {
   Hooks.on("renderTokenHUD", renderTokenLevelControl);
+  Hooks.on("updateToken", synchronizeTokenElevationDisplay);
   Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
     if (feature !== FEATURES.levelTools || enabled) return;
     globalThis.document?.querySelectorAll?.(`.${HUD_CONTROL_CLASS}`).forEach(element => element.remove());
@@ -75,9 +78,16 @@ export function getLevelBelow(level, scene = level?.parent ?? canvas.scene) {
  * @param {number|string} elevation
  * @param {boolean} [falling=false] Announce a downward change as a fall.
  * @param {boolean} [levelTransition=false] Move the Token to the native Level containing the new elevation.
+ * @param {boolean} [ignoreCeiling=false] Ignore walls and surfaces while applying the elevation change.
  * @returns {Promise<TokenDocument|null>}
  */
-export async function updateTokenElevation(token, elevation, falling = false, levelTransition = false) {
+export async function updateTokenElevation(
+  token,
+  elevation,
+  falling = false,
+  levelTransition = false,
+  ignoreCeiling = false
+) {
   assertFeatureEnabled(FEATURES.levelTools);
   const document = token?.document ?? token;
   const targetElevation = Number(elevation);
@@ -90,30 +100,99 @@ export async function updateTokenElevation(token, elevation, falling = false, le
 
   const movement = document.movement;
   if (movement?.id && movement.user && !movement.user.isSelf) return null;
-  if (isMovementActive(movement)) {
-    const completed = await movement.finished;
-    if (!completed) return null;
+  const request = {};
+  pendingElevationRequests.set(document, request);
+  try {
+    if ((isMovementActive(movement) || movement?.state === "completed") && movement.finished?.then) {
+      const completed = await movement.finished;
+      if (!completed) return null;
+    }
 
-    // Do not interrupt a new movement which began while the original movement was finishing.
+    // A single drag can enter several adjacent Regions. Only its last requested elevation should create
+    // a follow-up movement; otherwise the competing updates can stop the Token at a Region boundary.
+    if (pendingElevationRequests.get(document) !== request) return null;
+
+    // Foundry resolves movement.finished before its chained canvas animation necessarily ends. Replacing the
+    // movement during that animation corrupts its chain, so wait for both lifecycles before updating elevation.
+    if (movement?.animation?.ended?.then) await movement.animation.ended;
+    if (pendingElevationRequests.get(document) !== request) return null;
+
+    // The movement document's animation promise can resolve before the Token placeable's final animation frame.
+    // That late frame merges its old elevation back into the prepared document, leaving the saved source correct
+    // but the mesh and tooltip stale. Wait for the rendered animation itself before changing elevation.
+    await waitForRenderedMovementAnimation(document);
+    if (pendingElevationRequests.get(document) !== request) return null;
+
+    // Do not interrupt a new movement which began while the original movement or animation was finishing.
     const currentMovement = document.movement;
-    if (currentMovement?.id !== movement.id && isMovementActive(currentMovement)) return null;
-  }
+    if (currentMovement?.id !== movement?.id && isMovementActive(currentMovement)) return null;
 
-  const previousElevation = Number(document?._source?.elevation ?? document.elevation);
-  if (previousElevation === targetElevation) return document;
-  const changes = {elevation: targetElevation};
-  const targetLevel = getLevelAtElevation(targetElevation, document.parent);
-  if (isChecked(levelTransition)) {
-    const currentLevel = getTokenLevel(document, document.parent);
-    if (targetLevel && currentLevel?.id !== targetLevel.id) changes.level = targetLevel.id;
-  }
-  const updated = await document.update(changes, {animate: false});
+    const previousElevation = Number(document?._source?.elevation ?? document.elevation);
+    const changes = {};
+    if (previousElevation !== targetElevation) changes.elevation = targetElevation;
+    const targetLevel = getLevelAtElevation(targetElevation, document.parent);
+    if (isChecked(levelTransition)) {
+      const currentLevel = getTokenLevel(document, document.parent);
+      if (targetLevel && currentLevel?.id !== targetLevel.id) changes.level = targetLevel.id;
+    }
+    if (!Object.keys(changes).length) return document;
 
-  const fallDistance = previousElevation - targetElevation;
-  if (isChecked(falling) && fallDistance > 0 && isFeatureEnabled(FEATURES.fallingMessages)) {
-    if (targetLevel) await announceFalls([{name: document.name, distance: fallDistance}], targetLevel);
+    // Foundry's non-animated Token update can retain the preceding movement's prepared elevation even after
+    // _source has the correct value. Mark the update so every client can reset its rendered Token from _source.
+    const updateOptions = {animate: false, [SYNC_ELEVATION_OPTION]: true};
+    if (isChecked(ignoreCeiling)) updateOptions.constrainOptions = {ignoreWalls: true};
+    const updated = await document.update(changes, updateOptions);
+
+    // updateToken hooks run before Foundry finishes the overall Token movement operation. Repeat the reset here,
+    // after document.update has completed, so late movement callbacks cannot restore the preceding elevation.
+    synchronizeTokenElevationDisplay(document, changes, updateOptions);
+    if (pendingElevationRequests.get(document) !== request) return null;
+
+    if (changes.level && document.parent?.isView && canvas.level?.id !== changes.level
+      && typeof document.parent.view === "function") {
+      await document.parent.view({level: changes.level, controlledTokens: [document.id]});
+    }
+
+    const fallDistance = previousElevation - targetElevation;
+    if (isChecked(falling) && fallDistance > 0 && isFeatureEnabled(FEATURES.fallingMessages)) {
+      if (targetLevel) await announceFalls([{name: document.name, distance: fallDistance}], targetLevel);
+    }
+    return updated;
+  } finally {
+    if (pendingElevationRequests.get(document) === request) pendingElevationRequests.delete(document);
   }
-  return updated;
+}
+
+/**
+ * Reset a rendered Token's animation cache after one of our non-animated elevation updates.
+ * Foundry's tooltip reads the prepared document value, which a completed movement animation can leave stale.
+ */
+function synchronizeTokenElevationDisplay(document, changed, options) {
+  if (!options?.[SYNC_ELEVATION_OPTION] || !Object.hasOwn(changed ?? {}, "elevation")) return;
+  const token = document?.object;
+  if (!token || token.rendered === false) return;
+
+  try {
+    if (typeof token.stopAnimation === "function") token.stopAnimation({reset: true});
+    else document.reset?.();
+  } catch (error) {
+    // reset() has already restored the authoritative source in Foundry's stopAnimation implementation.
+    console.error(`${MODULE_ID} | Failed to synchronize Token elevation display`, error);
+  }
+  token.renderFlags?.set?.({refreshElevation: true});
+}
+
+async function waitForRenderedMovementAnimation(document) {
+  const token = document?.object;
+  if (!token) return;
+
+  let animation = token.movementAnimationPromise;
+  while (animation?.then) {
+    await animation;
+    const nextAnimation = token.movementAnimationPromise;
+    if (!nextAnimation || nextAnimation === animation) return;
+    animation = nextAnimation;
+  }
 }
 
 /**
@@ -312,11 +391,24 @@ async function announceFalls(falls, targetLevel) {
 }
 
 function getLevelAtElevation(elevation, scene = canvas.scene) {
-  if (scene === canvas.scene && typeof canvas.inferLevelFromElevation === "function") {
-    const inferred = canvas.inferLevelFromElevation(elevation);
-    if (inferred) return inferred;
-  }
-  return getSceneLevels(scene).find(level => elevationInLevel(elevation, level)) ?? null;
+  const candidates = getSceneLevels(scene).filter(level => elevationInLevel(elevation, level));
+  if (!candidates.length) return null;
+  return candidates.reduce((selected, candidate) => {
+    if (!selected) return candidate;
+    const candidatePriority = levelElevationPriority(elevation, candidate);
+    const selectedPriority = levelElevationPriority(elevation, selected);
+    if (candidatePriority !== selectedPriority) {
+      return candidatePriority < selectedPriority ? candidate : selected;
+    }
+    return candidate.isView && !selected.isView ? candidate : selected;
+  }, null);
+}
+
+function levelElevationPriority(elevation, level) {
+  const bottom = Number(level?.elevation?.bottom);
+  const top = Number(level?.elevation?.top);
+  if (bottom < elevation && elevation < top) return 0;
+  return bottom === elevation ? 1 : 2;
 }
 
 function normalizeTokenDocuments(tokens) {

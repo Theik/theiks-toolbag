@@ -297,7 +297,24 @@
       }
     },
     "DestructionMode": {
-      "Title": "Destruction Mode"
+      "Title": "Destruction Mode",
+      "Reset": {
+        "Title": "Reset destructables",
+        "Dialog": {
+          "Title": "Reset destructables?",
+          "Content": "Restore all damaged destructables in this Scene? This will repair {walls} walls, {terrain} terrain tiles, and {lights} visible lights and run their configured repair behaviors.",
+          "Confirm": "Reset destructables"
+        },
+        "Notifications": {
+          "Empty": "There are no damaged destructables to reset in this Scene.",
+          "InProgress": "Destructables are already being reset.",
+          "SceneUnavailable": "The current Scene is not available.",
+          "SceneChanged": "The active Scene changed, so no destructables were reset.",
+          "Failed": "Destructables could not be reset. Check the console for details.",
+          "Complete": "Reset {repaired} destructables.",
+          "Partial": "Reset {repaired} destructables; {failed} could not be repaired. Check the console for details."
+        }
+      }
     }
   }
 }

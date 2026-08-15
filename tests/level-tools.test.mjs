@@ -42,7 +42,7 @@ globalThis.foundry = {
   }
 };
 
-const ground = {id: "ground", name: "Ground", elevation: {bottom: -10, top: 0}};
+const ground = {id: "ground", name: "Ground", elevation: {bottom: -10, top: 10}};
 const middle = {id: "middle", name: "Middle", elevation: {bottom: 10, top: 20}};
 const upper = {id: "upper", name: "Upper", elevation: {bottom: 30, top: 40}};
 const levels = new Map([[ground.id, ground], [middle.id, middle], [upper.id, upper]]);
@@ -154,7 +154,91 @@ assert.equal(await elevationChange, moving);
 assert.equal(moving.elevation, 2, "elevation changes after movement completes");
 assert.deepEqual(moving.updateCalls.at(-1), {
   changes: {elevation: 2},
-  options: {animate: false}
+  options: {animate: false, theiksToolbagSyncElevation: true}
+});
+
+const completing = createToken("completing", "Completing", ground.id, 5);
+let finishCompletedMovement;
+completing.movement = {
+  id: "movement-completing",
+  state: "completed",
+  user: {isSelf: true},
+  finished: new Promise(resolve => { finishCompletedMovement = resolve; })
+};
+const postMovementElevationChange = updateTokenElevation(completing, 9, false, true, true);
+await Promise.resolve();
+assert.equal(completing.elevation, 5,
+  "a movement marked completed is still allowed to finish its post-workflow before elevation changes");
+finishCompletedMovement(true);
+assert.equal(await postMovementElevationChange, completing);
+assert.equal(completing.elevation, 9);
+assert.deepEqual(completing.updateCalls.at(-1), {
+  changes: {elevation: 9},
+  options: {animate: false, theiksToolbagSyncElevation: true, constrainOptions: {ignoreWalls: true}}
+});
+
+const crossingSteps = createToken("crossing-steps", "Crossing Steps", ground.id, 0);
+let finishStepCrossing;
+let finishStepCrossingAnimation;
+let finishRenderedStepCrossingAnimation;
+let renderedStepCrossingAnimationActive = true;
+const renderedStepCrossingAnimation = new Promise(resolve => {
+  finishRenderedStepCrossingAnimation = () => {
+    renderedStepCrossingAnimationActive = false;
+    resolve();
+  };
+});
+const stepCrossingMovement = {
+  id: "movement-crossing-steps",
+  state: "pending",
+  user: {isSelf: true},
+  finished: new Promise(resolve => { finishStepCrossing = resolve; }),
+  animation: {ended: new Promise(resolve => { finishStepCrossingAnimation = resolve; })}
+};
+crossingSteps.movement = stepCrossingMovement;
+crossingSteps.object = {
+  rendered: true,
+  get movementAnimationPromise() {
+    return renderedStepCrossingAnimationActive ? renderedStepCrossingAnimation : null;
+  },
+  stopAnimation: () => {},
+  renderFlags: {set: () => {}}
+};
+const firstStepRequest = updateTokenElevation(crossingSteps, 3, false, true, true);
+const secondStepRequest = updateTokenElevation(crossingSteps, 6, false, true, true);
+await Promise.resolve();
+assert.equal(crossingSteps.updateCalls.length, 0, "adjacent stair Regions wait for the source movement");
+crossingSteps.movement = {...stepCrossingMovement, state: "completed"};
+finishStepCrossing(true);
+await Promise.resolve();
+assert.equal(crossingSteps.updateCalls.length, 0,
+  "the final stair request also waits for the source movement's chained animation");
+finishStepCrossingAnimation();
+await Promise.resolve();
+assert.equal(crossingSteps.updateCalls.length, 0,
+  "the final stair request waits for the rendered Token animation after the movement snapshot resolves");
+finishRenderedStepCrossingAnimation();
+assert.equal(await firstStepRequest, null, "an earlier elevation request from the same drag becomes stale");
+assert.equal(await secondStepRequest, crossingSteps);
+assert.equal(crossingSteps.elevation, 6, "the final stair Region crossed determines the elevation");
+assert.deepEqual(crossingSteps.updateCalls, [{
+  changes: {elevation: 6},
+  options: {animate: false, theiksToolbagSyncElevation: true, constrainOptions: {ignoreWalls: true}}
+}], "crossing two stair Regions creates only one follow-up Token movement");
+
+const ceilingStopped = createToken("ceiling-stopped", "Ceiling Stopped", ground.id, 5);
+ceilingStopped.movement = {
+  id: "movement-stopped-at-ceiling",
+  state: "stopped",
+  user: {isSelf: true},
+  finished: Promise.resolve(false)
+};
+await updateTokenElevation(ceilingStopped, 9, false, true, true);
+assert.equal(ceilingStopped.elevation, 9,
+  "ignoreCeiling can recover after the entering movement was stopped by the ceiling");
+assert.deepEqual(ceilingStopped.updateCalls.at(-1), {
+  changes: {elevation: 9},
+  options: {animate: false, theiksToolbagSyncElevation: true, constrainOptions: {ignoreWalls: true}}
 });
 
 await updateTokenElevation(moving, -5);
@@ -170,8 +254,41 @@ assert.equal(elevationOnly.elevation, 12);
 assert.equal(elevationOnly.level, ground.id, "Level transitions remain disabled by default");
 assert.deepEqual(elevationOnly.updateCalls.at(-1), {
   changes: {elevation: 12},
-  options: {animate: false}
+  options: {animate: false, theiksToolbagSyncElevation: true}
 });
+
+const ceilingIgnored = createToken("ceiling-ignored", "Ceiling Ignored", ground.id, 5);
+await updateTokenElevation(ceilingIgnored, 9, false, false, true);
+assert.equal(ceilingIgnored.elevation, 9);
+assert.equal(ceilingIgnored.level, ground.id, "ignoring a ceiling does not transition the Token's Level");
+assert.deepEqual(ceilingIgnored.updateCalls.at(-1), {
+  changes: {elevation: 9},
+  options: {animate: false, theiksToolbagSyncElevation: true, constrainOptions: {ignoreWalls: true}}
+});
+
+const staleRenderedElevation = createToken("stale-rendered", "Stale Rendered", ground.id, 6);
+staleRenderedElevation.update = async (changes, options = {}) => {
+  staleRenderedElevation.updateCalls.push({changes, options});
+  if (Object.hasOwn(changes, "elevation")) staleRenderedElevation._source.elevation = changes.elevation;
+  if (Object.hasOwn(changes, "level")) staleRenderedElevation._source.level = changes.level;
+  return staleRenderedElevation;
+};
+let postUpdateStopOptions;
+let postUpdateRenderFlags;
+staleRenderedElevation.object = {
+  rendered: true,
+  stopAnimation: options => {
+    postUpdateStopOptions = options;
+    staleRenderedElevation.elevation = staleRenderedElevation._source.elevation;
+  },
+  renderFlags: {set: flags => { postUpdateRenderFlags = flags; }}
+};
+await updateTokenElevation(staleRenderedElevation, 0);
+assert.equal(staleRenderedElevation._source.elevation, 0);
+assert.equal(staleRenderedElevation.elevation, 0,
+  "the rendered elevation is synchronized after the complete document update operation");
+assert.deepEqual(postUpdateStopOptions, {reset: true});
+assert.deepEqual(postUpdateRenderFlags, {refreshElevation: true});
 
 const transitioning = createToken("transitioning", "Transitioning", ground.id, -5);
 await updateTokenElevation(transitioning, 12, false, true);
@@ -179,16 +296,44 @@ assert.equal(transitioning.elevation, 12, "the exact requested elevation is pres
 assert.equal(transitioning.level, middle.id, "the Token moves to the Level containing its new elevation");
 assert.deepEqual(transitioning.updateCalls.at(-1), {
   changes: {elevation: 12, level: middle.id},
-  options: {animate: false}
+  options: {animate: false, theiksToolbagSyncElevation: true}
 });
 
 await updateTokenElevation(transitioning, 15, false, true);
 assert.deepEqual(transitioning.updateCalls.at(-1).changes, {elevation: 15},
   "remaining inside the current Level does not write its Level ID again");
 
+const boundaryTransition = createToken("boundary-transition", "Boundary Transition", ground.id, 10);
+const previousCanvasLevel = canvas.level;
+const previousSceneIsView = scene.isView;
+const previousSceneView = scene.view;
+let viewOptions;
+canvas.level = ground;
+scene.isView = true;
+scene.view = async options => {
+  viewOptions = options;
+  canvas.level = levels.get(options.level);
+};
+await updateTokenElevation(boundaryTransition, 10, false, true, true);
+assert.equal(boundaryTransition.elevation, 10);
+assert.equal(boundaryTransition.level, middle.id,
+  "an unchanged boundary elevation still transitions to the Level which starts there");
+assert.deepEqual(boundaryTransition.updateCalls.at(-1), {
+  changes: {level: middle.id},
+  options: {animate: false, theiksToolbagSyncElevation: true, constrainOptions: {ignoreWalls: true}}
+});
+assert.deepEqual(viewOptions, {level: middle.id, controlledTokens: [boundaryTransition.id]},
+  "the local Scene view follows an API-driven Level transition");
+canvas.level = previousCanvasLevel;
+scene.isView = previousSceneIsView;
+scene.view = previousSceneView;
+
+const inferLevelFromElevation = canvas.inferLevelFromElevation;
+canvas.inferLevelFromElevation = () => canvas.level;
 await updateTokenElevation(transitioning, 25, false, true);
 assert.equal(transitioning.level, middle.id, "an unmatched elevation leaves the current Level unchanged");
 assert.deepEqual(transitioning.updateCalls.at(-1).changes, {elevation: 25});
+canvas.inferLevelFromElevation = inferLevelFromElevation;
 
 moving.movement = {
   id: "remote-movement",
@@ -287,6 +432,43 @@ assert.equal(fallingCheckbox.checked, false, "hiding Falling clears a stale sele
 
 registerLevelTools();
 assert.equal(hooks.get("renderTokenHUD")?.length, 1);
+assert.equal(hooks.get("updateToken")?.length, 1);
+
+const staleDisplayToken = {
+  documentName: "Token",
+  elevation: 6,
+  _source: {elevation: 0},
+  resetCalls: 0
+};
+let stoppedAnimationOptions;
+let elevationRenderFlags;
+staleDisplayToken.reset = () => {
+  staleDisplayToken.resetCalls += 1;
+  staleDisplayToken.elevation = staleDisplayToken._source.elevation;
+};
+staleDisplayToken.object = {
+  rendered: true,
+  stopAnimation: options => {
+    stoppedAnimationOptions = options;
+    staleDisplayToken.reset();
+  },
+  renderFlags: {set: flags => { elevationRenderFlags = flags; }}
+};
+hooks.get("updateToken")[0](
+  staleDisplayToken,
+  {elevation: 0},
+  {animate: false, theiksToolbagSyncElevation: true},
+  game.user.id
+);
+assert.deepEqual(stoppedAnimationOptions, {reset: true});
+assert.equal(staleDisplayToken.elevation, 0,
+  "a completed movement's stale prepared elevation is reset from the authoritative source");
+assert.deepEqual(elevationRenderFlags, {refreshElevation: true},
+  "the Token elevation mesh and tooltip are refreshed after resetting its animation cache");
+
+hooks.get("updateToken")[0](staleDisplayToken, {elevation: 3}, {animate: false}, game.user.id);
+assert.equal(staleDisplayToken.resetCalls, 1,
+  "unrelated non-animated Token updates are not modified by the elevation display workaround");
 
 let appendedControl = null;
 const fakeButton = {

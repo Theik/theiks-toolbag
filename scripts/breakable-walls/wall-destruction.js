@@ -132,6 +132,26 @@ export async function promptWallDestruction(wall) {
   }
 }
 
+/** Destroy an intact Wall immediately using one uniformly random valid artwork direction. */
+export async function quickDestroyWall(wall, {random = Math.random} = {}) {
+  const data = validateDestroyableWall(wall);
+  const choices = [];
+  if (data.images.both) choices.push({kind: "both"});
+  if (data.images.single) {
+    choices.push(
+      {kind: "single", side: "positive"},
+      {kind: "single", side: "negative"}
+    );
+  }
+  if (!choices.length) throw new Error(localize("Errors.NoImages"));
+
+  const rolled = Number(random());
+  const bounded = Number.isFinite(rolled)
+    ? Math.min(Math.max(rolled, 0), 1 - Number.EPSILON)
+    : 0;
+  return await destroyWall(wall, choices[Math.floor(bounded * choices.length)]);
+}
+
 /**
  * Disable a Wall while retaining its document and exact repair state.
  *
@@ -197,6 +217,16 @@ export async function destroyWall(wall, {kind, side} = {}) {
  * @returns {Promise<WallDocument>}
  */
 export async function repairWall(wall) {
+  return await repairWallState(wall, {emitBehaviors: true});
+}
+
+/** Restore a destroyed Wall without emitting Toolbag repair behaviors. */
+export async function repairWallSilently(wall) {
+  return await repairWallState(wall, {emitBehaviors: false});
+}
+
+/** Restore a destroyed Wall's exact saved mechanical state. */
+async function repairWallState(wall, {emitBehaviors}) {
   const data = validateDestroyedWall(wall);
   if (!data.restore) throw new Error(localize("Errors.InvalidRestore"));
 
@@ -215,14 +245,16 @@ export async function repairWall(wall) {
       [RESTORE_FIELD]: null
     }, {[REPAIR_NONCE_OPTION]: repairNonce});
     if (!updated) throw new Error(localize("Errors.UpdateFailed"));
-    queueEventBehaviors({
-      behaviors: getBreakableWallData(updated).behaviors,
-      document: updated,
-      alias: "wall",
-      name: "repaired",
-      previous,
-      current: getWallEventState(updated)
-    });
+    if (emitBehaviors) {
+      queueEventBehaviors({
+        behaviors: getBreakableWallData(updated).behaviors,
+        document: updated,
+        alias: "wall",
+        name: "repaired",
+        previous,
+        current: getWallEventState(updated)
+      });
+    }
     return updated;
   } finally {
     repairAuthorizations.delete(progressKey);

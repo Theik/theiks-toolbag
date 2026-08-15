@@ -298,6 +298,16 @@ export async function destroyVisibleLight(light) {
 
 /** Repair a destroyed visible light while leaving the fixture switched off. GMs only. */
 export async function repairVisibleLight(light) {
+  return await repairVisibleLightState(light, {emitBehaviors: true});
+}
+
+/** Repair a destroyed visible light without emitting Toolbag repair behaviors. */
+export async function repairVisibleLightSilently(light) {
+  return await repairVisibleLightState(light, {emitBehaviors: false});
+}
+
+/** Repair a destroyed visible light while preserving its switched-off state. */
+async function repairVisibleLightState(light, {emitBehaviors}) {
   validateLight(light);
   const user = game.user;
   if (!user?.isGM) throw new Error(localize("Errors.GmRepairOnly"));
@@ -307,14 +317,16 @@ export async function repairVisibleLight(light) {
   const updated = await runLightUpdate(light, {
     [DESTROYED_FIELD]: false
   });
-  queueEventBehaviors({
-    behaviors: getVisibleLightData(updated).behaviors,
-    document: updated,
-    alias: "light",
-    name: "repaired",
-    previous,
-    current: getVisibleLightEventState(updated)
-  });
+  if (emitBehaviors) {
+    queueEventBehaviors({
+      behaviors: getVisibleLightData(updated).behaviors,
+      document: updated,
+      alias: "light",
+      name: "repaired",
+      previous,
+      current: getVisibleLightEventState(updated)
+    });
+  }
   return updated;
 }
 

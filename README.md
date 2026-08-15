@@ -91,6 +91,7 @@ Select **Wall Destruction Mode** from the Walls controls, then interact with the
 | Marker | Action | Result |
 |:--|:--|:--|
 | 🟠 Explosion | <kbd>Left click</kbd> | Makes the wall nonblocking and renders rubble directly on the canvas |
+| 🟠 Explosion | <kbd>Right click</kbd> | Immediately destroys the wall with a random valid rubble direction |
 | 🟢 Repair | <kbd>Left click</kbd> | Restores the wall's original movement, sight, light, sound, door type, and door state |
 
 - The Wall document is retained; destruction does not create a Tile.
@@ -272,7 +273,15 @@ An Execute Script Region Behavior can safely change the entering Token's elevati
 await game.modules.get("theiks-toolbag")?.api?.updateElevation?.(event.data.token, 2, false, true);
 ```
 
-The third argument is optional and defaults to `false`. Pass `true` to count a downward elevation change as falling. The fourth `levelTransition` argument also defaults to `false`; when `true`, the Token moves to the native Scene Level containing its new elevation while keeping that exact elevation. If no Level contains the elevation, only the elevation changes.
+The third argument is optional and defaults to `false`. Pass `true` to count a downward elevation change as falling. The fourth `levelTransition` argument also defaults to `false`; when `true`, the Token moves to the native Scene Level containing its new elevation while keeping that exact elevation, and the local view follows it to that Level. If no Level contains the elevation, only the elevation changes.
+
+The fifth `ignoreCeiling` argument defaults to `false`. Pass `true` to ignore Foundry's wall and surface constraints for the elevation change while keeping the Token on its current Level. This is useful for stairways which rise above one Level's ceiling before reaching the next Level:
+
+```js
+await game.modules.get("theiks-toolbag")?.api?.updateElevation?.(event.data.token, 9, false, false, true);
+```
+
+When one Token movement crosses multiple adjacent elevation Regions, pending calls are coalesced so only the final Region's elevation is applied after Foundry's chained movement animation ends. This prevents competing follow-up movements from stopping the Token between stair steps or corrupting the active animation chain.
 
 </details>
 

@@ -263,6 +263,31 @@ await new Promise(resolve => setTimeout(resolve, 0));
 assert.equal(destroyMarker.eventMode, "static");
 assert.deepEqual(notifications, []);
 
+let quickPrevented = false;
+const originalRandom = Math.random;
+Math.random = () => 0;
+try {
+  destroyMarker.handlers.get("pointerdown")({
+    button: 2,
+    stopPropagation() {},
+    preventDefault() { quickPrevented = true; }
+  });
+  await new Promise(resolve => setTimeout(resolve, 0));
+} finally {
+  Math.random = originalRandom;
+}
+assert.equal(quickPrevented, true, "right-click suppresses the native context menu");
+assert.equal(dialogCalls, 1, "right-click bypasses the destruction prompt");
+assert.equal(destroyMarker.eventMode, "none", "quick destruction locks the marker during its update");
+assert.deepEqual(
+  intact.state.changes["flags.theiks-toolbag.breakableWall.destruction"],
+  {kind: "both", side: null},
+  "quick destruction applies the randomly selected valid result"
+);
+intact.state.updateGate.resolve();
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(destroyMarker.eventMode, "static");
+
 const originalConsoleError = console.error;
 const loggedErrors = [];
 console.error = (...args) => loggedErrors.push(args);

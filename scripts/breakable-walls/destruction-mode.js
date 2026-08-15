@@ -1,5 +1,5 @@
 import { MODULE_ID, getBreakableWallData } from "./wall-config.js";
-import { promptWallDestruction, repairWall } from "./wall-destruction.js";
+import { promptWallDestruction, quickDestroyWall, repairWall } from "./wall-destruction.js";
 import {
   FEATURES,
   FEATURE_SETTING_CHANGED_HOOK,
@@ -189,8 +189,11 @@ async function createMarker(wall) {
     marker.icon.tint = idleTint;
   });
   marker.on("pointerdown", event => {
+    const button = event.button ?? event.nativeEvent?.button ?? 0;
+    if (![0, 2].includes(button)) return;
     event.stopPropagation();
-    void activateMarker(marker, wall.id);
+    event.preventDefault?.();
+    void activateMarker(marker, wall.id, button);
   });
 
   return marker;
@@ -199,16 +202,22 @@ async function createMarker(wall) {
 /**
  * @param {foundry.canvas.containers.ControlIcon} marker
  * @param {string} wallId
+ * @param {number} button
  */
-async function activateMarker(marker, wallId) {
+async function activateMarker(marker, wallId, button) {
   if (marker.eventMode === "none") return;
+  const wall = canvas.scene?.walls.get(wallId);
+  const destroyed = getBreakableWallData(wall).destroyed;
+  const action = destroyed
+    ? (button === 0 ? repairWall : null)
+    : (button === 2 ? quickDestroyWall : promptWallDestruction);
+  if (!action) return;
+
   marker.eventMode = "none";
   marker.alpha = 0.45;
 
   try {
-    const wall = canvas.scene?.walls.get(wallId);
-    if (getBreakableWallData(wall).destroyed) await repairWall(wall);
-    else await promptWallDestruction(wall);
+    await action(wall);
   } catch (error) {
     ui.notifications.error(error.message);
     console.error(`${MODULE_ID} | Wall destruction-mode action failed`, error);

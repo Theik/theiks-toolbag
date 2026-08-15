@@ -44,6 +44,7 @@ const {
 const {
   advanceTerrainDestruction,
   restoreTerrain,
+  restoreTerrainSilently,
   retreatTerrainDestruction
 } = await import("../scripts/breakable-terrain/terrain-destruction.js");
 registerBreakableTerrainConfig();
@@ -262,6 +263,18 @@ assert.deepEqual(globalThis.__terrainEvents, [
   {name: "repairedPartial", previous: 3, current: 2, alias: true, user: "gm"},
   {name: "repaired", previous: 2, current: 0, alias: true, user: "gm"}
 ]);
+
+const silentTerrain = createTile({
+  id: "silent-repair",
+  scripts: {repaired: recordTerrainEvent}
+});
+await advanceTerrainDestruction(silentTerrain.tile);
+await restoreTerrainSilently(silentTerrain.tile);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(silentTerrain.flag.stage, 0);
+assert.equal(silentTerrain.tile.texture.src, "statue.webp");
+assert.equal(globalThis.__terrainEvents.length, 5,
+  "silent terrain restoration emits no repair behavior");
 
 game.user.isGM = false;
 const nonGm = createTile({id: "non-gm"});

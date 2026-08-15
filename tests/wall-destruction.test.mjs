@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import {
   destroyWall,
+  quickDestroyWall,
   registerBreakableWallState,
   repairWall,
+  repairWallSilently,
   toggleWall
 } from "../scripts/breakable-walls/wall-destruction.js";
 import { getBreakableWallData } from "../scripts/breakable-walls/wall-config.js";
@@ -233,6 +235,27 @@ const prompted = createWall({id: "prompted"});
 foundry.applications.api.DialogV2.wait = async () => "both";
 assert.equal(await toggleWall(prompted.wall), prompted.wall);
 assert.equal(prompted.flag.destroyed, true);
+
+// Quick destruction chooses uniformly from every valid dialog result without prompting.
+const quickBoth = createWall({id: "quick-both"});
+await quickDestroyWall(quickBoth.wall, {random: () => 0});
+assert.deepEqual(quickBoth.flag.destruction, {kind: "both", side: null});
+
+const quickPositive = createWall({id: "quick-positive"});
+await quickDestroyWall(quickPositive.wall, {random: () => 0.34});
+assert.deepEqual(quickPositive.flag.destruction, {kind: "single", side: "positive"});
+
+const quickNegative = createWall({id: "quick-negative"});
+await quickDestroyWall(quickNegative.wall, {random: () => 0.99});
+assert.deepEqual(quickNegative.flag.destruction, {kind: "single", side: "negative"});
+
+const quickSingleOnly = createWall({id: "quick-single-only", images: {both: "", single: "single.png"}});
+await quickDestroyWall(quickSingleOnly.wall, {random: () => 0.99});
+assert.deepEqual(quickSingleOnly.flag.destruction, {kind: "single", side: "negative"});
+
+const quickMissing = createWall({id: "quick-missing", images: {both: "", single: ""}});
+await assert.rejects(() => quickDestroyWall(quickMissing.wall), /NoImages/);
+assert.equal(quickMissing.state.updateCalls.length, 0);
 
 // Repair authorization belongs to one update operation, not every update on that wall while its
 // database request is pending.
@@ -473,6 +496,19 @@ assert.deepEqual(globalThis.__wallEvents, [
   {name: "destroyed", previous: false, current: true, alias: true, user: "gm"},
   {name: "repaired", previous: true, current: false, alias: true, user: "gm"}
 ]);
+
+const silentWall = createWall({
+  id: "silent-repair",
+  scripts: {repaired: recordWallEvent}
+});
+await destroyWall(silentWall.wall, {kind: "both"});
+await repairWallSilently(silentWall.wall);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(silentWall.flag.destroyed, false);
+assert.deepEqual(globalThis.__wallEvents, [
+  {name: "destroyed", previous: false, current: true, alias: true, user: "gm"},
+  {name: "repaired", previous: true, current: false, alias: true, user: "gm"}
+], "silent wall repair restores state without emitting a repair behavior");
 
 game.user.isGM = false;
 const nonGm = createWall({id: "non-gm"});

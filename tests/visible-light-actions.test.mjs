@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   destroyVisibleLight,
   repairVisibleLight,
+  repairVisibleLightSilently,
   registerVisibleLightControls,
   toggleVisibleLight
 } from "../scripts/visible-lights/light-controls.js";
@@ -397,6 +398,24 @@ assert.deepEqual(globalThis.__visibleLightEvents, [
   {name: "destroyed", previous: "on", current: "destroyed", alias: true, user: "gm"},
   {name: "repaired", previous: "destroyed", current: "off", alias: true, user: "gm"}
 ], "successful light actions emit one semantic event each, including repair");
+
+const silentLight = createFixture({
+  behaviors: [{
+    id: "silent-light-repair",
+    type: "executeScript",
+    name: "Record silent light repair",
+    disabled: false,
+    events: ["repaired"],
+    source: recordLightEvent
+  }]
+});
+await destroyVisibleLight(silentLight.light);
+await repairVisibleLightSilently(silentLight.light);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(silentLight.flag.destroyed, false);
+assert.equal(silentLight.light.hidden, true);
+assert.equal(globalThis.__visibleLightEvents.length, 4,
+  "silent visible-light repair emits no repair behavior");
 
 featureSettings.enableVisibleLights = false;
 game.user = gm;

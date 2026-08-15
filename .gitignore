@@ -1,2 +1,5 @@
 # PhpStorm
 /.idea/
+
+# Foundry pack database locks
+packs/**/LOCK

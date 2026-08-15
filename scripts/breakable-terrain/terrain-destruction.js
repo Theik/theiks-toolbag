@@ -166,6 +166,16 @@ export async function retreatTerrainDestruction(tile) {
  * @returns {Promise<TileDocument>}
  */
 export async function restoreTerrain(tile) {
+  return await restoreTerrainState(tile, {emitBehaviors: true});
+}
+
+/** Restore damaged terrain without emitting Toolbag repair behaviors. */
+export async function restoreTerrainSilently(tile) {
+  return await restoreTerrainState(tile, {emitBehaviors: false});
+}
+
+/** Restore damaged terrain to its exact original texture and stage. */
+async function restoreTerrainState(tile, {emitBehaviors}) {
   validateTile(tile);
   const initial = getBreakableTerrainData(tile);
   if (!initial.damaged) throw new Error(localize("Errors.NotDamaged"));
@@ -197,14 +207,16 @@ export async function restoreTerrain(tile) {
         [TERRAIN_FIELDS.restoreSrc]: null
       }, updateOptions);
       if (!updated) throw new Error(localize("Errors.UpdateFailed"));
-      queueEventBehaviors({
-        behaviors: getBreakableTerrainData(updated).behaviors,
-        document: updated,
-        alias: "tile",
-        name: "repaired",
-        previous,
-        current: getTerrainEventState(updated)
-      });
+      if (emitBehaviors) {
+        queueEventBehaviors({
+          behaviors: getBreakableTerrainData(updated).behaviors,
+          document: updated,
+          alias: "tile",
+          name: "repaired",
+          previous,
+          current: getTerrainEventState(updated)
+        });
+      }
       return updated;
     } finally {
       revokeTerrainTransition(tile, nonce);

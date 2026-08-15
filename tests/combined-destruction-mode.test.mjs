@@ -130,9 +130,19 @@ const combined = controls.theiksToolbagDestruction;
 assert.ok(combined, "a GM receives the top-level combined destruction control");
 assert.equal(combined.order, 100, "the combined control is placed after Foundry's normal layer controls");
 assert.equal(combined.icon, "fa-solid fa-hammer", "the combined control uses the destruction hammer icon");
-assert.deepEqual(combined.tools, {}, "the far-left icon itself activates the mode without a redundant subtool");
+assert.deepEqual(
+  Object.keys(combined.tools),
+  ["theiksToolbagDestructionMode", "theiksToolbagResetDestructables"],
+  "the combined control exposes destruction mode and the one-shot reset button"
+);
+assert.equal(combined.activeTool, "theiksToolbagDestructionMode", "destruction mode remains the default tool");
+const mode = combined.tools.theiksToolbagDestructionMode;
+const reset = combined.tools.theiksToolbagResetDestructables;
+assert.equal(mode.button, undefined, "destruction mode is a selectable tool");
+assert.equal(reset.button, true, "reset is a one-shot button which does not replace the active tool");
+assert.equal(reset.icon, "fa-solid fa-arrow-rotate-left");
 
-combined.onChange(null, true);
+mode.onChange(null, true);
 await new Promise(resolve => setTimeout(resolve, 0));
 assert.equal(controlsLayer.doors.visible, false, "combined destruction mode hides native door controls");
 assert.deepEqual(
@@ -142,7 +152,7 @@ assert.deepEqual(
 );
 assert.ok(controlsLayer.children.every(container => container.children.length === 1));
 
-combined.onChange(null, false);
+mode.onChange(null, false);
 assert.equal(controlsLayer.children.length, 0, "leaving the combined control removes both marker sets");
 assert.equal(controlsLayer.doors.visible, true, "leaving the combined control restores native door controls");
 
