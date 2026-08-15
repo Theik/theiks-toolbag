@@ -1,0 +1,41 @@
+<div class="theiks-toolbag script-behavior-fields standard-form">
+    <fieldset>
+        <legend>{{localize "THEIKS_TOOLBAG.EventBehaviors.Identity"}}</legend>
+        <div class="form-group">
+            <label for="toolbag-behavior-name">{{localize "THEIKS_TOOLBAG.EventBehaviors.Name"}}</label>
+            <div class="form-fields">
+                <input id="toolbag-behavior-name" type="text" name="name" value="{{behavior.name}}">
+            </div>
+        </div>
+    </fieldset>
+    <fieldset>
+        <legend>{{localize "THEIKS_TOOLBAG.EventBehaviors.Status"}}</legend>
+        <div class="form-group">
+            <label for="toolbag-behavior-disabled">{{localize "THEIKS_TOOLBAG.EventBehaviors.Disabled"}}</label>
+            <div class="form-fields">
+                <input id="toolbag-behavior-disabled" type="checkbox" name="disabled" {{checked behavior.disabled}}>
+            </div>
+        </div>
+    </fieldset>
+    <fieldset>
+        <legend>{{localize "THEIKS_TOOLBAG.EventBehaviors.Triggers"}}</legend>
+        <div class="form-group stacked">
+            <label>{{localize "THEIKS_TOOLBAG.EventBehaviors.EventsLabel"}}</label>
+            <multi-select name="events">
+                {{#each events as |event|}}
+                <option value="{{event.value}}" {{#if event.selected}}selected{{/if}}
+                    {{#if event.disabled}}disabled{{/if}}>{{event.label}}</option>
+                {{/each}}
+            </multi-select>
+            <p class="hint">{{localize "THEIKS_TOOLBAG.EventBehaviors.EventsHint"}}</p>
+        </div>
+    </fieldset>
+    <fieldset>
+        <legend>{{localize "THEIKS_TOOLBAG.EventBehaviors.ExecuteScript"}}</legend>
+        <div class="form-group stacked">
+            <label>{{localize "THEIKS_TOOLBAG.EventBehaviors.Source"}}</label>
+            <code-mirror name="source" language="javascript" indent="2">{{~behavior.source~}}</code-mirror>
+            <p class="hint">{{localize "THEIKS_TOOLBAG.EventBehaviors.SourceHint"}}</p>
+        </div>
+    </fieldset>
+</div>

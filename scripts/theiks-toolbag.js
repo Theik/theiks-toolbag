@@ -8,10 +8,12 @@ import {
 } from "./breakable-walls/wall-destruction.js";
 import { registerWallDestructionMode } from "./breakable-walls/destruction-mode.js";
 import { registerDestroyedWallArt } from "./breakable-walls/wall-art.js";
+import { registerWallSplitting } from "./breakable-walls/wall-splitting.js";
 import { registerVisibleLightConfig } from "./visible-lights/light-config.js";
 import { registerVisibleLightArt } from "./visible-lights/light-art.js";
 import {
   destroyVisibleLight,
+  repairVisibleLight,
   registerVisibleLightControls,
   toggleVisibleLight
 } from "./visible-lights/light-controls.js";
@@ -28,7 +30,8 @@ import {registerFeatureSettings} from "./settings.js";
 import {
   changeTokenLevels,
   promptTokenLevelChange,
-  registerLevelTools
+  registerLevelTools,
+  updateTokenElevation
 } from "./levels/level-tools.js";
 
 export const MODULE_ID = "theiks-toolbag";
@@ -39,6 +42,7 @@ Hooks.once("init", () => {
   registerBreakableWallState();
   registerWallDestructionMode();
   registerDestroyedWallArt();
+  registerWallSplitting();
   registerVisibleLightConfig();
   registerVisibleLightArt();
   registerVisibleLightControls();
@@ -51,6 +55,7 @@ Hooks.once("init", () => {
   const module = game.modules.get(MODULE_ID);
   module.api = {
     ...module.api,
+    updateElevation: updateTokenElevation,
     breakableWalls: {
       prompt: promptWallDestruction,
       destroy: destroyWall,
@@ -59,7 +64,8 @@ Hooks.once("init", () => {
     },
     visibleLights: {
       toggle: toggleVisibleLight,
-      destroy: destroyVisibleLight
+      destroy: destroyVisibleLight,
+      repair: repairVisibleLight
     },
     breakableTerrain: {
       advance: advanceTerrainDestruction,
@@ -68,7 +74,8 @@ Hooks.once("init", () => {
     },
     levelTools: {
       prompt: promptTokenLevelChange,
-      change: changeTokenLevels
+      change: changeTokenLevels,
+      updateElevation: updateTokenElevation
     }
   };
 

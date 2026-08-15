@@ -5,11 +5,110 @@
   min-width: 0;
 }
 
+#theiks-toolbag-wall-split-hud .col.middle {
+  height: var(--control-size);
+  justify-content: center;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--control-size);
+}
+
 .theiks-toolbag.breakable-wall .multiple-values,
 .theiks-toolbag.visible-light .multiple-values,
 .theiks-toolbag.breakable-terrain .multiple-values {
   outline: 1px dashed var(--color-border-highlight, #ff9829);
   outline-offset: 2px;
+}
+
+.theiks-toolbag-config-tab {
+  min-height: 0;
+}
+
+.theiks-toolbag-tab-control {
+  white-space: nowrap;
+}
+
+.theiks-toolbag .toolbag-event-behaviors {
+  margin-top: 0.75rem;
+}
+
+.theiks-toolbag.script-behavior-fields code-mirror {
+  min-height: 8rem;
+  width: 100%;
+}
+
+.theiks-toolbag .toolbag-behavior-header {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border-light-primary, #7a7971);
+  font-weight: bold;
+  padding-bottom: 0.35rem;
+}
+
+.theiks-toolbag .toolbag-behavior-header > span {
+  flex: 1;
+}
+
+.theiks-toolbag .toolbag-behavior-header button.icon,
+.theiks-toolbag .toolbag-behavior-controls button.icon {
+  flex: 0 0 var(--input-height, 2rem);
+  margin: 0;
+}
+
+.theiks-toolbag .toolbag-behavior-list {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.theiks-toolbag .toolbag-behavior {
+  align-items: center;
+  border: 1px solid var(--color-border-light-primary, #7a7971);
+  border-radius: 3px;
+  gap: 0.35rem;
+  padding: 0.25rem;
+}
+
+.theiks-toolbag .toolbag-behavior.inactive {
+  opacity: 0.55;
+}
+
+.theiks-toolbag .toolbag-behavior-name {
+  align-items: center;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  display: grid;
+  flex: 1;
+  gap: 0 0.4rem;
+  grid-template-columns: auto 1fr;
+  margin: 0;
+  min-width: 0;
+  padding: 0.25rem;
+  text-align: left;
+}
+
+.theiks-toolbag .toolbag-behavior-name:hover,
+.theiks-toolbag .toolbag-behavior-name:focus {
+  box-shadow: none;
+  color: var(--color-text-hyperlink, #ff6400);
+}
+
+.theiks-toolbag .toolbag-behavior-name small {
+  color: var(--color-text-dark-secondary, #4b4a44);
+  grid-column: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theiks-toolbag .toolbag-behavior-controls {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.theiks-toolbag .toolbag-event-behaviors .warning {
+  color: var(--color-level-warning, #c79300);
 }
 
 .theiks-toolbag.breakable-terrain .terrain-states-header {

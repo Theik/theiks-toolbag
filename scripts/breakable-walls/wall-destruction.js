@@ -9,6 +9,7 @@ import {
   assertFeatureEnabled,
   isFeatureEnabled
 } from "../settings.js";
+import {queueEventBehaviors} from "../script-events.js";
 
 const DESTRUCTION_KINDS = new Set(["both", "single"]);
 const DESTRUCTION_SIDES = new Set(["positive", "negative"]);
@@ -161,6 +162,7 @@ export async function destroyWall(wall, {kind, side} = {}) {
     const currentSrc = kind === "both" ? currentData.images.both : currentData.images.single;
     if (currentSrc !== src) throw new Error(localize("Errors.StateChanged"));
     calculateRubbleGeometry(wall.c);
+    const previous = getWallEventState(wall, currentData);
 
     const updated = await wall.update({
       [DESTROYED_FIELD]: true,
@@ -174,6 +176,14 @@ export async function destroyWall(wall, {kind, side} = {}) {
     if (!updated) throw new Error(localize("Errors.UpdateFailed"));
 
     releaseWall(wall);
+    queueEventBehaviors({
+      behaviors: getBreakableWallData(updated).behaviors,
+      document: updated,
+      alias: "wall",
+      name: "destroyed",
+      previous,
+      current: getWallEventState(updated)
+    });
     return updated;
   } finally {
     inProgress.delete(progressKey);
@@ -197,6 +207,7 @@ export async function repairWall(wall) {
   repairAuthorizations.set(progressKey, repairNonce);
 
   try {
+    const previous = getWallEventState(wall, data);
     const updated = await wall.update({
       ...data.restore,
       [DESTROYED_FIELD]: false,
@@ -204,6 +215,14 @@ export async function repairWall(wall) {
       [RESTORE_FIELD]: null
     }, {[REPAIR_NONCE_OPTION]: repairNonce});
     if (!updated) throw new Error(localize("Errors.UpdateFailed"));
+    queueEventBehaviors({
+      behaviors: getBreakableWallData(updated).behaviors,
+      document: updated,
+      alias: "wall",
+      name: "repaired",
+      previous,
+      current: getWallEventState(updated)
+    });
     return updated;
   } finally {
     repairAuthorizations.delete(progressKey);
@@ -223,6 +242,20 @@ export async function toggleWall(wall, options = {}) {
   if (getBreakableWallData(wall).destroyed) return await repairWall(wall);
   if (options?.kind) return await destroyWall(wall, options);
   return await promptWallDestruction(wall);
+}
+
+/** Create the stable wall-state snapshot supplied to event scripts. */
+export function getWallEventState(wall, data = getBreakableWallData(wall)) {
+  return {
+    destroyed: data.destroyed,
+    destruction: data.destruction,
+    light: wall?.light,
+    sight: wall?.sight,
+    sound: wall?.sound,
+    move: wall?.move,
+    door: wall?.door,
+    ds: wall?.ds
+  };
 }
 
 /** @param {WallDocument} wall */

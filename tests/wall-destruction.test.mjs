@@ -105,6 +105,7 @@ function createWall({
   destroyed = false,
   destruction = null,
   restore = null,
+  scripts = {},
   mechanicalState = ORIGINAL_STATE,
   updateResult = true,
   updateGate = null
@@ -115,7 +116,7 @@ function createWall({
     released: false,
     updateCalls: []
   };
-  const flag = {enabled, images: clone(images), destroyed, destruction, restore};
+  const flag = {enabled, images: clone(images), destroyed, destruction, restore, scripts: clone(scripts)};
   const scene = {
     id: "scene",
     walls: new Map(),
@@ -174,6 +175,8 @@ assert.deepEqual(getBreakableWallData({
 }), {
   enabled: true,
   images: {both: "both.png", single: ""},
+  behaviors: [],
+  scripts: {destroyed: "", repaired: ""},
   destroyed: false,
   destruction: null,
   restore: null
@@ -348,9 +351,16 @@ const alreadyDestroyed = createWall({
 await assert.rejects(() => destroyWall(alreadyDestroyed.wall, {kind: "both"}), /AlreadyDestroyed/);
 
 // A failed Foundry update is surfaced, leaves the source untouched, and releases the progress lock.
-const failedUpdate = createWall({id: "failed-update", updateResult: false});
+delete globalThis.__failedWallEvent;
+const failedUpdate = createWall({
+  id: "failed-update",
+  updateResult: false,
+  scripts: {destroyed: "globalThis.__failedWallEvent = true;"}
+});
 await assert.rejects(() => destroyWall(failedUpdate.wall, {kind: "both"}), /UpdateFailed/);
 await assert.rejects(() => destroyWall(failedUpdate.wall, {kind: "both"}), /UpdateFailed/);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(globalThis.__failedWallEvent, undefined, "failed wall updates emit no scripts");
 assert.equal(failedUpdate.flag.destroyed, false);
 
 // Direct edits cannot clear the canonical state or re-enable mechanics outside repairWall.
@@ -443,6 +453,26 @@ try {
 }
 assert.equal(releaseFailure.flag.destroyed, true);
 assert.match(releaseWarning, /Failed to release/);
+
+globalThis.__wallEvents = [];
+const recordWallEvent = `globalThis.__wallEvents.push({
+  name: event.name,
+  previous: event.data.previous.destroyed,
+  current: event.data.current.destroyed,
+  alias: wall === document,
+  user: event.user.id
+});`;
+const eventWall = createWall({
+  id: "events",
+  scripts: {destroyed: recordWallEvent, repaired: recordWallEvent}
+});
+await destroyWall(eventWall.wall, {kind: "both"});
+await repairWall(eventWall.wall);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.deepEqual(globalThis.__wallEvents, [
+  {name: "destroyed", previous: false, current: true, alias: true, user: "gm"},
+  {name: "repaired", previous: true, current: false, alias: true, user: "gm"}
+]);
 
 game.user.isGM = false;
 const nonGm = createWall({id: "non-gm"});

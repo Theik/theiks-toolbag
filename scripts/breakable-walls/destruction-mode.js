@@ -17,12 +17,15 @@ let markerContainer = null;
 const markersByWallId = new Map();
 let refreshId = 0;
 let refreshQueued = false;
+let hiddenDoorContainer = null;
+let priorDoorVisibility = null;
 
 /** Register the Walls toolbar tool and marker lifecycle hooks. */
 export function registerWallDestructionMode() {
   Hooks.on("getSceneControlButtons", addSceneControlTool);
   Hooks.on("canvasReady", refreshMarkersIfActive);
-  Hooks.on("canvasTearDown", clearMarkers);
+  Hooks.on("canvasTearDown", handleCanvasTearDown);
+  Hooks.on("activateCanvasLayer", keepDoorControlsHidden);
   Hooks.on("createWall", refreshForWallChange);
   Hooks.on("updateWall", refreshForWallChange);
   Hooks.on("deleteWall", refreshForWallChange);
@@ -49,13 +52,53 @@ function addSceneControlTool(controls) {
 
 /** @param {boolean} isActive */
 export function setWallDestructionModeActive(isActive) {
+  const wasActive = active;
   active = isActive && game.user.isGM && isFeatureEnabled(FEATURES.breakableWalls);
-  if (active) queueMarkerRefresh();
-  else clearMarkers();
+  if (active) {
+    hideDoorControls({captureCurrent: !wasActive});
+    queueMarkerRefresh();
+  } else {
+    clearMarkers();
+    restoreDoorControls();
+  }
 }
 
 function refreshMarkersIfActive() {
+  if (active) hideDoorControls();
   queueMarkerRefresh();
+}
+
+/** Foundry applies a layer's native DoorControl visibility before this hook is fired. */
+function keepDoorControlsHidden() {
+  if (active) hideDoorControls({captureCurrent: true});
+}
+
+/** Hide native open/close controls without losing the visibility state owned by Foundry's active layer. */
+function hideDoorControls({captureCurrent = false} = {}) {
+  const doors = globalThis.canvas?.controls?.doors;
+  if (!doors) return;
+
+  if (doors !== hiddenDoorContainer) {
+    restoreDoorControls();
+    hiddenDoorContainer = doors;
+    priorDoorVisibility = Boolean(doors.visible);
+  } else if (captureCurrent) priorDoorVisibility = Boolean(doors.visible);
+  doors.visible = false;
+}
+
+function restoreDoorControls() {
+  if (hiddenDoorContainer && priorDoorVisibility !== null) {
+    hiddenDoorContainer.visible = priorDoorVisibility;
+  }
+  hiddenDoorContainer = null;
+  priorDoorVisibility = null;
+}
+
+function handleCanvasTearDown() {
+  clearMarkers();
+  // The controls layer is being destroyed. Forget it so canvasReady captures the replacement.
+  hiddenDoorContainer = null;
+  priorDoorVisibility = null;
 }
 
 /** @param {WallDocument} wall */

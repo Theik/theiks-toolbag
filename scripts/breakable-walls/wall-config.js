@@ -3,16 +3,29 @@ import {
   FEATURE_SETTING_CHANGED_HOOK,
   isFeatureEnabled
 } from "../settings.js";
+import {mountToolbagConfigTab, removeToolbagConfigTabs} from "../config-tabs.js";
+import {
+  normalizeEventBehaviors,
+  normalizeEventScript,
+  validateEventBehaviorChanges,
+  validateEventScriptChanges
+} from "../script-events.js";
+import {closeScriptBehaviorEditors, mountScriptBehaviorList} from "../script-behaviors-ui.js";
 
 export const MODULE_ID = "theiks-toolbag";
 export const BREAKABLE_WALL_FLAG = "breakableWall";
 
 const TEMPLATE_PATH = `modules/${MODULE_ID}/templates/breakable-wall-config.hbs`;
-const FLAG_FIELDS = {
+export const WALL_FIELDS = Object.freeze({
   enabled: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.enabled`,
   both: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.images.both`,
-  single: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.images.single`
-};
+  single: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.images.single`,
+  behaviors: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.behaviors`,
+  destroyedScript: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.scripts.destroyed`,
+  repairedScript: `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.scripts.repaired`
+});
+const WALL_LEGACY_SCRIPTS_FIELD = `flags.${MODULE_ID}.${BREAKABLE_WALL_FLAG}.-=scripts`;
+const WALL_SCRIPT_FIELDS = [WALL_FIELDS.destroyedScript, WALL_FIELDS.repairedScript];
 
 const DESTRUCTION_KINDS = new Set(["both", "single"]);
 const DESTRUCTION_SIDES = new Set(["positive", "negative"]);
@@ -25,6 +38,8 @@ const RESTORE_FIELDS = ["light", "sight", "sound", "move", "door", "ds"];
  * @returns {{
  *   enabled: boolean,
  *   images: {both: string, single: string},
+ *   behaviors: object[],
+ *   scripts: {destroyed: string, repaired: string},
  *   destroyed: boolean,
  *   destruction: null|{kind: "both"|"single", side: null|"positive"|"negative"},
  *   restore: null|{light: number, sight: number, sound: number, move: number, door: number, ds: number}
@@ -32,12 +47,18 @@ const RESTORE_FIELDS = ["light", "sight", "sound", "move", "door", "ds"];
  */
 export function getBreakableWallData(wall) {
   const data = wall?.getFlag?.(MODULE_ID, BREAKABLE_WALL_FLAG) ?? {};
+  const scripts = {
+    destroyed: normalizeEventScript(data.scripts?.destroyed),
+    repaired: normalizeEventScript(data.scripts?.repaired)
+  };
   return {
     enabled: data.enabled === true,
     images: {
       both: typeof data.images?.both === "string" ? data.images.both : "",
       single: typeof data.images?.single === "string" ? data.images.single : ""
     },
+    behaviors: normalizeEventBehaviors(data.behaviors, {alias: "wall", legacyScripts: scripts}),
+    scripts,
     destroyed: data.destroyed === true,
     destruction: normalizeDestruction(data.destruction),
     restore: normalizeRestore(data.restore)
@@ -62,10 +83,18 @@ function normalizeRestore(restore) {
 /** Register the WallConfig render hook used by both the normal sheet and Wall Palette. */
 export function registerBreakableWallConfig() {
   Hooks.on("renderWallConfig", renderBreakableWallConfig);
+  Hooks.on("preCreateWall", validateWallScriptChanges);
+  Hooks.on("preUpdateWall", validateWallScriptChanges);
   Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
     if (feature !== FEATURES.breakableWalls || enabled) return;
-    globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-wall").forEach(element => element.remove());
+    closeScriptBehaviorEditors(FEATURES.breakableWalls);
+    removeToolbagConfigTabs(FEATURES.breakableWalls);
   });
+}
+
+function validateWallScriptChanges(_wall, changes, _options, userId) {
+  validateEventBehaviorChanges(changes, WALL_FIELDS.behaviors, "wall", userId);
+  validateEventScriptChanges(changes, WALL_SCRIPT_FIELDS, "wall", userId);
 }
 
 /**
@@ -79,21 +108,43 @@ export function registerBreakableWallConfig() {
 async function renderBreakableWallConfig(application, element, context) {
   if (!isFeatureEnabled(FEATURES.breakableWalls)) return;
   const scrollable = element.querySelector(".standard-form.scrollable");
-  if (!scrollable || scrollable.querySelector(".theiks-toolbag.breakable-wall")) return;
+  if (!scrollable || element.querySelector(".theiks-toolbag.breakable-wall")) return;
 
-  const wall = context.document ?? application.document;
+  const wall = application.isSelect && application.controlled?.length
+    ? application.controlled[0]
+    : context.document ?? application.document;
   const data = getBreakableWallData(wall);
+  const controlled = application.isSelect ? application.controlled ?? [] : [];
   const html = await foundry.applications.handlebars.renderTemplate(TEMPLATE_PATH, {
     rootId: `${application.id}-breakable-wall`,
-    fields: FLAG_FIELDS,
+    fields: WALL_FIELDS,
     ...data,
     bothImage: data.images.both,
     singleImage: data.images.single
   });
 
   if (!isFeatureEnabled(FEATURES.breakableWalls) || !application.rendered || !scrollable.isConnected) return;
-  scrollable.insertAdjacentHTML("beforeend", html);
-  applyMultipleValueState(application, scrollable);
+  const mounted = mountToolbagConfigTab({
+    application,
+    element,
+    content: html,
+    feature: FEATURES.breakableWalls,
+    nativeLabel: game.i18n.localize("THEIKS_TOOLBAG.ConfigTabs.Wall"),
+    nativeIcon: "fa-solid fa-block-brick"
+  });
+  if (!mounted) return;
+  applyMultipleValueState(application, mounted.panel);
+  await mountScriptBehaviorList({
+    application,
+    host: mounted.panel.querySelector("[data-toolbag-behaviors]"),
+    document: wall,
+    alias: "wall",
+    feature: FEATURES.breakableWalls,
+    behaviorField: WALL_FIELDS.behaviors,
+    legacyDeleteField: WALL_LEGACY_SCRIPTS_FIELD,
+    behaviors: data.behaviors,
+    selectedBehaviorLists: controlled.map(document => getBreakableWallData(document).behaviors)
+  });
   application.setPosition({height: "auto"});
 }
 
@@ -108,9 +159,9 @@ function applyMultipleValueState(application, root) {
   if (!application.isSelect || application.controlled?.length < 2) return;
 
   const documents = application.controlled;
-  setMultipleState(root, FLAG_FIELDS.enabled, documents.map(wall => getBreakableWallData(wall).enabled));
-  setMultipleState(root, FLAG_FIELDS.both, documents.map(wall => getBreakableWallData(wall).images.both));
-  setMultipleState(root, FLAG_FIELDS.single, documents.map(wall => getBreakableWallData(wall).images.single));
+  setMultipleState(root, WALL_FIELDS.enabled, documents.map(wall => getBreakableWallData(wall).enabled));
+  setMultipleState(root, WALL_FIELDS.both, documents.map(wall => getBreakableWallData(wall).images.both));
+  setMultipleState(root, WALL_FIELDS.single, documents.map(wall => getBreakableWallData(wall).images.single));
 }
 
 /**

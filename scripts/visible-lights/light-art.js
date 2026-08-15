@@ -10,24 +10,27 @@ import {
 } from "../settings.js";
 
 const artwork = new Map();
+const transformPreviews = new Map();
+const TRANSFORM_PREVIEW_TYPES = new Set(["dragging", "controls"]);
 let refreshId = 0;
 let refreshQueued = false;
 
 /**
  * Calculate the centered, one-grid geometry for visible-light artwork.
  *
- * @param {{x: number, y: number}} light
+ * @param {{x: number, y: number, rotation?: number}} light
  * @param {number} gridSize
- * @returns {{x: number, y: number, width: number, height: number}}
+ * @returns {{x: number, y: number, width: number, height: number, rotation: number}}
  */
 export function calculateLightArtworkGeometry(light, gridSize) {
   const x = Number(light?.x);
   const y = Number(light?.y);
+  const rotation = Number(light?.rotation ?? 0);
   const size = Number(gridSize);
-  if (![x, y, size].every(Number.isFinite) || size <= 0) {
-    throw new Error("Visible-light artwork requires finite coordinates and a positive grid size.");
+  if (![x, y, rotation, size].every(Number.isFinite) || size <= 0) {
+    throw new Error("Visible-light artwork requires finite coordinates and rotation, and a positive grid size.");
   }
-  return {x, y, width: size, height: size};
+  return {x, y, width: size, height: size, rotation};
 }
 
 /** Register the visible-light artwork lifecycle hooks. */
@@ -37,7 +40,8 @@ export function registerVisibleLightArt() {
   Hooks.on("createAmbientLight", refreshForLightChange);
   Hooks.on("updateAmbientLight", refreshForLightChange);
   Hooks.on("deleteAmbientLight", refreshForLightChange);
-  Hooks.on("refreshAmbientLight", updateArtworkPosition);
+  Hooks.on("refreshAmbientLight", updateArtworkTransform);
+  Hooks.on("destroyAmbientLight", restoreArtworkAfterPreviewDestroyed);
   Hooks.on("updateScene", refreshForSceneChange);
   Hooks.on(FEATURE_SETTING_CHANGED_HOOK, handleFeatureSettingChange);
 }
@@ -118,7 +122,13 @@ async function refreshArtwork() {
  * @param {number} gridSize
  */
 function createArtworkMesh(light, texture, gridSize) {
-  const geometry = calculateLightArtworkGeometry(light.document, gridSize);
+  const transformSource = transformPreviews.get(light.id) ?? light;
+  const position = transformSource.center ?? transformSource.document;
+  const geometry = calculateLightArtworkGeometry({
+    x: position?.x,
+    y: position?.y,
+    rotation: transformSource.document?.rotation ?? light.document.rotation
+  }, gridSize);
   const mesh = new foundry.canvas.primary.PrimarySpriteMesh({
     name: `${MODULE_ID}.visibleLight.${light.id}`,
     object: light,
@@ -130,28 +140,60 @@ function createArtworkMesh(light, texture, gridSize) {
   mesh.sort = Number.MAX_SAFE_INTEGER;
   mesh.zIndex = 0;
   mesh.anchor.set(0.5);
-  mesh.position.set(geometry.x, geometry.y);
+  applyArtworkTransform(mesh, geometry);
   mesh.resize(geometry.width, geometry.height, {fit: "fill"});
   mesh.eventMode = "none";
   mesh.name = `${MODULE_ID}.visibleLight.${light.id}`;
   return {lightId: light.id, mesh};
 }
 
-/** Keep the artwork attached to the light's drag preview as well as its saved position. */
-function updateArtworkPosition(light) {
+/** Keep the artwork attached to the light's drag and rotation previews. */
+function updateArtworkTransform(light) {
   const source = light._original ?? light;
+  // Foundry uses "dragging" for body drags and "controls" for its translate/rotate/resize handles.
+  // Track both explicitly because the original placeable continues to refresh between preview
+  // frames and would otherwise restore the saved transform while the pointer is paused.
+  if (isTransformPreview(light)) transformPreviews.set(source.id, light);
   const mesh = artwork.get(source.id);
   if (!mesh) return;
 
+  const activePreview = transformPreviews.get(source.id);
+  if (activePreview && !light._original) return;
+  if (activePreview && activePreview !== light) return;
+
   const position = light.center ?? light.document;
-  if (!Number.isFinite(position?.x) || !Number.isFinite(position?.y)) return;
-  mesh.position.set(position.x, position.y);
+  const rotation = Number(light.document?.rotation ?? source.document?.rotation ?? 0);
+  if (!Number.isFinite(position?.x) || !Number.isFinite(position?.y) || !Number.isFinite(rotation)) return;
+  applyArtworkTransform(mesh, {x: position.x, y: position.y, rotation});
   if (canvas.primary) canvas.primary.renderDirty = true;
+}
+
+/** Restore the saved transform after a drag preview is canceled or finishes committing. */
+function restoreArtworkAfterPreviewDestroyed(light) {
+  const source = light?._original;
+  if (!source || !isTransformPreview(light)) return;
+  if (transformPreviews.get(source.id) !== light) return;
+  transformPreviews.delete(source.id);
+  queueMicrotask(() => {
+    if (transformPreviews.has(source.id)) return;
+    updateArtworkTransform(source);
+  });
+}
+
+function isTransformPreview(light) {
+  return Boolean(light?._original && TRANSFORM_PREVIEW_TYPES.has(light._previewType));
+}
+
+/** Apply the Foundry document transform to its visible-light artwork. */
+function applyArtworkTransform(mesh, {x, y, rotation}) {
+  mesh.position.set(x, y);
+  mesh.angle = rotation;
 }
 
 function clearArtwork() {
   ++refreshId;
   refreshQueued = false;
+  transformPreviews.clear();
   destroyAllMeshes();
   if (canvas.primary && canvas.ready) canvas.primary.update();
 }

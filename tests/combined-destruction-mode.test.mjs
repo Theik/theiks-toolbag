@@ -72,6 +72,7 @@ globalThis.game = {
 };
 
 const controlsLayer = new Container();
+controlsLayer.doors = {visible: true};
 const wallFlag = {
   enabled: true,
   destroyed: false,
@@ -133,6 +134,7 @@ assert.deepEqual(combined.tools, {}, "the far-left icon itself activates the mod
 
 combined.onChange(null, true);
 await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(controlsLayer.doors.visible, false, "combined destruction mode hides native door controls");
 assert.deepEqual(
   controlsLayer.children.map(container => container.name).sort(),
   ["theiks-toolbag.breakableTerrainMarkers", "theiks-toolbag.breakableWallMarkers"],
@@ -142,6 +144,7 @@ assert.ok(controlsLayer.children.every(container => container.children.length ==
 
 combined.onChange(null, false);
 assert.equal(controlsLayer.children.length, 0, "leaving the combined control removes both marker sets");
+assert.equal(controlsLayer.doors.visible, true, "leaving the combined control restores native door controls");
 
 game.user.isGM = false;
 const nonGmControls = {};

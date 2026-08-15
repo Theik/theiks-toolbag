@@ -1,5 +1,71 @@
 {
   "THEIKS_TOOLBAG": {
+    "ConfigTabs": {
+      "Toolbag": "Theik's Toolbag",
+      "Wall": "Wall",
+      "Light": "Light",
+      "Tile": "Tile"
+    },
+    "EventScripts": {
+      "Legend": "Event scripts",
+      "ToggledOn": "Toggled on",
+      "ToggledOnHint": "Runs after this fixture is successfully switched on.",
+      "ToggledOff": "Toggled off",
+      "ToggledOffHint": "Runs after this fixture is successfully switched off.",
+      "Destroyed": "Destroyed",
+      "DestroyedHint": "Runs after this document successfully reaches its destroyed state.",
+      "Damaged": "Damaged",
+      "DamagedHint": "Runs after this terrain advances to a damage state before its final state.",
+      "RepairedPartial": "Repaired (Partial)",
+      "RepairedPartialHint": "Runs after this terrain moves back one state but remains damaged.",
+      "Repaired": "Repaired",
+      "RepairedHint": "Runs after this document is successfully restored.",
+      "GmOnly": "Only a GM can configure Toolbag script behaviors.",
+      "Invalid": "The {label} script is not valid asynchronous JavaScript: {error}"
+    },
+    "EventBehaviors": {
+      "Legend": "Behaviors",
+      "Header": "Script behaviors",
+      "Add": "Add behavior",
+      "Edit": "Edit behavior",
+      "Delete": "Delete behavior",
+      "Enable": "Enable behavior",
+      "Disable": "Disable behavior",
+      "Empty": "No script behaviors are configured.",
+      "MultipleValues": "The selected documents have different behavior lists. Make their lists identical before bulk editing behaviors.",
+      "ExecuteScript": "Execute Script",
+      "Behavior": {
+        "ExecuteScript": "Execute Script"
+      },
+      "Identity": "Identity",
+      "Name": "Name",
+      "Status": "Status",
+      "Disabled": "Disabled",
+      "Triggers": "Triggers",
+      "EventsLabel": "Trigger events",
+      "EventsHint": "Choose one or more Toolbag events which run this behavior.",
+      "Source": "Script",
+      "SourceHint": "Runs asynchronously on the authoritative GM after the Toolbag action succeeds.",
+      "NoEvents": "No triggers selected",
+      "Save": "Save",
+      "Cancel": "Cancel",
+      "DeleteTitle": "Delete Behavior",
+      "DeleteConfirm": "Delete the behavior “{name}”?",
+      "Delete": "Delete",
+      "Errors": {
+        "EventRequired": "Choose at least one trigger event.",
+        "Invalid": "Could not save {name}: {error}",
+        "UpdateFailed": "Foundry could not save the behavior collection."
+      },
+      "Events": {
+        "toggledOn": "Toggled on",
+        "toggledOff": "Toggled off",
+        "destroyed": "Destroyed",
+        "repaired": "Repaired",
+        "damaged": "Damaged",
+        "repairedPartial": "Repaired (Partial)"
+      }
+    },
     "Settings": {
       "BreakableWalls": {
         "Name": "Breakable Walls",
@@ -19,7 +85,7 @@
       },
       "FallingMessages": {
         "Name": "Falling Chat messages",
-        "Hint": "Post combined Chat messages when Tokens fall manually or when a breakable platform collapses."
+        "Hint": "Post combined Chat messages when creatures fall manually or when a breakable platform collapses."
       },
       "Disabled": "{feature} is disabled in Theik's Toolbag settings."
     },
@@ -35,6 +101,29 @@
       },
       "Tool": {
         "Title": "Wall Destruction Mode"
+      },
+      "Split": {
+        "Hud": {
+          "Title": "Split selected walls into grid-sized sections"
+        },
+        "Notifications": {
+          "Complete": "Wall splitting complete: {walls} walls became {sections} sections.",
+          "NothingToSplit": "Every selected wall is already one grid unit or shorter."
+        },
+        "Errors": {
+          "GmOnly": "Only a GM can split walls.",
+          "SceneUnavailable": "The current Scene is not available.",
+          "Gridless": "Walls cannot be split into grid-sized sections in a gridless Scene.",
+          "InvalidGrid": "The Scene has no valid grid size.",
+          "InvalidCoordinates": "A selected wall has invalid coordinates.",
+          "NoWallsSelected": "No walls are selected.",
+          "WallUnavailable": "A selected wall is no longer available in the current Scene.",
+          "StateChanged": "A selected wall changed before it could be split. Try again.",
+          "InProgress": "Walls are already being split in this Scene.",
+          "CreateFailed": "Foundry could not create every wall section.",
+          "UpdateFailed": "Foundry could not resize every original wall.",
+          "RollbackFailed": "Wall splitting failed and could not be fully rolled back. Check the Scene before trying again."
+        }
       },
       "Dialog": {
         "Title": "Destroy Wall",
@@ -90,11 +179,14 @@
         "NotConfigured": "That light has no visible-light artwork configured.",
         "Destroyed": "That light is destroyed and cannot be switched on.",
         "AlreadyDestroyed": "That light is already destroyed.",
+        "NotDestroyed": "That light is not destroyed.",
         "GmDestroyOnly": "Only a GM can destroy lights.",
+        "GmRepairOnly": "Only a GM can repair lights.",
         "InactiveUser": "The requesting user is not active.",
         "TokenRequired": "Select an adjacent token to toggle this light.",
         "TokenNotOwned": "You do not own the selected token.",
         "NotAdjacent": "The selected token is not next to this light.",
+        "WallBlocked": "A wall blocks access to this light.",
         "StateChanged": "The light changed before the request was processed. Try again.",
         "InProgress": "That light is already being changed.",
         "UpdateFailed": "Foundry did not update the light.",
@@ -111,7 +203,7 @@
         "Enabled": "Destroyable",
         "EnabledHint": "Show this tile in Terrain Destruction Mode and allow it to cycle through destroyed states.",
         "Platform": "Breakable platform",
-        "PlatformHint": "On the final destroyed state, choose Tokens on every Level assigned to this Tile to fall to each Level below.",
+        "PlatformHint": "On the final destroyed state, choose creatures on every Level assigned to this Tile to fall to each Level below.",
         "PlatformMessage": "Destroyed message",
         "PlatformMessageHint": "Optional text shown in Chat when this platform reaches its final destroyed state. Leave blank to omit this sentence.",
         "BlocksMovement": "Block movement",
@@ -149,16 +241,16 @@
       "Platform": {
         "Dialog": {
           "Title": "Collapse Platform",
-          "Prompt": "Collapse {tile} and send selected Tokens on every assigned Level to the Level below?",
-          "SelectTokens": "Select Tokens that fall",
-          "Underneath": "Tokens underneath",
-          "NoCandidates": "No Tokens are on this platform.",
-          "NoUnderneath": "No Tokens are underneath this platform.",
+          "Prompt": "Collapse {tile} and send selected creatures on every assigned Level to the Level below?",
+          "SelectTokens": "Select creatures that fall",
+          "Underneath": "Creatures underneath",
+          "NoCandidates": "No creatures are on this platform.",
+          "NoUnderneath": "No creatures are underneath this platform.",
           "Collapse": "Collapse"
         },
         "Chat": {
           "Title": "Platform Collapse",
-          "Falls": "Falling Tokens",
+          "Falls": "Falling creatures",
           "Fell": "{name} falls {distance} feet.",
           "NoFalls": "No one falls.",
           "Underneath": "Underneath",
@@ -169,26 +261,27 @@
           "PlatformLevelRequired": "A breakable platform must be assigned to at least one Scene Level.",
           "NoLevelBelow": "Every assigned platform Level must have a Scene Level below it. Missing below: {levels}",
           "PlatformStateChanged": "The platform's Level configuration changed before it collapsed. Try again.",
-          "TokenMoveFailed": "The platform collapsed, but these Tokens could not be moved: {names}",
-          "UpdateFailed": "Foundry did not update a falling Token.",
+          "TokenMoveFailed": "The platform collapsed, but these creatures could not be moved: {names}",
+          "UpdateFailed": "Foundry did not update a falling creature.",
           "ChatFailed": "The platform collapsed, but its Chat message could not be created."
         }
       }
     },
     "LevelTools": {
       "Hud": {
-        "Title": "Make tokens fall"
+        "Title": "Change Level + Elevation"
       },
       "Dialog": {
-        "Title": "Make tokens fall",
+        "Title": "Change Level + Elevation",
         "SelectedTokens": "Selected Tokens",
         "TargetLevel": "Target Level",
+        "Falling": "Falling",
         "To": "to",
         "Apply": "Apply"
       },
       "Chat": {
-        "Title": "Tokens Fall",
-        "Target": "The selected Tokens descend to {level}.",
+        "Title": "Creatures fall",
+        "Target": "The following creatures fall to {level}.",
         "Fell": "{name} falls {distance} feet."
       },
       "Errors": {
@@ -197,6 +290,7 @@
         "NoLevels": "This Scene has no Levels.",
         "NoTokensSelected": "No Tokens are selected.",
         "TokenUnavailable": "A selected Token is no longer available in the current Scene.",
+        "InvalidElevation": "Elevation must be a finite number.",
         "InvalidLevel": "The selected Level is no longer available.",
         "UpdateFailed": "Foundry did not update every selected Token.",
         "ChatFailed": "The Tokens changed Level, but the falling Chat message could not be created."

@@ -13,6 +13,7 @@ import {
   promptPlatformCollapse,
   validatePlatformCollapsePlan
 } from "./platform-collapse.js";
+import {queueEventBehaviors} from "../script-events.js";
 
 const inProgress = new Set();
 let transitionSequence = 0;
@@ -61,6 +62,7 @@ export async function advanceTerrainDestruction(tile) {
       throw new Error(localize("Errors.StateChanged"));
     }
     if (platformPlan) validatePlatformCollapsePlan(tile, platformPlan);
+    const previous = getTerrainEventState(tile, current);
 
     const nonce = createNonce();
     const updateOptions = authorizeTerrainTransition(tile, nonce);
@@ -79,6 +81,15 @@ export async function advanceTerrainDestruction(tile) {
           console.error(`${MODULE_ID} | Platform collapse follow-up failed after terrain destruction`, error);
         }
       }
+      const destroyed = targetStage >= initial.states.length;
+      queueEventBehaviors({
+        behaviors: getBreakableTerrainData(updated).behaviors,
+        document: updated,
+        alias: "tile",
+        name: destroyed ? "destroyed" : "damaged",
+        previous,
+        current: getTerrainEventState(updated)
+      });
       return updated;
     } finally {
       revokeTerrainTransition(tile, nonce);
@@ -120,6 +131,7 @@ export async function retreatTerrainDestruction(tile) {
       throw new Error(localize("Errors.StateChanged"));
     }
 
+    const previous = getTerrainEventState(tile, current);
     const nonce = createNonce();
     const updateOptions = authorizeTerrainTransition(tile, nonce);
     try {
@@ -129,6 +141,15 @@ export async function retreatTerrainDestruction(tile) {
         [TERRAIN_FIELDS.restoreSrc]: targetStage === 0 ? null : initial.restoreSrc
       }, updateOptions);
       if (!updated) throw new Error(localize("Errors.UpdateFailed"));
+      const repaired = targetStage === 0;
+      queueEventBehaviors({
+        behaviors: getBreakableTerrainData(updated).behaviors,
+        document: updated,
+        alias: "tile",
+        name: repaired ? "repaired" : "repairedPartial",
+        previous,
+        current: getTerrainEventState(updated)
+      });
       return updated;
     } finally {
       revokeTerrainTransition(tile, nonce);
@@ -166,6 +187,7 @@ export async function restoreTerrain(tile) {
       throw new Error(localize("Errors.StateChanged"));
     }
 
+    const previous = getTerrainEventState(tile, current);
     const nonce = createNonce();
     const updateOptions = authorizeTerrainTransition(tile, nonce);
     try {
@@ -175,6 +197,14 @@ export async function restoreTerrain(tile) {
         [TERRAIN_FIELDS.restoreSrc]: null
       }, updateOptions);
       if (!updated) throw new Error(localize("Errors.UpdateFailed"));
+      queueEventBehaviors({
+        behaviors: getBreakableTerrainData(updated).behaviors,
+        document: updated,
+        alias: "tile",
+        name: "repaired",
+        previous,
+        current: getTerrainEventState(updated)
+      });
       return updated;
     } finally {
       revokeTerrainTransition(tile, nonce);
@@ -182,6 +212,16 @@ export async function restoreTerrain(tile) {
   } finally {
     inProgress.delete(key);
   }
+}
+
+/** Create the stable terrain-state snapshot supplied to event scripts. */
+export function getTerrainEventState(tile, data = getBreakableTerrainData(tile)) {
+  return {
+    stage: data.stage,
+    damaged: data.damaged,
+    fullyDestroyed: data.fullyDestroyed,
+    textureSrc: getTextureSrc(tile)
+  };
 }
 
 function validateTile(tile) {

@@ -57,10 +57,11 @@ function createTile({
   stage = 0,
   restoreSrc = null,
   src = "statue.webp",
+  scripts = {},
   updateGate = null,
   updateResult = true
 }) {
-  const flag = {enabled, blocksMovement, blocksVision, states, stage, restoreSrc};
+  const flag = {enabled, blocksMovement, blocksVision, states, stage, restoreSrc, scripts};
   const updateCalls = [];
   const tile = {
     documentName: "Tile",
@@ -219,9 +220,48 @@ await assert.rejects(() => advanceTerrainDestruction(rejectedTexture.tile), /Ima
 assert.equal(rejectedTexture.flag.stage, 0);
 
 loadTexture = async src => ({src, valid: true, width: 2, height: 2});
-const failedUpdate = createTile({id: "failed-update", updateResult: false});
+delete globalThis.__failedTerrainEvent;
+const failedUpdate = createTile({
+  id: "failed-update",
+  updateResult: false,
+  scripts: {damaged: "globalThis.__failedTerrainEvent = true;"}
+});
 await assert.rejects(() => advanceTerrainDestruction(failedUpdate.tile), /UpdateFailed/);
 await assert.rejects(() => advanceTerrainDestruction(failedUpdate.tile), /UpdateFailed/);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(globalThis.__failedTerrainEvent, undefined, "failed terrain updates emit no scripts");
+
+globalThis.__terrainEvents = [];
+const recordTerrainEvent = `globalThis.__terrainEvents.push({
+  name: event.name,
+  previous: event.data.previous.stage,
+  current: event.data.current.stage,
+  alias: tile === document,
+  user: event.user.id
+});`;
+const eventTerrain = createTile({
+  id: "events",
+  states: ["cracked.webp", "damaged.webp", "rubble.webp"],
+  scripts: {
+    damaged: recordTerrainEvent,
+    destroyed: recordTerrainEvent,
+    repairedPartial: recordTerrainEvent,
+    repaired: recordTerrainEvent
+  }
+});
+await advanceTerrainDestruction(eventTerrain.tile);
+await advanceTerrainDestruction(eventTerrain.tile);
+await advanceTerrainDestruction(eventTerrain.tile);
+await retreatTerrainDestruction(eventTerrain.tile);
+await restoreTerrain(eventTerrain.tile);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.deepEqual(globalThis.__terrainEvents, [
+  {name: "damaged", previous: 0, current: 1, alias: true, user: "gm"},
+  {name: "damaged", previous: 1, current: 2, alias: true, user: "gm"},
+  {name: "destroyed", previous: 2, current: 3, alias: true, user: "gm"},
+  {name: "repairedPartial", previous: 3, current: 2, alias: true, user: "gm"},
+  {name: "repaired", previous: 2, current: 0, alias: true, user: "gm"}
+]);
 
 game.user.isGM = false;
 const nonGm = createTile({id: "non-gm"});

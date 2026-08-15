@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import {
   findAdjacentOwnedToken,
-  isTokenAdjacentToLight
+  isTokenAdjacentToLight,
+  isTokenBlockedFromLight
 } from "../scripts/visible-lights/light-controls.js";
 
 const token = {x: 0, y: 0, width: 1, height: 1};
@@ -20,6 +21,34 @@ assert.equal(
   isTokenAdjacentToLight({x: 0, y: 0, width: 2, height: 2}, {x: 250, y: 150}, fallback),
   true,
   "large token footprint is respected"
+);
+
+const squareGrid = {
+  isSquare: true,
+  size: 125,
+  getOffset: ({x, y}) => ({i: Math.floor(y / 125), j: Math.floor(x / 125)}),
+  testAdjacency: (a, b) => Math.max(Math.abs(a.i - b.i), Math.abs(a.j - b.j)) === 1
+};
+const boundaryToken = {
+  _source: {x: 1000, y: 1375, width: 1, height: 1, elevation: 0},
+  getOccupiedGridSpaceOffsets: () => {
+    throw new Error("square grids must not use floor-biased cell adjacency");
+  }
+};
+assert.equal(
+  isTokenAdjacentToLight(boundaryToken, {x: 875, y: 1313, elevation: 0}, {grid: squareGrid}),
+  false,
+  "a light 1.5 tiles left of the Token center is out of range even on a grid boundary"
+);
+assert.equal(
+  isTokenAdjacentToLight(boundaryToken, {x: 1250, y: 1313, elevation: 0}, {grid: squareGrid}),
+  false,
+  "the symmetric right-hand light produces the same result"
+);
+assert.equal(
+  isTokenAdjacentToLight(boundaryToken, {x: 937.5, y: 1312.5, elevation: 0}, {grid: squareGrid}),
+  true,
+  "a diagonally positioned light exactly one tile from the Token center remains in range"
 );
 
 const gridToken = {
@@ -99,5 +128,82 @@ assert.equal(
   "only a selected, owned, adjacent token qualifies"
 );
 assert.equal(findAdjacentOwnedToken(light, user, selected.slice(0, 2), fallback), null);
+
+const level = {id: "ground"};
+let edgesInitialized = 0;
+let receivedCollision;
+const collisionScene = {
+  grid: {size: 100},
+  levels: new Map([[level.id, level]]),
+  initializeEdges: () => { edgesInitialized += 1; }
+};
+const collisionToken = {
+  parent: collisionScene,
+  _source: {
+    x: 0,
+    y: 0,
+    width: 1,
+    height: 1,
+    depth: 1,
+    elevation: 0,
+    level: level.id
+  },
+  getMovementOrigin: source => ({
+    x: source.x + 50,
+    y: source.y + 50,
+    elevation: source.elevation + 2.5
+  })
+};
+const collisionLight = {
+  parent: collisionScene,
+  _source: {x: 150, y: 50, elevation: 0, level: level.id}
+};
+const blockingBackend = {
+  testCollision: (origin, destination, options) => {
+    receivedCollision = {origin, destination, options};
+    return true;
+  }
+};
+assert.equal(
+  isTokenBlockedFromLight(collisionToken, collisionLight, {collisionBackend: blockingBackend}),
+  true,
+  "Foundry movement collisions block interaction through walls"
+);
+assert.equal(edgesInitialized, 1, "off-canvas Scene edges are initialized before collision testing");
+assert.deepEqual(receivedCollision.origin, {x: 50, y: 50, elevation: 2.5});
+assert.deepEqual(receivedCollision.destination, {x: 150, y: 50, elevation: 2.5});
+assert.equal(receivedCollision.options.type, "move");
+assert.equal(receivedCollision.options.mode, "any");
+assert.equal(receivedCollision.options.level, level);
+assert.equal(
+  isTokenBlockedFromLight(collisionToken, collisionLight, {
+    collisionBackend: {testCollision: () => false}
+  }),
+  false,
+  "an open route remains interactable"
+);
+
+const collisionUser = {id: "collision-player"};
+const blockedCandidate = {
+  id: "blocked",
+  document: {...collisionToken, testUserPermission: () => true}
+};
+assert.equal(
+  findAdjacentOwnedToken(collisionLight, collisionUser, [blockedCandidate], {
+    gridSize: 100,
+    collisionBackend: blockingBackend
+  }),
+  null,
+  "an owned adjacent Token does not qualify when a wall blocks it"
+);
+assert.equal(
+  findAdjacentOwnedToken(collisionLight, collisionUser, [blockedCandidate], {
+    gridSize: 100,
+    collisionBackend: blockingBackend,
+    testWalls: false
+  })?.id,
+  "blocked",
+  "callers can distinguish wall blocking from a missing adjacent Token"
+);
 
 console.log("visible light adjacency tests passed");

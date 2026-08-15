@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {
   destroyVisibleLight,
+  repairVisibleLight,
   registerVisibleLightControls,
   toggleVisibleLight
 } from "../scripts/visible-lights/light-controls.js";
@@ -9,6 +10,7 @@ const readyHooks = [];
 const registeredHooks = new Map();
 let socketListener = null;
 let authenticatedRequestHandled = false;
+let wallCollision = false;
 const featureSettings = {enableVisibleLights: true};
 globalThis.Hooks = {
   once: (name, callback) => {
@@ -43,8 +45,9 @@ globalThis.game = {
         setTimeout(() => {
           const previousUser = game.user;
           game.user = gm;
-          socketListener(message, player.id);
-          game.user = previousUser;
+          Promise.resolve(socketListener(message, player.id)).finally(() => {
+            game.user = previousUser;
+          });
         }, 0);
       } else if (message.type === "visibleLightToggleResult") {
         authenticatedRequestHandled = true;
@@ -57,8 +60,16 @@ globalThis.game = {
   }
 };
 globalThis.CONST = {DOCUMENT_OWNERSHIP_LEVELS: {OWNER: 3}};
+globalThis.CONFIG = {
+  Canvas: {
+    polygonBackends: {
+      move: {testCollision: () => wallCollision}
+    }
+  }
+};
 globalThis.canvas = {
   scene: null,
+  level: null,
   grid: null,
   dimensions: {size: 100},
   tokens: {controlled: []}
@@ -75,22 +86,34 @@ game.users.activeGM = gm;
 registerVisibleLightControls();
 for (const callback of readyHooks) callback();
 
-function createFixture() {
+function createFixture({scripts = {}, behaviors, updateResult = true} = {}) {
   const flag = {
     destroyed: false,
-    images: {on: "on.webp", off: "off.webp", destroyed: "broken.webp"}
+    images: {on: "on.webp", off: "off.webp", destroyed: "broken.webp"},
+    scripts,
+    ...(behaviors === undefined ? {} : {behaviors})
   };
-  const scene = {id: "scene", grid: {size: 100}, lights: new Map(), tokens: new Map()};
+  const level = {id: "ground"};
+  const scene = {
+    id: "scene",
+    grid: {size: 100},
+    levels: new Map([[level.id, level]]),
+    lights: new Map(),
+    tokens: new Map(),
+    initializeEdges: () => {}
+  };
   const light = {
     documentName: "AmbientLight",
     id: "light",
     uuid: "Scene.scene.AmbientLight.light",
     x: 150,
     y: 50,
+    _source: {x: 150, y: 50, elevation: 0, level: level.id},
     hidden: false,
     parent: scene,
     getFlag: () => flag,
     update: async changes => {
+      if (!updateResult) return null;
       if (Object.hasOwn(changes, "hidden")) light.hidden = changes.hidden;
       if (Object.hasOwn(changes, "flags.theiks-toolbag.visibleLight.destroyed")) {
         flag.destroyed = changes["flags.theiks-toolbag.visibleLight.destroyed"];
@@ -104,13 +127,31 @@ function createFixture() {
     y: 0,
     width: 1,
     height: 1,
+    depth: 1,
+    elevation: 0,
+    _source: {
+      x: 0,
+      y: 0,
+      width: 1,
+      height: 1,
+      depth: 1,
+      elevation: 0,
+      shape: 0,
+      level: level.id
+    },
     parent: scene,
+    getMovementOrigin: source => ({
+      x: source.x + (source.width * 50),
+      y: source.y + (source.height * 50),
+      elevation: source.elevation + 2.5
+    }),
     testUserPermission: user => user === player
   };
   scene.lights.set(light.id, light);
   scene.tokens.set(token.id, token);
   game.scenes.set(scene.id, scene);
   canvas.scene = scene;
+  canvas.level = level;
   canvas.tokens.controlled = [{document: token}];
   return {flag, light, scene, token};
 }
@@ -130,12 +171,51 @@ await assert.rejects(
   () => toggleVisibleLight(fixture.light),
   /TokenRequired/
 );
-const farToken = {...fixture.token, id: "far", x: 400, testUserPermission: () => true};
+const farToken = {
+  ...fixture.token,
+  id: "far",
+  x: 400,
+  _source: {...fixture.token._source, x: 400},
+  testUserPermission: () => true
+};
 canvas.tokens.controlled = [{document: farToken}];
 await assert.rejects(
   () => toggleVisibleLight(fixture.light),
   /TokenRequired/
 );
+
+const blockedFixture = createFixture();
+wallCollision = true;
+game.user = player;
+await assert.rejects(
+  () => toggleVisibleLight(blockedFixture.light),
+  /WallBlocked/,
+  "the player client rejects an adjacent interaction through a wall"
+);
+assert.equal(blockedFixture.light.hidden, false);
+
+wallCollision = false;
+const authoritativeBlockFixture = createFixture();
+game.user = player;
+const authoritativeToggle = toggleVisibleLight(authoritativeBlockFixture.light);
+wallCollision = true;
+const originalWallWarn = console.warn;
+console.warn = () => {};
+try {
+  await assert.rejects(
+    () => authoritativeToggle,
+    /WallBlocked/,
+    "the active GM repeats the collision test before applying a socket request"
+  );
+} finally {
+  console.warn = originalWallWarn;
+}
+assert.equal(authoritativeBlockFixture.light.hidden, false);
+
+game.user = gm;
+await toggleVisibleLight(authoritativeBlockFixture.light);
+assert.equal(authoritativeBlockFixture.light.hidden, true, "GM toggles remain unrestricted");
+wallCollision = false;
 
 fixture.light.hidden = false;
 game.user = gm;
@@ -144,6 +224,16 @@ assert.equal(fixture.light.hidden, true, "destroying also switches the Foundry l
 assert.equal(fixture.flag.destroyed, true);
 await assert.rejects(() => toggleVisibleLight(fixture.light), /Destroyed/);
 await assert.rejects(() => destroyVisibleLight(fixture.light), /AlreadyDestroyed/);
+
+const repairFixture = createFixture();
+game.user = gm;
+await destroyVisibleLight(repairFixture.light);
+assert.equal((await repairVisibleLight(repairFixture.light)), repairFixture.light);
+assert.equal(repairFixture.flag.destroyed, false);
+assert.equal(repairFixture.light.hidden, true, "repair leaves the fixture safely switched off");
+await assert.rejects(() => repairVisibleLight(repairFixture.light), /NotDestroyed/);
+await toggleVisibleLight(repairFixture.light);
+assert.equal(repairFixture.light.hidden, false, "a repaired fixture can be switched on normally");
 
 fixture.light.hidden = false;
 game.user = gm;
@@ -156,6 +246,12 @@ game.user = player;
 await assert.rejects(
   () => destroyVisibleLight(playerFixture.light, {user: gm}),
   /GmDestroyOnly/
+);
+playerFixture.flag.destroyed = true;
+playerFixture.light.hidden = true;
+await assert.rejects(
+  () => repairVisibleLight(playerFixture.light),
+  /GmRepairOnly/
 );
 
 // Foundry's occupied-space helper can return different prepared footprints on the viewed player
@@ -250,6 +346,57 @@ try {
   console.warn = originalWarn;
 }
 assert.equal(forgedStateFixture.light.hidden, false);
+
+globalThis.__playerLightEvent = null;
+const playerEventFixture = createFixture({
+  scripts: {toggledOff: "globalThis.__playerLightEvent = event.user.id;"}
+});
+game.user = player;
+await toggleVisibleLight(playerEventFixture.light);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(globalThis.__playerLightEvent, player.id,
+  "a player toggle script executes on the authoritative GM with the requester in event.user");
+
+delete globalThis.__failedLightEvent;
+const failedEventFixture = createFixture({
+  updateResult: false,
+  scripts: {toggledOff: "globalThis.__failedLightEvent = true;"}
+});
+game.user = gm;
+await assert.rejects(() => toggleVisibleLight(failedEventFixture.light), /UpdateFailed/);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.equal(globalThis.__failedLightEvent, undefined, "failed light updates emit no scripts");
+
+globalThis.__visibleLightEvents = [];
+const recordLightEvent = `globalThis.__visibleLightEvents.push({
+  name: event.name,
+  previous: event.data.previous.state,
+  current: event.data.current.state,
+  alias: light === document,
+  user: event.user.id
+});`;
+const eventFixture = createFixture({
+  behaviors: [{
+    id: "all-light-events",
+    type: "executeScript",
+    name: "Record light event",
+    disabled: false,
+    events: ["toggledOn", "toggledOff", "destroyed", "repaired"],
+    source: recordLightEvent
+  }]
+});
+game.user = gm;
+await toggleVisibleLight(eventFixture.light);
+await toggleVisibleLight(eventFixture.light);
+await destroyVisibleLight(eventFixture.light);
+await repairVisibleLight(eventFixture.light);
+await new Promise(resolve => setTimeout(resolve, 0));
+assert.deepEqual(globalThis.__visibleLightEvents, [
+  {name: "toggledOff", previous: "on", current: "off", alias: true, user: "gm"},
+  {name: "toggledOn", previous: "off", current: "on", alias: true, user: "gm"},
+  {name: "destroyed", previous: "on", current: "destroyed", alias: true, user: "gm"},
+  {name: "repaired", previous: "destroyed", current: "off", alias: true, user: "gm"}
+], "successful light actions emit one semantic event each, including repair");
 
 featureSettings.enableVisibleLights = false;
 game.user = gm;

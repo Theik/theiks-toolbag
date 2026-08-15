@@ -1,4 +1,21 @@
 import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
+
+const translations = JSON.parse(await readFile(new URL("../lang/en.json", import.meta.url), "utf8"));
+assert.equal(translations.THEIKS_TOOLBAG.LevelTools.Chat.Title, "Creatures fall");
+assert.equal(
+  translations.THEIKS_TOOLBAG.LevelTools.Chat.Target,
+  "The following creatures fall to {level}."
+);
+assert.equal(translations.THEIKS_TOOLBAG.BreakableTerrain.Platform.Chat.Falls, "Falling creatures");
+const platformCopy = Object.values(translations.THEIKS_TOOLBAG.BreakableTerrain.Platform)
+  .flatMap(section => Object.values(section))
+  .join(" ");
+assert.doesNotMatch(
+  platformCopy,
+  /tokens?/i,
+  "platform-collapse copy refers to creatures instead of Tokens"
+);
 
 const hookHandlers = new Map();
 globalThis.Hooks = {
@@ -135,7 +152,11 @@ globalThis.canvas = {
 };
 
 const chatMessages = [];
-globalThis.ChatMessage = {create: async data => { chatMessages.push(data); return data; }};
+globalThis.ChatMessage = {create: async data => {
+  chatMessages.push(data);
+  globalThis.__platformFollowupComplete = true;
+  return data;
+}};
 
 const {registerBreakableTerrainConfig} = await import("../scripts/breakable-terrain/terrain-config.js");
 const {advanceTerrainDestruction} = await import("../scripts/breakable-terrain/terrain-destruction.js");
@@ -152,7 +173,8 @@ function createTile({
   states = ["destroyed.webp"],
   platform = true,
   platformMessage = "",
-  levelIds = [upper.id]
+  levelIds = [upper.id],
+  scripts = {}
 }) {
   const flag = {
     enabled: true,
@@ -162,7 +184,8 @@ function createTile({
     blocksVision: true,
     states,
     stage: 0,
-    restoreSrc: null
+    restoreSrc: null,
+    scripts
   };
   const tile = {
     documentName: "Tile",
@@ -201,12 +224,20 @@ assert.deepEqual(context.candidates.map(token => token.id), [onPlatform.id, fail
 assert.deepEqual(context.underneath.map(token => token.id), [underneath.id]);
 
 dialogSelection = [onPlatform.id, failing.id];
-const collapse = createTile({id: "collapse", platformMessage: "The balcony <snaps>!"});
+globalThis.__platformFollowupComplete = false;
+delete globalThis.__platformScriptSawFollowup;
+const collapse = createTile({
+  id: "collapse",
+  platformMessage: "The balcony <snaps>!",
+  scripts: {destroyed: "globalThis.__platformScriptSawFollowup = globalThis.__platformFollowupComplete;"}
+});
 const originalConsoleError = console.error;
 const loggedErrors = [];
 console.error = (...args) => loggedErrors.push(args);
 assert.equal(await advanceTerrainDestruction(collapse.tile), collapse.tile);
+await new Promise(resolve => setTimeout(resolve, 0));
 console.error = originalConsoleError;
+assert.equal(globalThis.__platformScriptSawFollowup, true, "destroyed scripts run after platform follow-up work");
 assert.equal(collapse.flag.stage, 1);
 assert.equal(onPlatform.level, middle.id);
 assert.equal(onPlatform.elevation, middle.elevation.bottom);
@@ -259,9 +290,15 @@ settings.enableFallingMessages = true;
 onPlatform.level = onPlatform._source.level = upper.id;
 onPlatform.elevation = onPlatform._source.elevation = 35;
 dialogSelection = null;
-const canceled = createTile({id: "canceled"});
+delete globalThis.__canceledPlatformEvent;
+const canceled = createTile({
+  id: "canceled",
+  scripts: {destroyed: "globalThis.__canceledPlatformEvent = true;"}
+});
 assert.equal(await advanceTerrainDestruction(canceled.tile), null);
+await new Promise(resolve => setTimeout(resolve, 0));
 assert.equal(canceled.flag.stage, 0, "canceling leaves the Tile at its previous stage");
+assert.equal(globalThis.__canceledPlatformEvent, undefined, "canceling emits no destroyed script");
 
 dialogSelection = [onPlatform.id];
 const staged = createTile({id: "staged", states: ["cracked.webp", "destroyed.webp"]});

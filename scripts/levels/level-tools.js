@@ -8,6 +8,7 @@ import {
 export const MODULE_ID = "theiks-toolbag";
 
 const HUD_CONTROL_CLASS = "theiks-toolbag-level-change";
+const FALLING_INPUT_ID = "theiks-toolbag-level-falling";
 
 /** Register the GM-only Token HUD action for native Foundry Scene Levels. */
 export function registerLevelTools() {
@@ -22,6 +23,21 @@ export function registerLevelTools() {
 export function getSceneLevels(scene = canvas.scene) {
   if (!scene?.levels) return [];
   return scene.levels.contents ?? Array.from(scene.levels.values?.() ?? scene.levels);
+}
+
+/** Return whether a Scene has enough native Levels for movement between them. */
+export function hasMultipleSceneLevels(scene = canvas.scene) {
+  return getSceneLevels(scene).length > 1;
+}
+
+/** Return whether a target Level is below at least one Token's current Level. */
+export function isLevelBelowSelectedTokens(targetLevel, tokens, scene = targetLevel?.parent ?? canvas.scene) {
+  const targetBottom = Number(targetLevel?.elevation?.bottom);
+  if (!Number.isFinite(targetBottom)) return false;
+  return normalizeTokenDocuments(tokens).some(token => {
+    const currentBottom = Number(getTokenLevel(token, scene)?.elevation?.bottom);
+    return Number.isFinite(currentBottom) && targetBottom < currentBottom;
+  });
 }
 
 /** Resolve the native Level currently occupied by a Token. */
@@ -52,6 +68,55 @@ export function getLevelBelow(level, scene = level?.parent ?? canvas.scene) {
 }
 
 /**
+ * Change a Token's elevation after its active Foundry movement completes.
+ * Other clients ignore movement initiated by a different User, preventing duplicate Region-script updates.
+ *
+ * @param {TokenDocument|foundry.canvas.placeables.Token} token
+ * @param {number|string} elevation
+ * @param {boolean} [falling=false] Announce a downward change as a fall.
+ * @param {boolean} [levelTransition=false] Move the Token to the native Level containing the new elevation.
+ * @returns {Promise<TokenDocument|null>}
+ */
+export async function updateTokenElevation(token, elevation, falling = false, levelTransition = false) {
+  assertFeatureEnabled(FEATURES.levelTools);
+  const document = token?.document ?? token;
+  const targetElevation = Number(elevation);
+  if (!Number.isFinite(targetElevation)) throw new Error(localize("Errors.InvalidElevation"));
+  if (document?.documentName !== "Token"
+    || typeof document.update !== "function"
+    || document.parent?.tokens?.get?.(document.id) !== document) {
+    throw new Error(localize("Errors.TokenUnavailable"));
+  }
+
+  const movement = document.movement;
+  if (movement?.id && movement.user && !movement.user.isSelf) return null;
+  if (isMovementActive(movement)) {
+    const completed = await movement.finished;
+    if (!completed) return null;
+
+    // Do not interrupt a new movement which began while the original movement was finishing.
+    const currentMovement = document.movement;
+    if (currentMovement?.id !== movement.id && isMovementActive(currentMovement)) return null;
+  }
+
+  const previousElevation = Number(document?._source?.elevation ?? document.elevation);
+  if (previousElevation === targetElevation) return document;
+  const changes = {elevation: targetElevation};
+  const targetLevel = getLevelAtElevation(targetElevation, document.parent);
+  if (isChecked(levelTransition)) {
+    const currentLevel = getTokenLevel(document, document.parent);
+    if (targetLevel && currentLevel?.id !== targetLevel.id) changes.level = targetLevel.id;
+  }
+  const updated = await document.update(changes, {animate: false});
+
+  const fallDistance = previousElevation - targetElevation;
+  if (isChecked(falling) && fallDistance > 0 && isFeatureEnabled(FEATURES.fallingMessages)) {
+    if (targetLevel) await announceFalls([{name: document.name, distance: fallDistance}], targetLevel);
+  }
+  return updated;
+}
+
+/**
  * Prompt to move a snapshot of selected Tokens to a native Scene Level.
  *
  * @param {Iterable<TokenDocument|foundry.canvas.placeables.Token>} [tokens]
@@ -73,6 +138,8 @@ export async function promptTokenLevelChange(tokens) {
     }
 
     const defaultLevelId = getDefaultLevelId(selected, levels);
+    const defaultLevel = levels.find(level => level.id === defaultLevelId);
+    const defaultCanFall = isLevelBelowSelectedTokens(defaultLevel, selected, canvas.scene);
     const tokenNames = selected.map(token => escapeHTML(token.name)).join(", ");
     const options = levels.map(level => {
       const selectedAttribute = level.id === defaultLevelId ? " selected" : "";
@@ -83,7 +150,7 @@ export async function promptTokenLevelChange(tokens) {
     const result = await foundry.applications.api.DialogV2.input({
       window: {
         title: localize("Dialog.Title"),
-        icon: "fa-solid fa-person-falling"
+        icon: "fa-solid fa-ladder-water"
       },
       content: `<div class="theiks-toolbag level-change-dialog">
         <p>${localize("Dialog.SelectedTokens")}: ${tokenNames}</p>
@@ -91,7 +158,12 @@ export async function promptTokenLevelChange(tokens) {
           <label>${localize("Dialog.TargetLevel")}</label>
           <div class="form-fields"><select name="levelId">${options}</select></div>
         </div>
+        <div class="form-group" data-role="falling-option"${defaultCanFall ? "" : " hidden"}>
+          <label for="${FALLING_INPUT_ID}">${localize("Dialog.Falling")}</label>
+          <div class="form-fields"><input id="${FALLING_INPUT_ID}" type="checkbox" name="falling"${defaultCanFall ? "" : " disabled"}></div>
+        </div>
       </div>`,
+      render: (_event, dialog) => bindFallingOption(dialog.element, selected, levels),
       ok: {
         label: localize("Dialog.Apply"),
         icon: "fa-solid fa-check"
@@ -100,8 +172,12 @@ export async function promptTokenLevelChange(tokens) {
       modal: true
     });
     if (!result) return null;
+    const targetLevel = levels.find(level => level.id === String(result.levelId ?? ""));
+    const falling = isChecked(result.falling)
+      && isLevelBelowSelectedTokens(targetLevel, selected, canvas.scene);
     return await changeTokenLevels(selected, {
-      levelId: String(result.levelId ?? "")
+      levelId: String(result.levelId ?? ""),
+      falling
     });
   } catch (error) {
     ui.notifications.error(error.message);
@@ -111,13 +187,13 @@ export async function promptTokenLevelChange(tokens) {
 }
 
 /**
- * Move Tokens to a native Scene Level and announce all downward movement in one message.
+ * Move Tokens to a native Scene Level and optionally announce downward movement in one message.
  *
  * @param {Iterable<TokenDocument|foundry.canvas.placeables.Token>} tokens
- * @param {{levelId: string}} options
+ * @param {{levelId: string, falling?: boolean}} options
  * @returns {Promise<TokenDocument[]>}
  */
-export async function changeTokenLevels(tokens, {levelId} = {}) {
+export async function changeTokenLevels(tokens, {levelId, falling = false} = {}) {
   validateLevelTools();
   const documents = normalizeTokenDocuments(tokens);
   if (!documents.length) throw new Error(localize("Errors.NoTokensSelected"));
@@ -153,20 +229,15 @@ export async function changeTokenLevels(tokens, {levelId} = {}) {
     const distance = Number(before?.elevation) - targetElevation;
     return distance > 0 ? {name: before?.name ?? token.name, distance} : null;
   }).filter(Boolean);
-  if (falls.length && isFeatureEnabled(FEATURES.fallingMessages)) {
-    try {
-      await createFallingMessage(falls, targetLevel);
-    } catch (error) {
-      ui.notifications.error(localize("Errors.ChatFailed"));
-      console.error(`${MODULE_ID} | Failed to create the Token falling Chat message`, error);
-    }
+  if (isChecked(falling) && falls.length && isFeatureEnabled(FEATURES.fallingMessages)) {
+    await announceFalls(falls, targetLevel);
   }
   return updated;
 }
 
 function renderTokenLevelControl(application, element) {
   if (!game.user?.isGM || !isFeatureEnabled(FEATURES.levelTools)) return;
-  if (!canvas.ready || !getSceneLevels(canvas.scene).length) return;
+  if (!canvas.ready || !hasMultipleSceneLevels(canvas.scene)) return;
   if (!element || element.querySelector?.(`.${HUD_CONTROL_CLASS}`)) return;
 
   const nativeLevelAction = element.querySelector?.([
@@ -188,7 +259,7 @@ function renderTokenLevelControl(application, element) {
   button.className = `control-icon ${HUD_CONTROL_CLASS}`;
   button.dataset.tooltip = localize("Hud.Title");
   button.setAttribute("aria-label", localize("Hud.Title"));
-  button.innerHTML = '<i class="fa-solid fa-person-falling"></i>';
+  button.innerHTML = '<i class="fa-solid fa-ladder-water"></i>';
   button.addEventListener("click", event => {
     event.preventDefault();
     event.stopPropagation();
@@ -198,6 +269,23 @@ function renderTokenLevelControl(application, element) {
   if (nativeLevelControl?.insertAdjacentElement) nativeLevelControl.insertAdjacentElement("afterend", button);
   else column?.append(button);
   application?.setPosition?.();
+}
+
+function bindFallingOption(element, tokens, levels) {
+  const select = element?.querySelector?.('[name="levelId"]');
+  const group = element?.querySelector?.('[data-role="falling-option"]');
+  const checkbox = group?.querySelector?.('[name="falling"]');
+  if (!select || !group || !checkbox) return;
+
+  const update = () => {
+    const target = levels.find(level => level.id === String(select.value));
+    const visible = isLevelBelowSelectedTokens(target, tokens, canvas.scene);
+    group.hidden = !visible;
+    checkbox.disabled = !visible;
+    if (!visible) checkbox.checked = false;
+  };
+  select.addEventListener("change", update);
+  update();
 }
 
 async function createFallingMessage(falls, targetLevel) {
@@ -212,6 +300,23 @@ async function createFallingMessage(falls, targetLevel) {
       <ul>${lines}</ul>
     </div>`
   });
+}
+
+async function announceFalls(falls, targetLevel) {
+  try {
+    await createFallingMessage(falls, targetLevel);
+  } catch (error) {
+    ui.notifications.error(localize("Errors.ChatFailed"));
+    console.error(`${MODULE_ID} | Failed to create the Token falling Chat message`, error);
+  }
+}
+
+function getLevelAtElevation(elevation, scene = canvas.scene) {
+  if (scene === canvas.scene && typeof canvas.inferLevelFromElevation === "function") {
+    const inferred = canvas.inferLevelFromElevation(elevation);
+    if (inferred) return inferred;
+  }
+  return getSceneLevels(scene).find(level => elevationInLevel(elevation, level)) ?? null;
 }
 
 function normalizeTokenDocuments(tokens) {
@@ -252,6 +357,16 @@ function escapeHTML(value) {
 function formatElevation(value) {
   const number = Number(value);
   return Number.isFinite(number) ? String(number) : "?";
+}
+
+function isChecked(value) {
+  return value === true || value === "true" || value === "on" || value === 1 || value === "1";
+}
+
+function isMovementActive(movement) {
+  return movement?.finished?.then
+    && movement.state !== "completed"
+    && movement.state !== "stopped";
 }
 
 function localize(key) {

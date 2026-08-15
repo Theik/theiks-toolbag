@@ -3,6 +3,14 @@ import {
   FEATURE_SETTING_CHANGED_HOOK,
   isFeatureEnabled
 } from "../settings.js";
+import {mountToolbagConfigTab, removeToolbagConfigTabs} from "../config-tabs.js";
+import {
+  normalizeEventBehaviors,
+  normalizeEventScript,
+  validateEventBehaviorChanges,
+  validateEventScriptChanges
+} from "../script-events.js";
+import {closeScriptBehaviorEditors, mountScriptBehaviorList} from "../script-behaviors-ui.js";
 
 export const MODULE_ID = "theiks-toolbag";
 export const BREAKABLE_TERRAIN_FLAG = "breakableTerrain";
@@ -17,10 +25,22 @@ export const TERRAIN_FIELDS = Object.freeze({
   blocksVision: `${FLAG_ROOT}.blocksVision`,
   states: `${FLAG_ROOT}.states`,
   stage: `${FLAG_ROOT}.stage`,
-  restoreSrc: `${FLAG_ROOT}.restoreSrc`
+  restoreSrc: `${FLAG_ROOT}.restoreSrc`,
+  behaviors: `${FLAG_ROOT}.behaviors`,
+  damagedScript: `${FLAG_ROOT}.scripts.damaged`,
+  destroyedScript: `${FLAG_ROOT}.scripts.destroyed`,
+  repairedPartialScript: `${FLAG_ROOT}.scripts.repairedPartial`,
+  repairedScript: `${FLAG_ROOT}.scripts.repaired`
 });
+const TERRAIN_LEGACY_SCRIPTS_FIELD = `${FLAG_ROOT}.-=scripts`;
 
 const TRANSITION_NONCE_OPTION = "theiksToolbagTerrainNonce";
+const TERRAIN_SCRIPT_FIELDS = [
+  TERRAIN_FIELDS.damagedScript,
+  TERRAIN_FIELDS.destroyedScript,
+  TERRAIN_FIELDS.repairedPartialScript,
+  TERRAIN_FIELDS.repairedScript
+];
 const transitionAuthorizations = new Map();
 
 /**
@@ -36,6 +56,8 @@ const transitionAuthorizations = new Map();
  *   states: string[],
  *   stage: number,
  *   restoreSrc: string|null,
+ *   behaviors: object[],
+ *   scripts: {damaged: string, destroyed: string, repairedPartial: string, repaired: string},
  *   damaged: boolean,
  *   fullyDestroyed: boolean,
  *   canAdvance: boolean,
@@ -53,6 +75,12 @@ export function getBreakableTerrainData(tile) {
   const platformMessage = typeof data.platformMessage === "string" ? data.platformMessage.trim() : "";
   const blocksMovement = data.blocksMovement === true;
   const blocksVision = data.blocksVision === true;
+  const scripts = {
+    damaged: normalizeEventScript(data.scripts?.damaged),
+    destroyed: normalizeEventScript(data.scripts?.destroyed),
+    repairedPartial: normalizeEventScript(data.scripts?.repairedPartial),
+    repaired: normalizeEventScript(data.scripts?.repaired)
+  };
   return {
     enabled,
     platform,
@@ -62,6 +90,8 @@ export function getBreakableTerrainData(tile) {
     states,
     stage,
     restoreSrc: typeof data.restoreSrc === "string" && data.restoreSrc ? data.restoreSrc : null,
+    behaviors: normalizeEventBehaviors(data.behaviors, {alias: "tile", legacyScripts: scripts}),
+    scripts,
     damaged,
     fullyDestroyed,
     canAdvance: enabled && states.length > 0 && stage < states.length,
@@ -88,16 +118,24 @@ export function normalizeTerrainStates(states) {
 export function registerBreakableTerrainConfig() {
   Hooks.on("renderTileConfig", renderBreakableTerrainConfig);
   Hooks.on("preCreateTile", validateTerrainCreation);
+  Hooks.on("preCreateTile", validateTerrainScriptChanges);
   Hooks.on("preUpdateTile", validateTerrainUpdate);
+  Hooks.on("preUpdateTile", validateTerrainScriptChanges);
   Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
     if (enabled) return;
     if (feature === FEATURES.breakableTerrain) {
-      globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-terrain").forEach(element => element.remove());
+      closeScriptBehaviorEditors(FEATURES.breakableTerrain);
+      removeToolbagConfigTabs(FEATURES.breakableTerrain);
     } else if (feature === FEATURES.levelTools) {
       globalThis.document?.querySelectorAll?.(".theiks-toolbag.breakable-terrain .breakable-platform")
         .forEach(element => element.remove());
     }
   });
+}
+
+function validateTerrainScriptChanges(_tile, changes, _options, userId) {
+  validateEventBehaviorChanges(changes, TERRAIN_FIELDS.behaviors, "tile", userId);
+  validateEventScriptChanges(changes, TERRAIN_SCRIPT_FIELDS, "tile", userId);
 }
 
 /** Authorize one transition update without exposing its nonce outside this subsystem. */
@@ -117,9 +155,8 @@ async function renderBreakableTerrainConfig(application, element, context) {
   if (!isFeatureEnabled(FEATURES.breakableTerrain)) return;
   const form = application.form ?? element.querySelector("form");
   const root = element.querySelector(".standard-form.scrollable") ?? form;
-  if (!root || root.querySelector(".theiks-toolbag.breakable-terrain")) return;
+  if (!root || element.querySelector(".theiks-toolbag.breakable-terrain")) return;
 
-  const target = element.querySelector('.tab[data-tab="appearance"]') ?? root;
   const controlled = application.isSelect ? application.controlled ?? [] : [];
   const tile = controlled[0] ?? context.document ?? application.document;
   const data = getBreakableTerrainData(tile);
@@ -135,9 +172,18 @@ async function renderBreakableTerrainConfig(application, element, context) {
     platformMessageDisabled: !data.platform
   });
 
-  if (!isFeatureEnabled(FEATURES.breakableTerrain) || !application.rendered || !target.isConnected) return;
-  target.insertAdjacentHTML("beforeend", html);
-  const fieldset = target.querySelector(".theiks-toolbag.breakable-terrain");
+  if (!isFeatureEnabled(FEATURES.breakableTerrain) || !application.rendered || !root.isConnected) return;
+  const mounted = mountToolbagConfigTab({
+    application,
+    element,
+    content: html,
+    feature: FEATURES.breakableTerrain,
+    nativeTab: application.isSelect === undefined ? "appearance" : undefined,
+    nativeLabel: game.i18n.localize("THEIKS_TOOLBAG.ConfigTabs.Tile"),
+    nativeIcon: "fa-solid fa-cubes"
+  });
+  if (!mounted) return;
+  const fieldset = mounted.panel.querySelector(".theiks-toolbag.breakable-terrain");
   fieldset?.addEventListener("click", event => handleStateListAction(event, application, fieldset));
   fieldset?.addEventListener("change", event => handleStateFieldChange(event, application, fieldset));
   form?.addEventListener("formdata", event => serializeTerrainStates(event, fieldset, definitionLocked));
@@ -147,7 +193,23 @@ async function renderBreakableTerrainConfig(application, element, context) {
     });
   }
   if (definitionLocked) lockNativeTextureSource(element);
-  applyMultipleValueState(application, root);
+  applyMultipleValueState(application, mounted.panel);
+  await mountScriptBehaviorList({
+    application,
+    host: mounted.panel.querySelector("[data-toolbag-behaviors]"),
+    document: tile,
+    alias: "tile",
+    feature: FEATURES.breakableTerrain,
+    behaviorField: TERRAIN_FIELDS.behaviors,
+    legacyDeleteField: TERRAIN_LEGACY_SCRIPTS_FIELD,
+    behaviors: data.behaviors,
+    selectedBehaviorLists: controlled.map(document => getBreakableTerrainData(document).behaviors),
+    getUnavailableEvents: () => shouldShowIntermediateTerrainScripts(
+      normalizeTerrainStates(Array.from(
+        fieldset?.querySelectorAll(`[name="${TERRAIN_FIELDS.states}"]`) ?? [], field => field.value
+      )), controlled
+    ) ? [] : ["damaged", "repairedPartial"]
+  });
   updatePlatformMessageState(fieldset);
   updateStateRowControls(fieldset);
   application.setPosition({height: "auto"});
@@ -209,6 +271,7 @@ function handleStateListAction(event, application, fieldset) {
   switch (button.dataset.terrainStateAction) {
     case "add":
       list.insertAdjacentHTML("beforeend", createStateRowHtml(application.id));
+      markStatesDirty(application, fieldset, {submit: true});
       break;
     case "remove":
       row?.remove();
@@ -227,6 +290,12 @@ function handleStateListAction(event, application, fieldset) {
       break;
   }
   updateStateRowControls(fieldset);
+}
+
+/** Decide whether intermediate terrain script fields apply to the current form selection. */
+export function shouldShowIntermediateTerrainScripts(states, controlled = []) {
+  return normalizeTerrainStates(states).length > 1
+    || controlled.some(document => getBreakableTerrainData(document).states.length > 1);
 }
 
 function createStateRowHtml(applicationId) {

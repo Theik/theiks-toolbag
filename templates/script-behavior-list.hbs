@@ -1,0 +1,47 @@
+<fieldset class="toolbag-event-behaviors">
+    <legend>{{localize "THEIKS_TOOLBAG.EventBehaviors.Legend"}}</legend>
+    {{#if palette}}
+    <input type="hidden" name="{{behaviorField}}" data-toolbag-behavior-draft>
+    {{/if}}
+    <header class="toolbag-behavior-header flexrow">
+        <span>{{localize "THEIKS_TOOLBAG.EventBehaviors.Header"}}</span>
+        {{#if editable}}
+        <button type="button" class="icon fa-solid fa-plus" data-toolbag-behavior-action="add"
+            data-tooltip aria-label="{{localize "THEIKS_TOOLBAG.EventBehaviors.Add"}}"></button>
+        {{/if}}
+    </header>
+
+    {{#if mixed}}
+    <p class="hint warning"><i class="fa-solid fa-triangle-exclamation"></i>
+        {{localize "THEIKS_TOOLBAG.EventBehaviors.MultipleValues"}}
+    </p>
+    {{else if behaviors.length}}
+    <div class="toolbag-behavior-list">
+        {{#each behaviors as |behavior|}}
+        <div class="toolbag-behavior flexrow {{#if behavior.disabled}}inactive{{/if}}"
+            data-toolbag-behavior-id="{{behavior.id}}">
+            <button type="button" class="toolbag-behavior-name" data-toolbag-behavior-action="edit">
+                <i class="fa-solid fa-code fa-fw"></i>
+                <span>{{behavior.name}}</span>
+                <small>{{behavior.eventLabels}}</small>
+            </button>
+            <div class="toolbag-behavior-controls">
+                <button type="button"
+                    class="icon fa-solid {{#if behavior.disabled}}fa-toggle-off{{else}}fa-toggle-on{{/if}}"
+                    data-toolbag-behavior-action="toggle" data-tooltip
+                    aria-label="{{#if behavior.disabled}}{{localize "THEIKS_TOOLBAG.EventBehaviors.Enable"}}{{else}}{{localize "THEIKS_TOOLBAG.EventBehaviors.Disable"}}{{/if}}"></button>
+                <button type="button" class="icon fa-solid fa-pen-to-square"
+                    data-toolbag-behavior-action="edit" data-tooltip
+                    aria-label="{{localize "THEIKS_TOOLBAG.EventBehaviors.Edit"}}"></button>
+                <button type="button" class="icon fa-solid fa-trash"
+                    data-toolbag-behavior-action="delete" data-tooltip
+                    aria-label="{{localize "THEIKS_TOOLBAG.EventBehaviors.Delete"}}"></button>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+    {{else}}
+    <p class="hint">{{localize "THEIKS_TOOLBAG.EventBehaviors.Empty"}}</p>
+    {{/if}}
+</fieldset>
+

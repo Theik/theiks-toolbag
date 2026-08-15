@@ -12,11 +12,13 @@ import {
   createFeatureDisabledError,
   isFeatureEnabled
 } from "../settings.js";
+import {queueEventBehaviors} from "../script-events.js";
 
 const SOCKET_CHANNEL = `module.${MODULE_ID}`;
 const SOCKET_REQUEST = "visibleLightToggleRequest";
 const SOCKET_RESULT = "visibleLightToggleResult";
 const MARKER_TEXTURE = "icons/svg/light.svg";
+const REPAIR_MARKER_TEXTURE = "icons/svg/regen.svg";
 const DESTROYED_FIELD = `flags.${MODULE_ID}.${VISIBLE_LIGHT_FLAG}.destroyed`;
 const REQUEST_TIMEOUT_MS = 5000;
 const TOKEN_SYNC_TIMEOUT_MS = 750;
@@ -24,7 +26,8 @@ const TOKEN_SYNC_POLL_MS = 25;
 const TOKEN_STATE_NUMERIC_FIELDS = ["x", "y", "width", "height", "depth", "elevation", "shape"];
 const STATE_COLORS = {
   on: 0xFFD166,
-  off: 0x8A8A8A
+  off: 0x8A8A8A,
+  destroyed: 0x4CAF50
 };
 
 const inProgress = new Set();
@@ -42,6 +45,9 @@ export function registerVisibleLightControls() {
   Hooks.on("activateCanvasLayer", refreshForActiveLayer);
   Hooks.on("controlToken", queueMarkerRefresh);
   Hooks.on("updateToken", refreshForDocumentChange);
+  Hooks.on("createWall", refreshForDocumentChange);
+  Hooks.on("updateWall", refreshForDocumentChange);
+  Hooks.on("deleteWall", refreshForDocumentChange);
   Hooks.on("createAmbientLight", refreshForDocumentChange);
   Hooks.on("updateAmbientLight", refreshForDocumentChange);
   Hooks.on("updateAmbientLight", reconcileDestroyedLight);
@@ -53,7 +59,8 @@ export function registerVisibleLightControls() {
 
 /**
  * Test whether a Token occupies the light's grid space or a directly adjacent one.
- * Foundry's grid API is used when available; rectangular bounds are the gridless fallback.
+ * Square grids use continuous bounds so a light placed exactly on a grid line is not assigned
+ * toward one Token and away from another. Foundry's grid API handles non-square grids.
  *
  * @param {TokenDocument|foundry.canvas.placeables.Token|object} token
  * @param {AmbientLightDocument|foundry.canvas.placeables.AmbientLight|object} light
@@ -88,6 +95,14 @@ export function isTokenAdjacentToLight(token, light, {grid = null, gridSize} = {
   if (Number.isFinite(tokenElevation) && Number.isFinite(lightElevation)
     && Math.abs(tokenElevation - lightElevation) > Number.EPSILON) return false;
 
+  // SquareGrid#getOffset uses floor(), which makes two fixtures at the same distance behave
+  // differently when one lies on the near edge of a grid line and the other on the far edge.
+  // Continuous bounds express the intended range: the light may be at most one grid space from
+  // the center of a 1x1 Token, extended naturally around the footprint of larger Tokens.
+  if (grid?.isSquare) {
+    return isWithinRectangularGridRange(tokenGeometry, lightX, lightY, grid.size ?? gridSize);
+  }
+
   if (grid?.getOffset && grid?.testAdjacency && tokenDocument.getOccupiedGridSpaceOffsets) {
     try {
       const lightOffset = grid.getOffset({
@@ -113,6 +128,11 @@ export function isTokenAdjacentToLight(token, light, {grid = null, gridSize} = {
     }
   }
 
+  return isWithinRectangularGridRange(tokenGeometry, lightX, lightY, gridSize);
+}
+
+/** Test a light point against the Token footprint with a half-grid radius around that point. */
+function isWithinRectangularGridRange(tokenGeometry, lightX, lightY, gridSize) {
   const size = Number(gridSize);
   const x = Number(tokenGeometry.x);
   const y = Number(tokenGeometry.y);
@@ -131,12 +151,84 @@ export function isTokenAdjacentToLight(token, light, {grid = null, gridSize} = {
 }
 
 /**
+ * Test whether a movement-blocking Wall separates a Token from a visible-light fixture.
+ * The movement backend makes open doors and walls which do not restrict movement passable while
+ * still respecting wall direction and the Token's native Scene Level.
+ *
+ * @param {TokenDocument|foundry.canvas.placeables.Token|object} token
+ * @param {AmbientLightDocument|foundry.canvas.placeables.AmbientLight|object} light
+ * @param {{collisionBackend?: object|null, gridSize?: number, level?: object|null}} [options]
+ * @returns {boolean}
+ */
+export function isTokenBlockedFromLight(token, light, {
+  collisionBackend = globalThis.CONFIG?.Canvas?.polygonBackends?.move,
+  gridSize,
+  level = null
+} = {}) {
+  const tokenDocument = token?.document ?? token;
+  const lightDocument = light?.document ?? light;
+  if (!tokenDocument || !lightDocument) return true;
+  if (!collisionBackend?.testCollision) return false;
+
+  const scene = lightDocument.parent ?? tokenDocument.parent;
+  const tokenSource = tokenDocument._source ?? tokenDocument;
+  const lightSource = lightDocument._source ?? lightDocument;
+  const interactionLevel = level
+    ?? scene?.levels?.get?.(tokenSource.level ?? lightSource.level)
+    ?? (globalThis.canvas?.scene === scene ? canvas.level : null);
+  // A v14 Scene always has a Level. If it cannot be resolved, do not silently bypass walls.
+  if (!interactionLevel) return true;
+
+  const origin = getTokenInteractionOrigin(tokenDocument, tokenSource, gridSize);
+  const destination = {
+    x: Number(lightSource.x ?? lightDocument.x),
+    y: Number(lightSource.y ?? lightDocument.y),
+    elevation: origin?.elevation
+  };
+  if (!origin || ![destination.x, destination.y].every(Number.isFinite)) return true;
+
+  try {
+    scene?.initializeEdges?.();
+    return Boolean(collisionBackend.testCollision(origin, destination, {
+      type: "move",
+      mode: "any",
+      level: interactionLevel
+    }));
+  } catch (error) {
+    console.warn(`${MODULE_ID} | Failed to test visible-light wall collision`, error);
+    return true;
+  }
+}
+
+/** Derive the Token's saved movement origin without using an animated or client-prepared position. */
+function getTokenInteractionOrigin(token, source, gridSize) {
+  if (typeof token.getMovementOrigin === "function") {
+    try {
+      const origin = token.getMovementOrigin(source);
+      if ([origin?.x, origin?.y].every(Number.isFinite)) return origin;
+    } catch (error) {
+      console.debug(`${MODULE_ID} | Falling back to rectangular Token center`, error);
+    }
+  }
+
+  const size = Number(gridSize ?? token.parent?.grid?.size);
+  const x = Number(source.x ?? token.x);
+  const y = Number(source.y ?? token.y);
+  const width = Number(source.width ?? token.width ?? 1) * size;
+  const height = Number(source.height ?? token.height ?? 1) * size;
+  const elevation = Number(source.elevation ?? token.elevation ?? 0);
+  if (![size, x, y, width, height, elevation].every(Number.isFinite) || size <= 0) return null;
+  return {x: x + (width / 2), y: y + (height / 2), elevation};
+}
+
+/**
  * Find a controlled, owned Token that authorizes this user to toggle the light.
  *
  * @param {AmbientLightDocument} light
  * @param {User} user
  * @param {Iterable<foundry.canvas.placeables.Token>} tokens
- * @param {{grid?: object|null, gridSize?: number}} options
+ * @param {{grid?: object|null, gridSize?: number, collisionBackend?: object|null,
+ *   level?: object|null, testWalls?: boolean}} options
  * @returns {foundry.canvas.placeables.Token|null}
  */
 export function findAdjacentOwnedToken(light, user, tokens, options) {
@@ -144,7 +236,9 @@ export function findAdjacentOwnedToken(light, user, tokens, options) {
     const document = token.document ?? token;
     if (document.parent !== light.parent) continue;
     if (!userOwnsToken(user, document)) continue;
-    if (isTokenAdjacentToLight(document, light, options)) return token;
+    if (!isTokenAdjacentToLight(document, light, options)) continue;
+    if (options?.testWalls !== false && isTokenBlockedFromLight(document, light, options)) continue;
+    return token;
   }
   return null;
 }
@@ -162,16 +256,19 @@ export async function toggleVisibleLight(light) {
   if (!user?.active) throw new Error(localize("Errors.InactiveUser"));
   if (user.isGM) return await applyVisibleLightToggle(light, {user});
 
-  const {grid, gridSize} = getAdjacencyOptions(light.parent);
+  const options = getAdjacencyOptions(light.parent);
   const controlled = globalThis.canvas?.tokens?.controlled ?? [];
-  const token = findAdjacentOwnedToken(light, user, controlled, {grid, gridSize});
-  if (!token) throw new Error(localize("Errors.TokenRequired"));
+  const token = findAdjacentOwnedToken(light, user, controlled, options);
+  if (!token) {
+    const adjacent = findAdjacentOwnedToken(light, user, controlled, {...options, testWalls: false});
+    throw new Error(localize(adjacent ? "Errors.WallBlocked" : "Errors.TokenRequired"));
+  }
   await requestToggle(light, token.document ?? token);
   return light;
 }
 
 /**
- * Permanently put a configured light into its destroyed state. GMs only.
+ * Put a configured light into its destroyed state. GMs only.
  *
  * @param {AmbientLightDocument} light
  * @returns {Promise<AmbientLightDocument>}
@@ -180,12 +277,45 @@ export async function destroyVisibleLight(light) {
   validateLight(light);
   const user = game.user;
   if (!user?.isGM) throw new Error(localize("Errors.GmDestroyOnly"));
-  if (getVisibleLightData(light).destroyed) throw new Error(localize("Errors.AlreadyDestroyed"));
+  const data = getVisibleLightData(light);
+  if (data.destroyed) throw new Error(localize("Errors.AlreadyDestroyed"));
 
-  return await runLightUpdate(light, {
+  const previous = getVisibleLightEventState(light);
+  const updated = await runLightUpdate(light, {
     hidden: true,
     [DESTROYED_FIELD]: true
   });
+  queueEventBehaviors({
+    behaviors: getVisibleLightData(updated).behaviors,
+    document: updated,
+    alias: "light",
+    name: "destroyed",
+    previous,
+    current: getVisibleLightEventState(updated)
+  });
+  return updated;
+}
+
+/** Repair a destroyed visible light while leaving the fixture switched off. GMs only. */
+export async function repairVisibleLight(light) {
+  validateLight(light);
+  const user = game.user;
+  if (!user?.isGM) throw new Error(localize("Errors.GmRepairOnly"));
+  if (!getVisibleLightData(light).destroyed) throw new Error(localize("Errors.NotDestroyed"));
+
+  const previous = getVisibleLightEventState(light);
+  const updated = await runLightUpdate(light, {
+    [DESTROYED_FIELD]: false
+  });
+  queueEventBehaviors({
+    behaviors: getVisibleLightData(updated).behaviors,
+    document: updated,
+    alias: "light",
+    name: "repaired",
+    previous,
+    current: getVisibleLightEventState(updated)
+  });
+  return updated;
 }
 
 /**
@@ -197,13 +327,37 @@ export async function destroyVisibleLight(light) {
  */
 async function applyVisibleLightToggle(light, {user, token = null, expectedHidden} = {}) {
   validateLight(light);
-  if (getVisibleLightData(light).destroyed) throw new Error(localize("Errors.Destroyed"));
+  const data = getVisibleLightData(light);
+  if (data.destroyed) throw new Error(localize("Errors.Destroyed"));
   validateUserAccess(light, user, token);
   if (typeof expectedHidden === "boolean" && Boolean(light.hidden) !== expectedHidden) {
     throw new Error(localize("Errors.StateChanged"));
   }
 
-  return await runLightUpdate(light, {hidden: !Boolean(light.hidden)});
+  const previous = getVisibleLightEventState(light);
+  const updated = await runLightUpdate(light, {hidden: !Boolean(light.hidden)});
+  const current = getVisibleLightEventState(updated);
+  const switchedOn = current.hidden === false;
+  queueEventBehaviors({
+    behaviors: getVisibleLightData(updated).behaviors,
+    document: updated,
+    alias: "light",
+    name: switchedOn ? "toggledOn" : "toggledOff",
+    previous,
+    current,
+    user
+  });
+  return updated;
+}
+
+/** Create the stable light-state snapshot supplied to event scripts. */
+export function getVisibleLightEventState(light) {
+  const data = getVisibleLightData(light);
+  return {
+    hidden: Boolean(light?.hidden),
+    destroyed: data.destroyed,
+    state: data.destroyed ? "destroyed" : (light?.hidden ? "off" : "on")
+  };
 }
 
 /** @param {AmbientLightDocument} light @param {object} changes */
@@ -235,10 +389,11 @@ function validateUserAccess(light, user, token) {
   validateUserAndToken(light, user, token);
   if (user.isGM) return;
 
-  const {grid, gridSize} = getAdjacencyOptions(light.parent);
-  if (!isTokenAdjacentToLight(token, light, {grid, gridSize})) {
+  const options = getAdjacencyOptions(light.parent);
+  if (!isTokenAdjacentToLight(token, light, options)) {
     throw new Error(localize("Errors.NotAdjacent"));
   }
+  if (isTokenBlockedFromLight(token, light, options)) throw new Error(localize("Errors.WallBlocked"));
 }
 
 /** Validate identity, Scene membership, and ownership without making a geometric decision. */
@@ -269,7 +424,8 @@ function getAdjacencyOptions(scene) {
   return {
     grid,
     gridSize: grid?.size ?? sceneGrid?.size
-      ?? (viewedScene === scene ? canvas.dimensions?.size : undefined)
+      ?? (viewedScene === scene ? canvas.dimensions?.size : undefined),
+    collisionBackend: globalThis.CONFIG?.Canvas?.polygonBackends?.move
   };
 }
 
@@ -346,7 +502,7 @@ function registerSocket() {
 function onSocketMessage(message, senderUserId) {
   if (!message || typeof message !== "object") return;
   if (message.type === SOCKET_REQUEST) {
-    if (game.users.activeGM?.id === game.user.id) void handleToggleRequest(message, senderUserId);
+    if (game.users.activeGM?.id === game.user.id) return handleToggleRequest(message, senderUserId);
     return;
   }
   if (message.type === SOCKET_RESULT && message.userId === game.user.id) {
@@ -467,12 +623,15 @@ async function refreshMarkers() {
   canvas.controls.addChild(container);
   markerContainer = container;
 
-  const options = {grid: canvas.grid, gridSize: canvas.dimensions?.size};
+  const options = getAdjacencyOptions(canvas.scene);
   const candidates = [];
   for (const light of canvas.lighting.placeables) {
     if (!isVisibleLightConfigured(light.document)) continue;
     const data = getVisibleLightData(light.document);
-    if (data.destroyed) continue;
+    if (data.destroyed) {
+      if (game.user.isGM) candidates.push(light);
+      continue;
+    }
     if (game.user.isGM) candidates.push(light);
     else {
       const token = findAdjacentOwnedToken(light.document, game.user, canvas.tokens.controlled, options);
@@ -501,10 +660,11 @@ async function refreshMarkers() {
  */
 async function createMarker(light) {
   const state = getVisibleLightState(light.document);
+  const destroyed = state === "destroyed";
   const color = STATE_COLORS[state];
   const size = 32 * canvas.dimensions.uiScale;
   const marker = new foundry.canvas.containers.ControlIcon({
-    texture: MARKER_TEXTURE,
+    texture: destroyed ? REPAIR_MARKER_TEXTURE : MARKER_TEXTURE,
     size,
     borderColor: color,
     tint: color
@@ -526,6 +686,10 @@ async function createMarker(light) {
   marker.on("pointerdown", event => {
     event.stopPropagation();
     const button = event.button ?? event.nativeEvent?.button ?? 0;
+    if (destroyed) {
+      if (button === 0 && game.user.isGM) void activateRepair(marker, light.id);
+      return;
+    }
     if (button === 2) {
       if (game.user.isGM) void activateDestroy(marker, light.id);
       return;
@@ -567,6 +731,25 @@ async function activateDestroy(marker, lightId) {
   } catch (error) {
     ui.notifications.warn(error.message);
     console.warn(`${MODULE_ID} | Visible-light destruction failed`, error);
+  } finally {
+    if (marker.parent) {
+      marker.eventMode = "static";
+      marker.alpha = 0.82;
+    }
+  }
+}
+
+/** @param {foundry.canvas.containers.ControlIcon} marker @param {string} lightId */
+async function activateRepair(marker, lightId) {
+  if (marker.eventMode === "none") return;
+  marker.eventMode = "none";
+  marker.alpha = 0.45;
+
+  try {
+    await repairVisibleLight(canvas.scene?.lights.get(lightId));
+  } catch (error) {
+    ui.notifications.warn(error.message);
+    console.warn(`${MODULE_ID} | Visible-light repair failed`, error);
   } finally {
     if (marker.parent) {
       marker.eventMode = "static";

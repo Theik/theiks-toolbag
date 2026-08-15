@@ -110,6 +110,7 @@ globalThis.game = {
 globalThis.ui = {notifications: {error: message => notifications.push(message)}};
 
 const controlsLayer = new Container();
+controlsLayer.doors = {visible: true};
 const scene = {walls: new Map()};
 globalThis.canvas = {
   ready: true,
@@ -206,6 +207,7 @@ assert.ok(tool, "the destruction mode is available to GMs");
 tool.onChange(null, true);
 await new Promise(resolve => setTimeout(resolve, 0));
 
+assert.equal(controlsLayer.doors.visible, false, "destruction mode hides native door controls");
 assert.equal(controlsLayer.children.length, 1);
 const markerContainer = controlsLayer.children[0];
 assert.equal(
@@ -274,11 +276,20 @@ assert.equal(corruptRepairMarker.eventMode, "static", "a failed repair re-enable
 assert.match(notifications.at(-1), /InvalidRestore/);
 assert.equal(loggedErrors.length, 1, "repair errors are logged as well as shown to the GM");
 
+controlsLayer.doors.visible = true;
+for (const callback of registeredHooks.get("activateCanvasLayer") ?? []) callback({});
+assert.equal(
+  controlsLayer.doors.visible,
+  false,
+  "Foundry layer activation cannot reveal door controls while destruction mode remains active"
+);
+
 featureSettings.enableBreakableWalls = false;
 for (const callback of registeredHooks.get("theiks-toolbag.featureSettingChanged") ?? []) {
   callback("breakableWalls", false);
 }
 assert.equal(controlsLayer.children.length, 0, "disabling breakable walls removes every external marker");
+assert.equal(controlsLayer.doors.visible, true, "leaving destruction mode restores native door controls");
 
 const disabledControls = {walls: {tools: {}}};
 for (const callback of registeredHooks.get("getSceneControlButtons") ?? []) callback(disabledControls);
