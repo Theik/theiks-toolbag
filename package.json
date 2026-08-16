@@ -1,0 +1,16 @@
+{
+  "name": "theiks-toolbag",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "packs:extract": "node tools/compendium-packs.mjs extract",
+    "packs:build": "node tools/compendium-packs.mjs build",
+    "packs:verify": "node tools/compendium-packs.mjs verify",
+    "release:build": "node tools/build-release.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@foundryvtt/foundryvtt-cli": "https://github.com/foundryvtt/foundryvtt-cli/archive/942529407e09adb9dbd62e88701318a176ec23d6.tar.gz",
+    "archiver": "^7.0.1"
+  }
+}

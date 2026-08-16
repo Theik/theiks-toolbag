@@ -1,0 +1,4251 @@
+{
+  "name": "Toolbag Demo",
+  "_id": "O6EyLS1RmRnH8QiF",
+  "navigation": false,
+  "navOrder": 0,
+  "thumb": "modules/theiks-toolbag/assets/images/maps/demo-building-ground-floor.webp",
+  "width": 1625,
+  "height": 1250,
+  "padding": 0.25,
+  "shiftX": 0,
+  "shiftY": 0,
+  "initial": {
+    "x": null,
+    "y": null,
+    "scale": null
+  },
+  "initialLevel": "defaultLevel0000",
+  "grid": {
+    "type": 1,
+    "size": 125,
+    "style": "solidLines",
+    "thickness": 1,
+    "color": "#000000",
+    "alpha": 0.2,
+    "distance": 5,
+    "units": "ft"
+  },
+  "tokenVision": true,
+  "fog": {
+    "mode": 1,
+    "colors": {
+      "explored": null,
+      "unexplored": null
+    }
+  },
+  "environment": {
+    "darknessLevel": 0.6,
+    "darknessLock": false,
+    "globalLight": {
+      "enabled": true,
+      "alpha": 0.5,
+      "bright": false,
+      "color": null,
+      "coloration": 1,
+      "luminosity": 0,
+      "saturation": 0,
+      "contrast": 0,
+      "shadows": 0,
+      "darkness": {
+        "min": 0,
+        "max": 1
+      }
+    },
+    "cycle": true,
+    "base": {
+      "hue": 0,
+      "intensity": 0,
+      "luminosity": 0,
+      "saturation": 0,
+      "shadows": 0
+    },
+    "dark": {
+      "hue": 0.7138888888888889,
+      "intensity": 0,
+      "luminosity": -0.25,
+      "saturation": 0,
+      "shadows": 0
+    }
+  },
+  "transition": {
+    "type": null,
+    "duration": 1500,
+    "activeOnly": false
+  },
+  "drawings": [],
+  "tokens": [],
+  "levels": [
+    {
+      "_id": "defaultLevel0000",
+      "name": "Ground floor",
+      "elevation": {
+        "bottom": 0,
+        "top": 10
+      },
+      "background": {
+        "color": "#999999",
+        "src": "modules/theiks-toolbag/assets/images/maps/demo-building-ground-floor.webp",
+        "tint": "#ffffff",
+        "alphaThreshold": 0.75
+      },
+      "foreground": {
+        "src": null,
+        "tint": "#ffffff",
+        "alphaThreshold": 0.75
+      },
+      "fog": {
+        "src": null,
+        "tint": "#ffffff"
+      },
+      "textures": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "offsetX": 0,
+        "offsetY": 0,
+        "fit": "fill",
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0
+      },
+      "visibility": {
+        "levels": []
+      },
+      "sort": 0,
+      "flags": {},
+      "_key": "!scenes.levels!O6EyLS1RmRnH8QiF.defaultLevel0000"
+    },
+    {
+      "name": "First Floor",
+      "_id": "a6GBXCd9XM6PxChN",
+      "elevation": {
+        "bottom": 10,
+        "top": 20
+      },
+      "background": {
+        "color": "#999999",
+        "src": "modules/theiks-toolbag/assets/images/maps/demo-building-first-floor.webp",
+        "tint": "#ffffff",
+        "alphaThreshold": 0.75
+      },
+      "foreground": {
+        "src": null,
+        "tint": "#ffffff",
+        "alphaThreshold": 0.75
+      },
+      "fog": {
+        "src": null,
+        "tint": "#ffffff"
+      },
+      "textures": {
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "offsetX": 0,
+        "offsetY": 0,
+        "fit": "fill",
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0
+      },
+      "visibility": {
+        "levels": [
+          "defaultLevel0000"
+        ]
+      },
+      "sort": 0,
+      "flags": {},
+      "_key": "!scenes.levels!O6EyLS1RmRnH8QiF.a6GBXCd9XM6PxChN"
+    }
+  ],
+  "lights": [
+    {
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "walls": true,
+      "vision": false,
+      "hidden": true,
+      "config": {
+        "negative": false,
+        "priority": 0,
+        "alpha": 0.5,
+        "angle": 360,
+        "color": null,
+        "coloration": 1,
+        "attenuation": 0.5,
+        "luminosity": 0.5,
+        "saturation": 0,
+        "contrast": 0,
+        "shadows": 0,
+        "animation": {
+          "type": null,
+          "speed": 5,
+          "intensity": 5,
+          "reverse": false
+        },
+        "darkness": {
+          "min": 0,
+          "max": 1
+        },
+        "bright": 30,
+        "dim": 60
+      },
+      "name": "Ambient Light",
+      "_id": "uwwxD8n840RFgSJu",
+      "x": 813,
+      "y": 813,
+      "rotation": 180,
+      "locked": false,
+      "flags": {
+        "theiks-toolbag": {
+          "visibleLight": {
+            "destroyed": false,
+            "images": {
+              "on": "modules/theiks-toolbag/assets/images/tiles/torch-on.png",
+              "off": "modules/theiks-toolbag/assets/images/tiles/torch-off.png",
+              "destroyed": ""
+            },
+            "behaviors": []
+          }
+        },
+        "pf1": {
+          "disableLowLight": false
+        }
+      },
+      "_key": "!scenes.lights!O6EyLS1RmRnH8QiF.uwwxD8n840RFgSJu"
+    },
+    {
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "walls": true,
+      "vision": false,
+      "hidden": false,
+      "config": {
+        "negative": false,
+        "priority": 0,
+        "alpha": 0.5,
+        "angle": 360,
+        "color": null,
+        "coloration": 1,
+        "attenuation": 0.5,
+        "luminosity": 0.5,
+        "saturation": 0,
+        "contrast": 0,
+        "shadows": 0,
+        "animation": {
+          "type": null,
+          "speed": 5,
+          "intensity": 5,
+          "reverse": false
+        },
+        "darkness": {
+          "min": 0,
+          "max": 1
+        },
+        "bright": 30,
+        "dim": 60
+      },
+      "name": "Ambient Light",
+      "x": 1188,
+      "y": 1313,
+      "rotation": 90,
+      "locked": false,
+      "flags": {
+        "theiks-toolbag": {
+          "visibleLight": {
+            "destroyed": false,
+            "images": {
+              "on": "modules/theiks-toolbag/assets/images/tiles/torch-on.png",
+              "off": "modules/theiks-toolbag/assets/images/tiles/torch-off.png",
+              "destroyed": ""
+            }
+          }
+        },
+        "pf1": {
+          "disableLowLight": false
+        }
+      },
+      "_id": "A730oeqIEAVRvoRc",
+      "_key": "!scenes.lights!O6EyLS1RmRnH8QiF.A730oeqIEAVRvoRc"
+    },
+    {
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "walls": true,
+      "vision": false,
+      "hidden": false,
+      "config": {
+        "negative": false,
+        "priority": 0,
+        "alpha": 0.5,
+        "angle": 360,
+        "color": null,
+        "coloration": 1,
+        "attenuation": 0.5,
+        "luminosity": 0.5,
+        "saturation": 0,
+        "contrast": 0,
+        "shadows": 0,
+        "animation": {
+          "type": null,
+          "speed": 5,
+          "intensity": 5,
+          "reverse": false
+        },
+        "darkness": {
+          "min": 0,
+          "max": 1
+        },
+        "bright": 30,
+        "dim": 60
+      },
+      "name": "Ambient Light",
+      "x": 813,
+      "y": 1438,
+      "rotation": 270,
+      "locked": false,
+      "flags": {
+        "theiks-toolbag": {
+          "visibleLight": {
+            "destroyed": false,
+            "images": {
+              "on": "modules/theiks-toolbag/assets/images/tiles/torch-on.png",
+              "off": "modules/theiks-toolbag/assets/images/tiles/torch-off.png",
+              "destroyed": ""
+            }
+          }
+        },
+        "pf1": {
+          "disableLowLight": false
+        }
+      },
+      "_id": "gV4aeXhxbSGAetEz",
+      "_key": "!scenes.lights!O6EyLS1RmRnH8QiF.gV4aeXhxbSGAetEz"
+    },
+    {
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "walls": true,
+      "vision": false,
+      "hidden": true,
+      "config": {
+        "negative": false,
+        "priority": 0,
+        "alpha": 0.5,
+        "angle": 360,
+        "color": null,
+        "coloration": 1,
+        "attenuation": 0.5,
+        "luminosity": 0.5,
+        "saturation": 0,
+        "contrast": 0,
+        "shadows": 0,
+        "animation": {
+          "type": null,
+          "speed": 5,
+          "intensity": 5,
+          "reverse": false
+        },
+        "darkness": {
+          "min": 0,
+          "max": 1
+        },
+        "bright": 30,
+        "dim": 60
+      },
+      "name": "Ambient Light",
+      "x": 1813,
+      "y": 1438,
+      "rotation": 270,
+      "locked": false,
+      "flags": {
+        "theiks-toolbag": {
+          "visibleLight": {
+            "destroyed": false,
+            "images": {
+              "on": "modules/theiks-toolbag/assets/images/tiles/torch-on.png",
+              "off": "modules/theiks-toolbag/assets/images/tiles/torch-off.png",
+              "destroyed": ""
+            }
+          }
+        },
+        "pf1": {
+          "disableLowLight": false
+        }
+      },
+      "_id": "7FKKgdqggnC82r6m",
+      "_key": "!scenes.lights!O6EyLS1RmRnH8QiF.7FKKgdqggnC82r6m"
+    },
+    {
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "walls": true,
+      "vision": false,
+      "hidden": false,
+      "config": {
+        "negative": false,
+        "priority": 0,
+        "alpha": 0.5,
+        "angle": 360,
+        "color": null,
+        "coloration": 1,
+        "attenuation": 0.5,
+        "luminosity": 0.5,
+        "saturation": 0,
+        "contrast": 0,
+        "shadows": 0,
+        "animation": {
+          "type": null,
+          "speed": 5,
+          "intensity": 5,
+          "reverse": false
+        },
+        "darkness": {
+          "min": 0,
+          "max": 1
+        },
+        "bright": 30,
+        "dim": 60
+      },
+      "name": "Ambient Light",
+      "x": 1625,
+      "y": 813,
+      "rotation": 270,
+      "locked": false,
+      "flags": {
+        "theiks-toolbag": {
+          "visibleLight": {
+            "destroyed": false,
+            "images": {
+              "on": "modules/theiks-toolbag/assets/images/tiles/torch-on.png",
+              "off": "modules/theiks-toolbag/assets/images/tiles/torch-off.png",
+              "destroyed": ""
+            }
+          }
+        },
+        "pf1": {
+          "disableLowLight": false
+        }
+      },
+      "_id": "wouBnxoPZCgQKLvL",
+      "_key": "!scenes.lights!O6EyLS1RmRnH8QiF.wouBnxoPZCgQKLvL"
+    }
+  ],
+  "notes": [],
+  "sounds": [],
+  "regions": [
+    {
+      "color": "#2830cc",
+      "elevation": {
+        "bottom": 0,
+        "top": 10
+      },
+      "levels": [
+        "defaultLevel0000",
+        "a6GBXCd9XM6PxChN"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Inside",
+      "_id": "AxQvlA9feEQXJSs3",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 750,
+          "y": 625,
+          "width": 1125,
+          "height": 750,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Suppress Weather",
+          "type": "suppressWeather",
+          "_id": "6ufvIb81f148W3Qn",
+          "system": {},
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.AxQvlA9feEQXJSs3.6ufvIb81f148W3Qn"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.AxQvlA9feEQXJSs3"
+    },
+    {
+      "color": "#8628cc",
+      "elevation": {
+        "bottom": 0,
+        "top": 10
+      },
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Stairs (Step 1)",
+      "_id": "lvuB3YjtS6Dcmd9H",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 1750,
+          "y": 750,
+          "width": 125,
+          "height": 125,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Execute Script",
+          "type": "executeScript",
+          "_id": "HhjYXYsbrruF4J38",
+          "system": {
+            "events": [
+              "tokenEnter"
+            ],
+            "source": "await game.modules\n  .get(\"theiks-toolbag\")\n  ?.api?.updateElevation?.(\n    event.data.token,\n    3,\n    false, // Falling\n    true,  // Level transition\n    true   // Ignore ceiling\n  );"
+          },
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.lvuB3YjtS6Dcmd9H.HhjYXYsbrruF4J38"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.lvuB3YjtS6Dcmd9H"
+    },
+    {
+      "color": "#28b5cc",
+      "elevation": {
+        "bottom": 0,
+        "top": 10
+      },
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Stairs (Ground)",
+      "_id": "9bjfIObL4IH85oDu",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 1750,
+          "y": 875,
+          "width": 125,
+          "height": 125,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Execute Script",
+          "type": "executeScript",
+          "_id": "Ag6BlWpm0l4Xgvr9",
+          "system": {
+            "events": [
+              "tokenEnter"
+            ],
+            "source": "await game.modules\n  .get(\"theiks-toolbag\")\n  ?.api?.updateElevation?.(\n    event.data.token,\n    0,\n    false, // Falling\n    true,  // Level transition\n    true   // Ignore ceiling\n  );"
+          },
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.9bjfIObL4IH85oDu.Ag6BlWpm0l4Xgvr9"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.9bjfIObL4IH85oDu"
+    },
+    {
+      "color": "#cc2852",
+      "elevation": {
+        "bottom": 0,
+        "top": 10
+      },
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Stairs (Step 2)",
+      "_id": "aOKTnhvhCjxqCLJl",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 1750,
+          "y": 625,
+          "width": 125,
+          "height": 125,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Execute Script",
+          "type": "executeScript",
+          "_id": "zgCK1sNHxqlvXzfO",
+          "system": {
+            "events": [
+              "tokenEnter"
+            ],
+            "source": "await game.modules\n  .get(\"theiks-toolbag\")\n  ?.api?.updateElevation?.(\n    event.data.token,\n    6,\n    false, // Falling\n    true,  // Level transition\n    true   // Ignore ceiling\n  );"
+          },
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.aOKTnhvhCjxqCLJl.zgCK1sNHxqlvXzfO"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.aOKTnhvhCjxqCLJl"
+    },
+    {
+      "color": "#a728cc",
+      "elevation": {
+        "bottom": 0,
+        "top": 10
+      },
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Stairs (Step 3)",
+      "_id": "qJwr2J1Hw1rwE9Tt",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 1625,
+          "y": 625,
+          "width": 125,
+          "height": 125,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Execute Script",
+          "type": "executeScript",
+          "_id": "dUprjC2Xy2QsG7RF",
+          "system": {
+            "events": [
+              "tokenEnter"
+            ],
+            "source": "await game.modules\n  .get(\"theiks-toolbag\")\n  ?.api?.updateElevation?.(\n    event.data.token,\n    9,\n    false, // Falling\n    true,  // Level transition\n    true   // Ignore ceiling\n  );"
+          },
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.qJwr2J1Hw1rwE9Tt.dUprjC2Xy2QsG7RF"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.qJwr2J1Hw1rwE9Tt"
+    },
+    {
+      "color": "#cc28cb",
+      "elevation": {
+        "bottom": 0,
+        "top": 10
+      },
+      "levels": [
+        "defaultLevel0000",
+        "a6GBXCd9XM6PxChN"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Stairs (Step 4)",
+      "_id": "ZLQtVVEG0DizoCWM",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 1500,
+          "y": 625,
+          "width": 125,
+          "height": 125,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Execute Script",
+          "type": "executeScript",
+          "_id": "RZbhKZbNGljJm1pm",
+          "system": {
+            "events": [
+              "tokenEnter"
+            ],
+            "source": "await game.modules\n  .get(\"theiks-toolbag\")\n  ?.api?.updateElevation?.(\n    event.data.token,\n    10,\n    false, // Falling\n    true,  // Level transition\n    true   // Ignore ceiling\n  );"
+          },
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.ZLQtVVEG0DizoCWM.RZbhKZbNGljJm1pm"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.ZLQtVVEG0DizoCWM"
+    },
+    {
+      "color": "#cc2f28",
+      "elevation": {
+        "bottom": 10,
+        "top": 20
+      },
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Stairs (Top)",
+      "_id": "IiP6rGaapWi6rnFV",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 1375,
+          "y": 625,
+          "width": 125,
+          "height": 125,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Execute Script",
+          "type": "executeScript",
+          "_id": "PLG3MqH1uAOLjwlL",
+          "system": {
+            "events": [
+              "tokenEnter"
+            ],
+            "source": "await game.modules.get(\"theiks-toolbag\").api.updateElevation(event.data.token, 10);"
+          },
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.IiP6rGaapWi6rnFV.PLG3MqH1uAOLjwlL"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.IiP6rGaapWi6rnFV"
+    },
+    {
+      "color": "#cc3d28",
+      "elevation": {
+        "bottom": 10,
+        "top": 20
+      },
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "restriction": {
+        "enabled": false,
+        "type": "move",
+        "priority": 0
+      },
+      "attachment": {
+        "token": null
+      },
+      "visibility": 4,
+      "highlightMode": "shapes",
+      "displayMeasurements": false,
+      "hidden": false,
+      "name": "Stairs (Step 4, upstairs)",
+      "_id": "k5vDc7NFP0PxXL5W",
+      "shapes": [
+        {
+          "type": "rectangle",
+          "x": 1625,
+          "y": 625,
+          "width": 125,
+          "height": 125,
+          "hole": false,
+          "anchorX": 0,
+          "anchorY": 0,
+          "rotation": 0,
+          "gridBased": false
+        }
+      ],
+      "behaviors": [
+        {
+          "name": "Execute Script",
+          "type": "executeScript",
+          "_id": "DrWtzmnAnkQO398L",
+          "system": {
+            "events": [
+              "tokenEnter"
+            ],
+            "source": "await game.modules\n  .get(\"theiks-toolbag\")\n  ?.api?.updateElevation?.(\n    event.data.token,\n    9,\n    false, // Falling\n    true,  // Level transition\n    true   // Ignore ceiling\n  );"
+          },
+          "disabled": false,
+          "flags": {},
+          "_stats": {
+            "coreVersion": "14.360",
+            "systemId": "pf1",
+            "systemVersion": "11.9",
+            "createdTime": 1786802031517,
+            "modifiedTime": 1786802031517,
+            "lastModifiedBy": "mxRjWBngP4DIIXvN",
+            "compendiumSource": null,
+            "duplicateSource": null,
+            "exportSource": null
+          },
+          "_key": "!scenes.regions.behaviors!O6EyLS1RmRnH8QiF.k5vDc7NFP0PxXL5W.DrWtzmnAnkQO398L"
+        }
+      ],
+      "locked": false,
+      "ownership": {
+        "default": 0,
+        "mxRjWBngP4DIIXvN": 3
+      },
+      "flags": {},
+      "_shapeConstraints": null,
+      "_key": "!scenes.regions!O6EyLS1RmRnH8QiF.k5vDc7NFP0PxXL5W"
+    }
+  ],
+  "tiles": [
+    {
+      "texture": {
+        "src": "modules/theiks-toolbag/assets/images/tabletop-by-theik-logo.png",
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "tint": "#ffffff",
+        "fit": "fill",
+        "alphaThreshold": 0.75
+      },
+      "x": 1625,
+      "y": 1125,
+      "width": 400,
+      "height": 400,
+      "sort": 0,
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "alpha": 1,
+      "restrictions": {
+        "light": false,
+        "weather": false
+      },
+      "occlusion": {
+        "modes": [],
+        "alpha": 0
+      },
+      "video": {
+        "loop": true,
+        "autoplay": true,
+        "volume": 0
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableTerrain": {
+            "enabled": false,
+            "platform": false,
+            "blocksMovement": false,
+            "blocksVision": false,
+            "states": [
+              ""
+            ]
+          }
+        }
+      },
+      "_id": "Ne4NEGbTISL5M0zu",
+      "rotation": 0,
+      "hidden": false,
+      "locked": false,
+      "name": "",
+      "_key": "!scenes.tiles!O6EyLS1RmRnH8QiF.Ne4NEGbTISL5M0zu"
+    },
+    {
+      "texture": {
+        "src": "modules/theiks-toolbag/assets/images/tiles/demo-house-floor-overlay.png",
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "tint": "#ffffff",
+        "fit": "fill",
+        "alphaThreshold": 0.75
+      },
+      "x": 1063,
+      "y": 875,
+      "width": 375,
+      "height": 250,
+      "sort": 1,
+      "elevation": 10,
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "alpha": 1,
+      "restrictions": {
+        "light": false,
+        "weather": false
+      },
+      "occlusion": {
+        "modes": [],
+        "alpha": 0
+      },
+      "video": {
+        "loop": true,
+        "autoplay": true,
+        "volume": 0
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableTerrain": {
+            "enabled": true,
+            "platform": true,
+            "blocksMovement": false,
+            "blocksVision": false,
+            "states": [
+              ""
+            ],
+            "platformMessage": "The floor creaks, then collapses.",
+            "stage": 0,
+            "restoreSrc": null,
+            "behaviors": [
+              {
+                "id": "28NTfji9e6jrUAWO",
+                "type": "executeScript",
+                "name": "Execute Script",
+                "disabled": false,
+                "events": [
+                  "destroyed"
+                ],
+                "source": "const debris = scene.tiles.find(\n  tile => tile.name === \"groundfloor.fragile-floor-debris\"\n);\n\nif (!debris) return;\n\nawait debris.update({ hidden: false });"
+              },
+              {
+                "id": "z1bL0AuLMSQt6lmy",
+                "type": "executeScript",
+                "name": "Execute Script",
+                "disabled": false,
+                "events": [
+                  "repaired"
+                ],
+                "source": "const debris = scene.tiles.find(\n  tile => tile.name === \"groundfloor.fragile-floor-debris\"\n);\n\nif (!debris) return;\n\nawait debris.update({ hidden: true });"
+              }
+            ]
+          }
+        }
+      },
+      "_id": "dpP3DPEhsZaRxfyM",
+      "rotation": 0,
+      "hidden": false,
+      "locked": false,
+      "name": "firstfloor.fragile-floor",
+      "_key": "!scenes.tiles!O6EyLS1RmRnH8QiF.dpP3DPEhsZaRxfyM"
+    },
+    {
+      "texture": {
+        "src": "modules/theiks-toolbag/assets/images/tiles/pillar.png",
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "tint": "#ffffff",
+        "fit": "fill",
+        "alphaThreshold": 0.75
+      },
+      "x": 1063,
+      "y": 875,
+      "width": 200,
+      "height": 200,
+      "sort": 2,
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "alpha": 1,
+      "restrictions": {
+        "light": false,
+        "weather": false
+      },
+      "occlusion": {
+        "modes": [],
+        "alpha": 0
+      },
+      "video": {
+        "loop": true,
+        "autoplay": true,
+        "volume": 0
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableTerrain": {
+            "enabled": true,
+            "platform": false,
+            "blocksMovement": true,
+            "blocksVision": true,
+            "states": [
+              "modules/theiks-toolbag/assets/images/tiles/pillar-damaged.png",
+              "modules/theiks-toolbag/assets/images/tiles/pillar-destroyed.png"
+            ],
+            "stage": 0,
+            "restoreSrc": null,
+            "behaviors": [
+              {
+                "id": "mueVONr4XFgffjtM",
+                "type": "executeScript",
+                "name": "Execute Script",
+                "disabled": false,
+                "events": [
+                  "destroyed"
+                ],
+                "source": "const fragileFloor = scene.tiles.find(\n  tile => tile.name === \"firstfloor.fragile-floor\"\n);\n\nif (!fragileFloor) {\n  return;\n}\n\nawait game.modules\n  .get(\"theiks-toolbag\")\n  ?.api?.breakableTerrain?.advance?.(fragileFloor);"
+              }
+            ]
+          }
+        }
+      },
+      "_id": "zi31uF0LkdsZgUW9",
+      "rotation": 0,
+      "hidden": false,
+      "locked": false,
+      "name": "",
+      "_key": "!scenes.tiles!O6EyLS1RmRnH8QiF.zi31uF0LkdsZgUW9"
+    },
+    {
+      "texture": {
+        "src": "modules/theiks-toolbag/assets/images/tiles/floor-debris.png",
+        "anchorX": 0.5,
+        "anchorY": 0.5,
+        "scaleX": 1,
+        "scaleY": 1,
+        "tint": "#ffffff",
+        "fit": "fill",
+        "alphaThreshold": 0.75
+      },
+      "x": 1063,
+      "y": 875,
+      "width": 627,
+      "height": 500,
+      "sort": -1,
+      "elevation": 0,
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "alpha": 1,
+      "restrictions": {
+        "light": false,
+        "weather": false
+      },
+      "occlusion": {
+        "modes": [],
+        "alpha": 0
+      },
+      "video": {
+        "loop": true,
+        "autoplay": true,
+        "volume": 0
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableTerrain": {
+            "enabled": false,
+            "platform": false,
+            "blocksMovement": false,
+            "blocksVision": false,
+            "states": [
+              ""
+            ]
+          }
+        }
+      },
+      "_id": "xwma3oGryDaUJKsB",
+      "rotation": 0,
+      "hidden": true,
+      "locked": false,
+      "name": "groundfloor.fragile-floor-debris",
+      "_key": "!scenes.tiles!O6EyLS1RmRnH8QiF.xwma3oGryDaUJKsB"
+    }
+  ],
+  "walls": [
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1000,
+        625,
+        875,
+        625
+      ],
+      "_id": "RAU3RvVm62azeG7g",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.RAU3RvVm62azeG7g"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        625,
+        750,
+        750
+      ],
+      "_id": "cnY5anfjvz6esqeh",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.cnY5anfjvz6esqeh"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 1,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": {
+        "type": "swing",
+        "texture": "modules/theiks-toolbag/assets/images/tiles/door.png",
+        "flip": false,
+        "double": false,
+        "direction": 1,
+        "duration": 750,
+        "strength": 1
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/door-fallen-center.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/door-fallen-single-side.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null,
+            "scripts": {
+              "destroyed": "",
+              "repaired": ""
+            }
+          }
+        }
+      },
+      "c": [
+        1000,
+        1375,
+        1125,
+        1375
+      ],
+      "_id": "Mnhdoecw5EbIeIBs",
+      "doorSound": "",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.Mnhdoecw5EbIeIBs"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 30,
+      "move": 20,
+      "sight": 30,
+      "sound": 20,
+      "dir": 0,
+      "door": 1,
+      "ds": 0,
+      "threshold": {
+        "light": 10,
+        "sight": 10,
+        "sound": null,
+        "attenuation": true
+      },
+      "animation": {
+        "type": "swing",
+        "texture": "modules/theiks-toolbag/assets/images/tiles/window.png",
+        "flip": true,
+        "double": true,
+        "direction": 1,
+        "duration": 750,
+        "strength": 1
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-window.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-window-half.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        875,
+        750,
+        1125
+      ],
+      "_id": "8lGXb8lkujYDTKUC",
+      "doorSound": "",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.8lGXb8lkujYDTKUC"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 30,
+      "move": 20,
+      "sight": 30,
+      "sound": 20,
+      "dir": 0,
+      "door": 1,
+      "ds": 0,
+      "threshold": {
+        "light": 10,
+        "sight": 10,
+        "sound": null,
+        "attenuation": true
+      },
+      "animation": {
+        "type": "swing",
+        "texture": "modules/theiks-toolbag/assets/images/tiles/window.png",
+        "flip": true,
+        "double": true,
+        "direction": 1,
+        "duration": 750,
+        "strength": 1
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-window.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-window-half.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1250,
+        625,
+        1000,
+        625
+      ],
+      "doorSound": "",
+      "_id": "yW1nwBn154qaxdQo",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.yW1nwBn154qaxdQo"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 30,
+      "move": 20,
+      "sight": 30,
+      "sound": 20,
+      "dir": 0,
+      "door": 1,
+      "ds": 0,
+      "threshold": {
+        "light": 10,
+        "sight": 10,
+        "sound": null,
+        "attenuation": true
+      },
+      "animation": {
+        "type": "swing",
+        "texture": "modules/theiks-toolbag/assets/images/tiles/window.png",
+        "flip": true,
+        "double": false,
+        "direction": 1,
+        "duration": 750,
+        "strength": 1
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-window.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-window-half.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        1125,
+        1875,
+        1000
+      ],
+      "doorSound": "",
+      "_id": "nWZSTUmFluSzhl0b",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.nWZSTUmFluSzhl0b"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 30,
+      "move": 20,
+      "sight": 30,
+      "sound": 20,
+      "dir": 0,
+      "door": 1,
+      "ds": 0,
+      "threshold": {
+        "light": 10,
+        "sight": 10,
+        "sound": null,
+        "attenuation": true
+      },
+      "animation": {
+        "type": "swing",
+        "texture": "modules/theiks-toolbag/assets/images/tiles/window.png",
+        "flip": true,
+        "double": false,
+        "direction": 1,
+        "duration": 750,
+        "strength": 1
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-window.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-window-half.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1500,
+        1375,
+        1625,
+        1375
+      ],
+      "doorSound": "",
+      "_id": "8Vz4v4mdbqqGRKg4",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.8Vz4v4mdbqqGRKg4"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true
+          }
+        }
+      },
+      "c": [
+        875,
+        625,
+        750,
+        625
+      ],
+      "_id": "CMSVWxqB8BNQcBPp",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.CMSVWxqB8BNQcBPp"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true
+          }
+        }
+      },
+      "c": [
+        750,
+        750,
+        750,
+        875
+      ],
+      "_id": "c9HkBnvhmhgjnX3t",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.c9HkBnvhmhgjnX3t"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        1125,
+        750,
+        1250
+      ],
+      "_id": "F0q6OTacYrgCcBij",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.F0q6OTacYrgCcBij"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        1375,
+        875,
+        1375
+      ],
+      "_id": "eZe5DPGJ3nKuPvKN",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.eZe5DPGJ3nKuPvKN"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1125,
+        1375,
+        1250,
+        1375
+      ],
+      "_id": "JVMb2JGRDdyzyyXu",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.JVMb2JGRDdyzyyXu"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        1125,
+        1375,
+        1250
+      ],
+      "_id": "53OfEUxZoEad5xqF",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.53OfEUxZoEad5xqF"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1625,
+        1375,
+        1750,
+        1375
+      ],
+      "_id": "DJQQmzlfmPtw2Cs5",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.DJQQmzlfmPtw2Cs5"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        1375,
+        1875,
+        1250
+      ],
+      "_id": "25ztxiTW4CTKRVFf",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.25ztxiTW4CTKRVFf"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1250,
+        625,
+        1375,
+        625
+      ],
+      "_id": "kv8r92PMsOSX8i6d",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.kv8r92PMsOSX8i6d"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        625,
+        1875,
+        750
+      ],
+      "_id": "rtGvuoYTY63ZZRef",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.rtGvuoYTY63ZZRef"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1750,
+        750,
+        1625,
+        750
+      ],
+      "_id": "M5zEkbzNtA7FgwwM",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.M5zEkbzNtA7FgwwM"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1500,
+        750,
+        1500,
+        625
+      ],
+      "_id": "R4GpKBHI8ivseWjQ",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.R4GpKBHI8ivseWjQ"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        1000,
+        1375,
+        875
+      ],
+      "_id": "19KJudGHJFPJZxU4",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.19KJudGHJFPJZxU4"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        1250,
+        750,
+        1375
+      ],
+      "_id": "yj0XfNRF4qxgRoGq",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.yj0XfNRF4qxgRoGq"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        875,
+        1375,
+        1000,
+        1375
+      ],
+      "_id": "9Qua05owKoDeQ4vl",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.9Qua05owKoDeQ4vl"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1250,
+        1375,
+        1375,
+        1375
+      ],
+      "_id": "14JoOmAb8pRibmEv",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.14JoOmAb8pRibmEv"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        1375,
+        1500,
+        1375
+      ],
+      "_id": "2VLEgrAMBVegRQQd",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.2VLEgrAMBVegRQQd"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1750,
+        1375,
+        1875,
+        1375
+      ],
+      "_id": "MOxMzBAa9hxInP6O",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.MOxMzBAa9hxInP6O"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        1250,
+        1875,
+        1125
+      ],
+      "_id": "26ysMXsuZ9hvpPtC",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.26ysMXsuZ9hvpPtC"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        625,
+        1500,
+        625
+      ],
+      "_id": "AcL9ideeC7btKw22",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.AcL9ideeC7btKw22"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1500,
+        625,
+        1625,
+        625
+      ],
+      "_id": "xv3jw0LcgHkT4UWU",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.xv3jw0LcgHkT4UWU"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1625,
+        625,
+        1750,
+        625
+      ],
+      "_id": "9CMpuVusDza5EMvY",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.9CMpuVusDza5EMvY"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1750,
+        625,
+        1875,
+        625
+      ],
+      "_id": "jGP2d8OCYLcrWDLO",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.jGP2d8OCYLcrWDLO"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        750,
+        1875,
+        875
+      ],
+      "_id": "jvE1ZpmhlTVY6YFj",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.jvE1ZpmhlTVY6YFj"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        875,
+        1875,
+        1000
+      ],
+      "_id": "UggzcOnUUh8apm0E",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.UggzcOnUUh8apm0E"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        1250,
+        1375,
+        1375
+      ],
+      "_id": "o9qsKFnPMZ1KACsd",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.o9qsKFnPMZ1KACsd"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        875,
+        625,
+        750,
+        625
+      ],
+      "_id": "R2apFmSpr56aeBh0",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.R2apFmSpr56aeBh0"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1625,
+        750,
+        1500,
+        750
+      ],
+      "_id": "0TOw0tKrgquX3Nxx",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.0TOw0tKrgquX3Nxx"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        875,
+        1375,
+        750
+      ],
+      "_id": "ERKMBuRpYj8kp7fa",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.ERKMBuRpYj8kp7fa"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        750,
+        1375,
+        625
+      ],
+      "_id": "ys8Za01msPzuCtDh",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.ys8Za01msPzuCtDh"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-stone-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        750,
+        750,
+        875
+      ],
+      "_id": "DrMAFqq9a6NLOIDD",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.DrMAFqq9a6NLOIDD"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 1,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": {
+        "type": "swing",
+        "texture": "modules/theiks-toolbag/assets/images/tiles/door.png",
+        "flip": false,
+        "double": false,
+        "direction": 1,
+        "duration": 750,
+        "strength": 1
+      },
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "enabled": true,
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/door-fallen-center.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/door-fallen-single-side.png"
+            },
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        1000,
+        1375,
+        1125
+      ],
+      "doorSound": "",
+      "_id": "vi3l5oi4snXC1m2Q",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.vi3l5oi4snXC1m2Q"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        625,
+        750,
+        750
+      ],
+      "_id": "GDR6xhp9MZ04VWdW",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.GDR6xhp9MZ04VWdW"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        1375,
+        875,
+        1375
+      ],
+      "_id": "6N23BEpp9Em9Zyfr",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.6N23BEpp9Em9Zyfr"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        1375,
+        1875,
+        1250
+      ],
+      "_id": "SUfrlDp9uNBwD8DF",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.SUfrlDp9uNBwD8DF"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        625,
+        1750,
+        625
+      ],
+      "_id": "6EMn9UThRJ4YWXbz",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.6EMn9UThRJ4YWXbz"
+    },
+    {
+      "levels": [
+        "defaultLevel0000"
+      ],
+      "light": 0,
+      "move": 20,
+      "sight": 0,
+      "sound": 0,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {},
+      "c": [
+        1750,
+        750,
+        1750,
+        875
+      ],
+      "_id": "e1rEQq5tzKge9Iav",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.e1rEQq5tzKge9Iav"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        750,
+        750,
+        875
+      ],
+      "_id": "2r8vUvoG0I6EsMhY",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.2r8vUvoG0I6EsMhY"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        875,
+        750,
+        1000
+      ],
+      "_id": "GeiZoqK1vqCtm5qC",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.GeiZoqK1vqCtm5qC"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        1000,
+        750,
+        1125
+      ],
+      "_id": "IwfCJufolZPy1mPY",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.IwfCJufolZPy1mPY"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        1125,
+        750,
+        1250
+      ],
+      "_id": "1oD1bR2VOHaWIsNM",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.1oD1bR2VOHaWIsNM"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        750,
+        1250,
+        750,
+        1375
+      ],
+      "_id": "dBY0em4emmBfRAo7",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.dBY0em4emmBfRAo7"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        1250,
+        1875,
+        1125
+      ],
+      "_id": "DU1Wy4oK2gSpMKN6",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.DU1Wy4oK2gSpMKN6"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        1125,
+        1875,
+        1000
+      ],
+      "_id": "eaicTeeVMX1uKqgD",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.eaicTeeVMX1uKqgD"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        1000,
+        1875,
+        875
+      ],
+      "_id": "UWn40bDs8BZ2s8dG",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.UWn40bDs8BZ2s8dG"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        875,
+        1875,
+        750
+      ],
+      "_id": "faju0VFy7iXWNhJC",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.faju0VFy7iXWNhJC"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1875,
+        750,
+        1875,
+        625
+      ],
+      "_id": "ectEm8bXXdbUuJ86",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.ectEm8bXXdbUuJ86"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1750,
+        625,
+        1625,
+        625
+      ],
+      "_id": "QNzfZkOqto1Q0arN",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.QNzfZkOqto1Q0arN"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1625,
+        625,
+        1500,
+        625
+      ],
+      "_id": "fpxFi2kpy3eamf3n",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.fpxFi2kpy3eamf3n"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1500,
+        625,
+        1375,
+        625
+      ],
+      "_id": "fy9iZLsE2A0Fkksh",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.fy9iZLsE2A0Fkksh"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        625,
+        1250,
+        625
+      ],
+      "_id": "sN6tCLRt40bN4XmY",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.sN6tCLRt40bN4XmY"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1250,
+        625,
+        1125,
+        625
+      ],
+      "_id": "g2LqrkYcwZosTjcT",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.g2LqrkYcwZosTjcT"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1125,
+        625,
+        1000,
+        625
+      ],
+      "_id": "QzjmaHjd5kfbtHAN",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.QzjmaHjd5kfbtHAN"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1000,
+        625,
+        875,
+        625
+      ],
+      "_id": "SBzk8kqIMdZRJf9X",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.SBzk8kqIMdZRJf9X"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        875,
+        625,
+        750,
+        625
+      ],
+      "_id": "pKXhDnHbSoTJeLL9",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.pKXhDnHbSoTJeLL9"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        875,
+        1375,
+        1000,
+        1375
+      ],
+      "_id": "yph0QrcHb6Be7uow",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.yph0QrcHb6Be7uow"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1000,
+        1375,
+        1125,
+        1375
+      ],
+      "_id": "ks1XmOrZVfcI3HYj",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.ks1XmOrZVfcI3HYj"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1125,
+        1375,
+        1250,
+        1375
+      ],
+      "_id": "RQKu6YJ3K3DEVMPF",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.RQKu6YJ3K3DEVMPF"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1250,
+        1375,
+        1375,
+        1375
+      ],
+      "_id": "dk1FrN21vcA54DQ0",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.dk1FrN21vcA54DQ0"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1375,
+        1375,
+        1500,
+        1375
+      ],
+      "_id": "QsWE58JkxbAYsnsX",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.QsWE58JkxbAYsnsX"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1500,
+        1375,
+        1625,
+        1375
+      ],
+      "_id": "Rn0bl2zRCbx15jdH",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.Rn0bl2zRCbx15jdH"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1625,
+        1375,
+        1750,
+        1375
+      ],
+      "_id": "bPFEZbhbNgjPOWH4",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.bPFEZbhbNgjPOWH4"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 20,
+      "move": 20,
+      "sight": 20,
+      "sound": 20,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {
+        "theiks-toolbag": {
+          "breakableWall": {
+            "images": {
+              "both": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood.png",
+              "single": "modules/theiks-toolbag/assets/images/tiles/destroyed-wall-wood-half.png"
+            },
+            "enabled": true,
+            "destroyed": false,
+            "destruction": null,
+            "restore": null
+          }
+        }
+      },
+      "c": [
+        1750,
+        1375,
+        1875,
+        1375
+      ],
+      "_id": "8o0Alm31YazSjMkC",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.8o0Alm31YazSjMkC"
+    },
+    {
+      "levels": [
+        "a6GBXCd9XM6PxChN"
+      ],
+      "light": 0,
+      "move": 20,
+      "sight": 0,
+      "sound": 0,
+      "dir": 0,
+      "door": 0,
+      "ds": 0,
+      "threshold": {
+        "light": null,
+        "sight": null,
+        "sound": null,
+        "attenuation": false
+      },
+      "animation": null,
+      "flags": {},
+      "c": [
+        1500,
+        750,
+        1875,
+        750
+      ],
+      "_id": "fGkCrMA4djnacRs6",
+      "_key": "!scenes.walls!O6EyLS1RmRnH8QiF.fGkCrMA4djnacRs6"
+    }
+  ],
+  "playlist": null,
+  "playlistSound": null,
+  "journal": null,
+  "journalEntryPage": null,
+  "weather": "",
+  "folder": null,
+  "ownership": {
+    "default": 0,
+    "mxRjWBngP4DIIXvN": 3
+  },
+  "flags": {},
+  "_stats": {
+    "coreVersion": "14.360",
+    "systemId": "pf1",
+    "systemVersion": "11.9",
+    "createdTime": 1786802031517,
+    "modifiedTime": 1786802031517,
+    "lastModifiedBy": "mxRjWBngP4DIIXvN",
+    "exportSource": null,
+    "compendiumSource": null,
+    "duplicateSource": null
+  },
+  "navName": "",
+  "active": false,
+  "sort": 0,
+  "_key": "!scenes!O6EyLS1RmRnH8QiF",
+  "templates": []
+}

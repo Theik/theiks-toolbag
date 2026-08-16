@@ -1,10 +1,9 @@
 # PhpStorm
 /.idea/
 
-# Foundry pack database locks
-packs/**/LOCK
+# Development dependencies and generated output
+/node_modules/
+/dist/
 
-# Foundry pack database diagnostics and temporary files
-packs/**/LOG
-packs/**/LOG.old
-packs/**/*.dbtmp
+# Generated Foundry LevelDB compendiums
+/packs/
