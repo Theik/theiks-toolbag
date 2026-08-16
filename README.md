@@ -15,6 +15,7 @@
     <a href="https://foundryvtt.com/"><img alt="Foundry VTT 14" src="https://img.shields.io/badge/Foundry_VTT-14-7A4A35?style=for-the-badge"></a>
     <a href="https://github.com/Theik/theiks-toolbag/releases"><img alt="Total downloads" src="https://img.shields.io/github/downloads/Theik/theiks-toolbag/total?style=for-the-badge&color=315949"></a>
     <a href="https://github.com/Theik/theiks-toolbag/issues"><img alt="Open issues" src="https://img.shields.io/github/issues/Theik/theiks-toolbag?style=for-the-badge&color=6D597A"></a>
+    <a href="https://www.patreon.com/cw/TabletopByTheik"><img alt="Support Tabletop by Theik on Patreon" src="https://img.shields.io/badge/Patreon-Support-FF424D?style=for-the-badge&logo=patreon&logoColor=white"></a>
   </p>
 
   <p>
@@ -360,6 +361,8 @@ Theik's Toolbag is an independent package for use with a licensed copy of Foundr
     <a href="https://github.com/Theik/theiks-toolbag/releases">Releases</a>
     ·
     <a href="https://github.com/Theik/theiks-toolbag/issues">Report an issue</a>
+    ·
+    <a href="https://www.patreon.com/cw/TabletopByTheik">Support on Patreon</a>
     ·
     <a href="#readme-top">Back to top ↑</a>
   </p>
