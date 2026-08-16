@@ -3,3 +3,8 @@
 
 # Foundry pack database locks
 packs/**/LOCK
+
+# Foundry pack database diagnostics and temporary files
+packs/**/LOG
+packs/**/LOG.old
+packs/**/*.dbtmp
