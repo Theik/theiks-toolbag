@@ -1,0 +1,51 @@
+<fieldset class="theiks-toolbag usable-tile">
+    <legend>{{localize "THEIKS_TOOLBAG.UsableTiles.Config.Legend"}}</legend>
+
+    <div class="form-group">
+        <label for="{{rootId}}-enabled">{{localize "THEIKS_TOOLBAG.UsableTiles.Config.Enabled"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-enabled" type="checkbox" name="{{fields.enabled}}" {{checked enabled}}
+                {{disabled definitionLocked}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.UsableTiles.Config.EnabledHint"}}</p>
+    </div>
+
+    <div class="usable-states-header">
+        <label>{{localize "THEIKS_TOOLBAG.UsableTiles.Config.States"}}</label>
+        <button type="button" class="icon fa-solid fa-plus" data-usable-state-action="add"
+            aria-label="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.AddState"}}"
+            data-tooltip="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.AddState"}}"
+            {{disabled definitionLocked}}></button>
+    </div>
+    <p class="hint">{{#if definitionLocked}}
+        {{localize "THEIKS_TOOLBAG.UsableTiles.Config.RepairBeforeDefinitionChange"}}
+        {{else}}{{localize "THEIKS_TOOLBAG.UsableTiles.Config.StatesHint"}}{{/if}}
+    </p>
+    <div class="usable-states" data-usable-states>
+        {{#each states}}
+        <div class="usable-state-row" data-usable-state-row>
+            <label for="{{../rootId}}-state-{{@index}}">
+                {{localize "THEIKS_TOOLBAG.UsableTiles.Config.State" number=number}}
+            </label>
+            <div class="form-fields">
+                <file-picker id="{{../rootId}}-state-{{@index}}" name="{{../fields.states}}" type="image"
+                    value="{{src}}" {{disabled ../definitionLocked}}></file-picker>
+                <button type="button" class="icon fa-solid fa-arrow-up" data-usable-state-action="up"
+                    aria-label="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.MoveUp"}}"
+                    data-tooltip="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.MoveUp"}}"
+                    {{#if ../definitionLocked}}data-definition-locked disabled{{/if}}></button>
+                <button type="button" class="icon fa-solid fa-arrow-down" data-usable-state-action="down"
+                    aria-label="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.MoveDown"}}"
+                    data-tooltip="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.MoveDown"}}"
+                    {{#if ../definitionLocked}}data-definition-locked disabled{{/if}}></button>
+                <button type="button" class="icon fa-solid fa-trash" data-usable-state-action="remove"
+                    aria-label="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.RemoveState"}}"
+                    data-tooltip="{{localize "THEIKS_TOOLBAG.UsableTiles.Config.RemoveState"}}"
+                    {{disabled ../definitionLocked}}></button>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+
+    <div data-toolbag-behaviors></div>
+</fieldset>

@@ -5,6 +5,7 @@ const PANEL_CLASS = "theiks-toolbag-config-tab";
 const CONTROL_CLASS = "theiks-toolbag-tab-control";
 const GENERATED_NAV_CLASS = "theiks-toolbag-generated-tabs";
 const NATIVE_PANEL_CLASS = "theiks-toolbag-native-tab";
+const FEATURE_CONTENT_CLASS = "theiks-toolbag-feature-content";
 
 /**
  * Mount one Toolbag configuration tab into a native tabbed sheet or create a two-tab layout.
@@ -32,7 +33,7 @@ export function mountToolbagConfigTab({
   nativeLabel,
   nativeIcon
 }) {
-  const existing = element.querySelector(`.${PANEL_CLASS}[data-toolbag-feature="${feature}"]`);
+  const existing = element.querySelector(`.${FEATURE_CONTENT_CLASS}[data-toolbag-feature="${feature}"]`);
   if (existing) return {panel: existing, root: getFormRoot(application, element)};
 
   const root = getFormRoot(application, element);
@@ -42,14 +43,14 @@ export function mountToolbagConfigTab({
   let nativePanel = nativeTab
     ? element.querySelector(`.tab[data-tab="${nativeTab}"]`)
     : null;
+  nativePanel ??= element.querySelector(`.${NATIVE_PANEL_CLASS}`);
 
   if (!navigation || !nativePanel) {
-    navigation = createNavigation(feature);
+    navigation = createNavigation();
     nativePanel = root;
-    prepareNativePanel(nativePanel, feature);
+    prepareNativePanel(nativePanel);
     nativePanel.before(navigation);
     navigation.append(createTabControl({
-      feature,
       tab: nativePanel.dataset.tab,
       label: nativeLabel,
       icon: nativeIcon,
@@ -60,27 +61,31 @@ export function mountToolbagConfigTab({
   const group = navigation.querySelector("[data-group]")?.dataset.group
     ?? nativePanel.dataset.group
     ?? TAB_GROUP;
-  const toolbagLabel = localize("THEIKS_TOOLBAG.ConfigTabs.Toolbag");
-  const control = createTabControl({
-    feature,
-    tab: TOOLBAG_TAB_ID,
-    label: toolbagLabel,
-    icon: "fa-solid fa-toolbox",
-    group
-  });
-  navigation.append(control);
+  let sharedPanel = element.querySelector(`.${PANEL_CLASS}[data-tab="${TOOLBAG_TAB_ID}"]`);
+  if (!sharedPanel) {
+    const toolbagLabel = localize("THEIKS_TOOLBAG.ConfigTabs.Toolbag");
+    navigation.append(createTabControl({
+      tab: TOOLBAG_TAB_ID,
+      label: toolbagLabel,
+      icon: "fa-solid fa-toolbox",
+      group
+    }));
 
-  const panel = globalThis.document.createElement("section");
-  panel.className = `tab standard-form scrollable ${PANEL_CLASS}`;
-  panel.dataset.group = group;
-  panel.dataset.tab = TOOLBAG_TAB_ID;
+    sharedPanel = globalThis.document.createElement("section");
+    sharedPanel.className = `tab standard-form scrollable ${PANEL_CLASS}`;
+    sharedPanel.dataset.group = group;
+    sharedPanel.dataset.tab = TOOLBAG_TAB_ID;
+    const parent = nativePanel.parentElement;
+    const footer = parent?.querySelector(":scope > footer, :scope > .form-footer");
+    if (footer) parent.insertBefore(sharedPanel, footer);
+    else parent?.append(sharedPanel);
+  }
+
+  const panel = globalThis.document.createElement("div");
+  panel.className = FEATURE_CONTENT_CLASS;
   panel.dataset.toolbagFeature = feature;
   panel.insertAdjacentHTML("beforeend", content);
-
-  const parent = nativePanel.parentElement;
-  const footer = parent?.querySelector(":scope > footer, :scope > .form-footer");
-  if (footer) parent.insertBefore(panel, footer);
-  else parent?.append(panel);
+  sharedPanel.append(panel);
 
   if (application.tabGroups?.[group] === TOOLBAG_TAB_ID) {
     activateTab(element, group, TOOLBAG_TAB_ID);
@@ -92,7 +97,7 @@ export function mountToolbagConfigTab({
 /** Remove Toolbag tabs for a disabled feature and restore generated native form layouts. */
 export function removeToolbagConfigTabs(feature, ownerDocument = globalThis.document) {
   const panels = ownerDocument?.querySelectorAll?.(
-    `.${PANEL_CLASS}[data-toolbag-feature="${feature}"]`
+    `.${FEATURE_CONTENT_CLASS}[data-toolbag-feature="${feature}"]`
   ) ?? [];
 
   for (const panel of panels) {
@@ -100,20 +105,19 @@ export function removeToolbagConfigTabs(feature, ownerDocument = globalThis.docu
       panel?.remove?.();
       continue;
     }
-    const scope = panel.closest?.("form") ?? panel.parentElement;
-    const group = panel.dataset.group ?? TAB_GROUP;
-    const wasActive = panel.classList.contains("active");
-    const control = scope?.querySelector?.(
-      `.${CONTROL_CLASS}[data-toolbag-feature="${feature}"][data-tab="${TOOLBAG_TAB_ID}"]`
-    );
-    const generatedNavigation = scope?.querySelector?.(
-      `.${GENERATED_NAV_CLASS}[data-toolbag-feature="${feature}"]`
-    );
-    const nativePanel = scope?.querySelector?.(
-      `.${NATIVE_PANEL_CLASS}[data-toolbag-feature="${feature}"]`
-    );
-
+    const sharedPanel = panel.closest?.(`.${PANEL_CLASS}`) ?? panel.parentElement;
+    const scope = panel.closest?.("form") ?? sharedPanel?.parentElement;
     panel.remove();
+    if (sharedPanel?.querySelector?.(`.${FEATURE_CONTENT_CLASS}`)) continue;
+
+    const group = sharedPanel?.dataset.group ?? TAB_GROUP;
+    const wasActive = sharedPanel?.classList.contains("active");
+    const control = scope?.querySelector?.(
+      `.${CONTROL_CLASS}[data-tab="${TOOLBAG_TAB_ID}"]`
+    );
+    const generatedNavigation = scope?.querySelector?.(`.${GENERATED_NAV_CLASS}`);
+    const nativePanel = scope?.querySelector?.(`.${NATIVE_PANEL_CLASS}`);
+    sharedPanel?.remove();
     control?.remove();
 
     if (generatedNavigation && nativePanel) {
@@ -137,35 +141,31 @@ function getFormRoot(application, element) {
     ?? element.querySelector("form");
 }
 
-function createNavigation(feature) {
+function createNavigation() {
   const navigation = globalThis.document.createElement("nav");
   navigation.className = `sheet-tabs tabs top-tabs ${GENERATED_NAV_CLASS}`;
-  navigation.dataset.toolbagFeature = feature;
   navigation.setAttribute("aria-roledescription", localize("SHEETS.FormNavLabel"));
   return navigation;
 }
 
-function prepareNativePanel(panel, feature) {
+function prepareNativePanel(panel) {
   panel.classList.add("tab", "active", NATIVE_PANEL_CLASS);
   panel.dataset.group = TAB_GROUP;
-  panel.dataset.tab = `theiks-toolbag-native-${feature}`;
-  panel.dataset.toolbagFeature = feature;
+  panel.dataset.tab = "theiks-toolbag-native";
 }
 
 function restoreNativePanel(panel) {
   panel.classList.remove("tab", "active", NATIVE_PANEL_CLASS);
   delete panel.dataset.group;
   delete panel.dataset.tab;
-  delete panel.dataset.toolbagFeature;
 }
 
-function createTabControl({feature, tab, label, icon, group = TAB_GROUP, active = false}) {
+function createTabControl({tab, label, icon, group = TAB_GROUP, active = false}) {
   const control = globalThis.document.createElement("a");
   control.className = `${CONTROL_CLASS}${active ? " active" : ""}`;
   control.dataset.action = "tab";
   control.dataset.group = group;
   control.dataset.tab = tab;
-  control.dataset.toolbagFeature = feature;
 
   const iconElement = globalThis.document.createElement("i");
   iconElement.className = icon;

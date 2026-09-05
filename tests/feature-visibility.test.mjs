@@ -5,6 +5,7 @@ const featureSettings = {
   enableBreakableWalls: false,
   enableBreakableTerrain: false,
   enableVisibleLights: false,
+  enableUsableTiles: false,
   enableLevelTools: false
 };
 let templateRenders = 0;
@@ -40,10 +41,12 @@ globalThis.document = {
 const {registerBreakableWallConfig} = await import("../scripts/breakable-walls/wall-config.js");
 const {registerBreakableTerrainConfig} = await import("../scripts/breakable-terrain/terrain-config.js");
 const {registerVisibleLightConfig} = await import("../scripts/visible-lights/light-config.js");
+const {registerUsableTileConfig} = await import("../scripts/usable-tiles/tile-config.js");
 
 registerBreakableWallConfig();
 registerBreakableTerrainConfig();
 registerVisibleLightConfig();
+registerUsableTileConfig();
 
 const element = {
   querySelector: () => {
@@ -53,6 +56,7 @@ const element = {
 for (const [hook, feature] of [
   ["renderWallConfig", "breakableWalls"],
   ["renderTileConfig", "breakableTerrain"],
+  ["renderTileConfig", "usableTiles"],
   ["renderAmbientLightConfig", "visibleLights"]
 ]) {
   for (const callback of hooks.get(hook) ?? []) await callback({}, element, {});
@@ -60,6 +64,6 @@ for (const [hook, feature] of [
 }
 
 assert.equal(templateRenders, 0, "disabled features never render their configuration templates");
-assert.equal(removedFieldsets, 3, "turning a feature off removes its fieldset from an already-open configuration");
+assert.equal(removedFieldsets, 4, "turning a feature off removes its fieldset from an already-open configuration");
 
 console.log("feature visibility tests passed");

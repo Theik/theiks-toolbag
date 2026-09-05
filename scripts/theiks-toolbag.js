@@ -26,6 +26,8 @@ import {
 import {registerBreakableTerrainEdges} from "./breakable-terrain/terrain-edges.js";
 import {registerTerrainDestructionMode} from "./breakable-terrain/destruction-mode.js";
 import {registerCombinedDestructionMode} from "./combined-destruction-mode.js";
+import {registerUsableTileConfig} from "./usable-tiles/tile-config.js";
+import {registerUsableTileControls, useUsableTile} from "./usable-tiles/tile-controls.js";
 import {registerFeatureSettings} from "./settings.js";
 import {
   changeTokenLevels,
@@ -50,6 +52,8 @@ Hooks.once("init", () => {
   registerBreakableTerrainEdges();
   registerTerrainDestructionMode();
   registerCombinedDestructionMode();
+  registerUsableTileConfig();
+  registerUsableTileControls();
   registerLevelTools();
 
   const module = game.modules.get(MODULE_ID);
@@ -71,6 +75,9 @@ Hooks.once("init", () => {
       advance: advanceTerrainDestruction,
       retreat: retreatTerrainDestruction,
       restore: restoreTerrain
+    },
+    usableTiles: {
+      use: useUsableTile
     },
     levelTools: {
       prompt: promptTokenLevelChange,

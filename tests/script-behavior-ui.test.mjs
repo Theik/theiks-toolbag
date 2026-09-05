@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 globalThis.foundry = {utils: {equals: (left, right) => JSON.stringify(left) === JSON.stringify(right)}};
-const {hasIdenticalBehaviorLists} = await import("../scripts/script-behaviors-ui.js");
+globalThis.game = {
+  i18n: {
+    localize: key => key.split(".").at(-1),
+    format: (key, data) => `${key.split(".").at(-1)}: ${data.event}`
+  }
+};
+const {eventLabel, hasIdenticalBehaviorLists} = await import("../scripts/script-behaviors-ui.js");
 
 const behavior = {
   id: "one",
@@ -15,6 +21,9 @@ const behavior = {
 assert.equal(hasIdenticalBehaviorLists([]), true);
 assert.equal(hasIdenticalBehaviorLists([[behavior], [structuredClone(behavior)]]), true);
 assert.equal(hasIdenticalBehaviorLists([[behavior], [{...behavior, disabled: true}]]), false);
+assert.equal(eventLabel("damaged", "tile"), "Destroy: damaged");
+assert.equal(eventLabel("off", "tile"), "Use: off");
+assert.equal(eventLabel("destroyed", "wall"), "destroyed", "non-Tile event labels stay unprefixed");
 
 const list = await readFile(new URL("../templates/script-behavior-list.hbs", import.meta.url), "utf8");
 assert.match(list, /data-toolbag-behavior-action="add"/);

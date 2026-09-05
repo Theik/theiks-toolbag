@@ -144,6 +144,12 @@ export function authorizeTerrainTransition(tile, nonce) {
   return {[TRANSITION_NONCE_OPTION]: nonce};
 }
 
+/** Return whether update options carry this subsystem's current private transition nonce. */
+export function isTerrainTransitionAuthorized(tile, options = {}) {
+  const authorized = transitionAuthorizations.get(getTerrainKey(tile));
+  return typeof authorized === "string" && options[TRANSITION_NONCE_OPTION] === authorized;
+}
+
 /** Revoke a transition authorization after its document update settles. */
 export function revokeTerrainTransition(tile, nonce) {
   const key = getTerrainKey(tile);
@@ -204,11 +210,11 @@ async function renderBreakableTerrainConfig(application, element, context) {
     legacyDeleteField: TERRAIN_LEGACY_SCRIPTS_FIELD,
     behaviors: data.behaviors,
     selectedBehaviorLists: controlled.map(document => getBreakableTerrainData(document).behaviors),
-    getUnavailableEvents: () => shouldShowIntermediateTerrainScripts(
+    getUnavailableEvents: () => ["off", "on", "step", ...(shouldShowIntermediateTerrainScripts(
       normalizeTerrainStates(Array.from(
         fieldset?.querySelectorAll(`[name="${TERRAIN_FIELDS.states}"]`) ?? [], field => field.value
       )), controlled
-    ) ? [] : ["damaged", "repairedPartial"]
+    ) ? [] : ["damaged", "repairedPartial"])]
   });
   updatePlatformMessageState(fieldset);
   updateStateRowControls(fieldset);

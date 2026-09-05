@@ -139,7 +139,7 @@ async function renderBehaviorList(store) {
     behaviorField: store.behaviorField,
     behaviors: behaviors.map(behavior => ({
       ...behavior,
-      eventLabels: behavior.events.map(eventLabel).join(", ") || localize("NoEvents")
+      eventLabels: behavior.events.map(eventName => eventLabel(eventName, store.alias)).join(", ") || localize("NoEvents")
     }))
   });
   store.host.innerHTML = html;
@@ -153,7 +153,7 @@ async function promptScriptBehavior(store, behavior) {
     behavior,
     events: EVENT_NAMES_BY_ALIAS[store.alias].map(value => ({
       value,
-      label: eventLabel(value),
+      label: eventLabel(value, store.alias),
       selected: selected.has(value),
       disabled: unavailable.has(value)
     }))
@@ -307,8 +307,11 @@ function randomID() {
     ?? Math.random().toString(36).slice(2, 18);
 }
 
-function eventLabel(eventName) {
-  return localize(`Events.${eventName}`);
+export function eventLabel(eventName, alias) {
+  const label = localize(`Events.${eventName}`);
+  if (alias !== "tile") return label;
+  const group = ["off", "on", "step"].includes(eventName) ? "Use" : "Destroy";
+  return format(`EventGroups.${group}`, {event: label});
 }
 
 function escapeHTML(value) {

@@ -47,6 +47,21 @@ export async function prepareTerrainTexture(src, {extractAlpha = true} = {}) {
   return texture;
 }
 
+/** Load and trace the current Tile texture, then return its opaque Canvas-space contours. */
+export async function prepareTileOpaqueContours(tile) {
+  const src = tile?._source?.texture?.src ?? tile?.texture?.src;
+  if (!src) return [];
+  cachePlaceableTexture(tile, src);
+  if (!getCachedTerrainTrace(tile)) await prepareTerrainTexture(src);
+  return getTileOpaqueContours(tile) ?? [];
+}
+
+/** Return cached opaque Canvas-space contours, or null when the texture has not been prepared. */
+export function getTileOpaqueContours(tile) {
+  const record = getCachedTerrainTrace(tile);
+  return record ? transformTerrainContours(record.traced, tile, record.textureDimensions) : null;
+}
+
 /**
  * Convert sampled texture alpha into closed pixel-boundary contours.
  *

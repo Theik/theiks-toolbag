@@ -4,7 +4,7 @@ export const SCRIPT_BEHAVIOR_TYPE = "executeScript";
 export const EVENT_NAMES_BY_ALIAS = Object.freeze({
   light: Object.freeze(["toggledOn", "toggledOff", "destroyed", "repaired"]),
   wall: Object.freeze(["destroyed", "repaired"]),
-  tile: Object.freeze(["damaged", "destroyed", "repairedPartial", "repaired"])
+  tile: Object.freeze(["damaged", "destroyed", "repairedPartial", "repaired", "off", "on", "step"])
 });
 
 const DOCUMENT_ALIASES = new Set(Object.keys(EVENT_NAMES_BY_ALIAS));

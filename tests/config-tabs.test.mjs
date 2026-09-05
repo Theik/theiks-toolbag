@@ -156,8 +156,9 @@ const mountedNormal = mountToolbagConfigTab({
   nativeLabel: "Light",
   nativeIcon: "fa-solid fa-lightbulb"
 });
-assert.equal(mountedNormal.panel.dataset.tab, TOOLBAG_TAB_ID);
+assert.equal(mountedNormal.panel.dataset.toolbagFeature, "visibleLights");
 assert.equal(mountedNormal.panel.innerHTML, "<fieldset>Toolbag</fieldset>");
+assert.equal(normalForm.querySelector(".theiks-toolbag-config-tab").dataset.tab, TOOLBAG_TAB_ID);
 assert.equal(normalForm.children.at(-1), footer, "the form footer remains outside tab content");
 assert.equal(nativeNavigation.children.length, 2);
 assert.equal(
@@ -173,7 +174,22 @@ assert.equal(
   mountedNormal.panel,
   "rerender protection returns the existing panel"
 );
+const mountedUsable = mountToolbagConfigTab({
+  application: normalApp,
+  element: normalForm,
+  content: "<fieldset>Usable Tile</fieldset>",
+  feature: "usableTiles",
+  nativeTab: "basic",
+  nativeLabel: "Tile",
+  nativeIcon: "fa-solid fa-cubes"
+});
+assert.equal(mountedUsable.panel.parentElement, mountedNormal.panel.parentElement);
+assert.equal(nativeNavigation.children.length, 2, "multiple features share one Toolbag tab control");
+assert.equal(normalForm.querySelector(".theiks-toolbag-config-tab").children.length, 2);
 removeToolbagConfigTabs("visibleLights", normalDocument);
+assert.equal(nativeNavigation.children.length, 2, "removing one feature preserves the shared tab");
+assert.equal(normalForm.querySelector(".theiks-toolbag-config-tab").children.length, 1);
+removeToolbagConfigTabs("usableTiles", normalDocument);
 assert.equal(nativeNavigation.children.length, 1);
 assert.equal(normalForm.querySelector(".theiks-toolbag-config-tab"), null);
 
@@ -197,7 +213,8 @@ const mountedGenerated = mountToolbagConfigTab({
 });
 assert.equal(generatedForm.children[0].tagName, "NAV");
 assert.equal(generatedForm.children[1], generatedBody);
-assert.equal(generatedForm.children[2], mountedGenerated.panel);
+assert.equal(generatedForm.children[2], generatedForm.querySelector(".theiks-toolbag-config-tab"));
+assert.equal(mountedGenerated.panel.parentElement, generatedForm.children[2]);
 assert.equal(generatedForm.children[3], generatedFooter);
 assert.equal(generatedBody.classList.contains("tab"), true);
 assert.equal(generatedBody.classList.contains("active"), true);

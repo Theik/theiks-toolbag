@@ -30,7 +30,7 @@ const {
 } = await import("../scripts/settings.js");
 
 registerFeatureSettings();
-assert.equal(registrations.size, 5);
+assert.equal(registrations.size, 6);
 for (const definition of registrations.values()) {
   assert.equal(definition.scope, "world");
   assert.equal(definition.config, true);
@@ -40,6 +40,7 @@ for (const definition of registrations.values()) {
 assert.equal(isFeatureEnabled(FEATURES.breakableWalls), true);
 assert.equal(isFeatureEnabled(FEATURES.breakableTerrain), true);
 assert.equal(isFeatureEnabled(FEATURES.visibleLights), true);
+assert.equal(isFeatureEnabled(FEATURES.usableTiles), true);
 assert.equal(isFeatureEnabled(FEATURES.levelTools), true);
 assert.equal(isFeatureEnabled(FEATURES.fallingMessages), true);
 

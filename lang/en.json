@@ -63,7 +63,14 @@
         "destroyed": "Destroyed",
         "repaired": "Repaired",
         "damaged": "Damaged",
-        "repairedPartial": "Repaired (Partial)"
+        "repairedPartial": "Repaired (Partial)",
+        "off": "Off",
+        "on": "On",
+        "step": "Step"
+      },
+      "EventGroups": {
+        "Destroy": "Destroy: {event}",
+        "Use": "Use: {event}"
       }
     },
     "Settings": {
@@ -78,6 +85,10 @@
       "VisibleLights": {
         "Name": "Visible Lights",
         "Hint": "Enable visible-light configuration, artwork, controls, and interactions."
+      },
+      "UsableTiles": {
+        "Name": "Usable Tiles",
+        "Hint": "Enable usable Tile configuration, lever controls, state images, and player interactions."
       },
       "LevelTools": {
         "Name": "Level Tools",
@@ -195,6 +206,46 @@
         "RequestRejected": "The GM rejected the light toggle request.",
         "NoActiveGm": "An active GM is required to toggle this light.",
         "RequestTimeout": "The GM did not process the light toggle request in time."
+      }
+    },
+    "UsableTiles": {
+      "Config": {
+        "Legend": "Usable Tile",
+        "Enabled": "Usable",
+        "EnabledHint": "Show a hand control and let this Tile move through its configured use states.",
+        "States": "Use states",
+        "StatesHint": "Add at least two images in order. The first is off, the last is on, and images between them are step states.",
+        "State": "Use state {number}",
+        "AddState": "Add use state",
+        "RemoveState": "Remove use state",
+        "MoveUp": "Move state up",
+        "MoveDown": "Move state down",
+        "RepairBeforeDefinitionChange": "Repair this Tile before changing its usable definition.",
+        "ManagedImage": "This image is managed by Usable Tiles. Disable usability before editing it directly."
+      },
+      "Errors": {
+        "InvalidTile": "A valid Tile document is required.",
+        "TileUnavailable": "That Tile is no longer available in its Scene.",
+        "NotUsable": "That Tile is not configured as usable.",
+        "StatesRequired": "A usable Tile requires at least two non-empty state images.",
+        "Damaged": "That Tile is damaged and cannot be used until it is repaired.",
+        "RepairBeforeUse": "Repair this Tile before changing its usable definition or image.",
+        "ManagedState": "Usable Tile state can only be changed through its lever control or API.",
+        "ManagedImage": "This Tile image is managed by Usable Tiles.",
+        "InactiveUser": "The requesting user is not active.",
+        "TokenRequired": "Select an owned Token next to this Tile.",
+        "TokenNotOwned": "You do not own the selected Token.",
+        "NotAdjacent": "The selected Token is more than one grid space from this Tile.",
+        "WallBlocked": "A wall blocks access to this Tile.",
+        "ImageLoad": "The usable state image could not be loaded: {src}",
+        "StateChanged": "The Tile changed before the request was processed. Try again.",
+        "InProgress": "That Tile is already being changed.",
+        "UpdateFailed": "Foundry did not update the Tile.",
+        "InvalidRequest": "The usable Tile request was invalid.",
+        "InvalidRequester": "The usable Tile requester was invalid.",
+        "RequestRejected": "The GM rejected the usable Tile request.",
+        "NoActiveGm": "An active GM is required to use this Tile.",
+        "RequestTimeout": "The GM did not process the usable Tile request in time."
       }
     },
     "BreakableTerrain": {

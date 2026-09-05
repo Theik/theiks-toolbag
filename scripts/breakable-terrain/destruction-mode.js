@@ -16,6 +16,7 @@ const DESTROY_MARKER_TEXTURE = "icons/svg/explosion.svg";
 const RESTORE_MARKER_TEXTURE = "icons/svg/regen.svg";
 const DESTROY_MARKER_COLOR = 0xFF9829;
 const RESTORE_MARKER_COLOR = 0x4CAF50;
+export const TERRAIN_DESTRUCTION_MODE_CHANGED_HOOK = `${MODULE_ID}.terrainDestructionModeChanged`;
 
 let active = false;
 let markerContainer = null;
@@ -53,9 +54,15 @@ function addSceneControlTool(controls) {
 
 /** Allow the combined destruction control to activate or deactivate terrain markers. */
 export function setTerrainDestructionModeActive(isActive) {
+  const previous = active;
   active = isActive && game.user.isGM && isFeatureEnabled(FEATURES.breakableTerrain);
+  if (active !== previous) Hooks.callAll?.(TERRAIN_DESTRUCTION_MODE_CHANGED_HOOK, active);
   if (active) queueMarkerRefresh();
   else clearMarkers();
+}
+
+export function isTerrainDestructionModeActive() {
+  return active;
 }
 
 function refreshMarkersIfActive() {

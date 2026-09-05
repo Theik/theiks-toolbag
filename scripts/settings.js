@@ -4,6 +4,7 @@ export const FEATURES = Object.freeze({
   breakableWalls: "breakableWalls",
   breakableTerrain: "breakableTerrain",
   visibleLights: "visibleLights",
+  usableTiles: "usableTiles",
   levelTools: "levelTools",
   fallingMessages: "fallingMessages"
 });
@@ -25,6 +26,11 @@ const DEFINITIONS = Object.freeze({
     key: "enableVisibleLights",
     name: "THEIKS_TOOLBAG.Settings.VisibleLights.Name",
     hint: "THEIKS_TOOLBAG.Settings.VisibleLights.Hint"
+  },
+  [FEATURES.usableTiles]: {
+    key: "enableUsableTiles",
+    name: "THEIKS_TOOLBAG.Settings.UsableTiles.Name",
+    hint: "THEIKS_TOOLBAG.Settings.UsableTiles.Hint"
   },
   [FEATURES.levelTools]: {
     key: "enableLevelTools",

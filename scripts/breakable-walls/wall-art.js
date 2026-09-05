@@ -1,5 +1,6 @@
 import {MODULE_ID, getBreakableWallData} from "./wall-config.js";
 import {calculateRubbleGeometry} from "./wall-destruction.js";
+import {createRubbleAccessMask, getRubbleBarrierSegments} from "./wall-rubble-mask.js";
 import {
   FEATURES,
   FEATURE_SETTING_CHANGED_HOOK,
@@ -39,6 +40,7 @@ varying vec2 vTextureCoord;
 uniform sampler2D uSampler;
 uniform sampler2D mask;
 uniform sampler2D spillMask;
+uniform sampler2D wallAccessMask;
 uniform float alpha;
 uniform vec2 supportTexelSize;
 uniform float spillOpacityGain;
@@ -57,6 +59,7 @@ void main(void) {
   vec4 color = texture2D(uSampler, vTextureCoord);
   float supportAlpha = texture2D(mask, vMaskCoord).a;
   float spillAlpha = texture2D(spillMask, vMaskCoord).a;
+  float wallAccess = texture2D(wallAccessMask, vMaskCoord).a;
 
   float supportLeft = texture2D(mask, vMaskCoord - vec2(supportTexelSize.x, 0.0)).a;
   float supportRight = texture2D(mask, vMaskCoord + vec2(supportTexelSize.x, 0.0)).a;
@@ -81,7 +84,7 @@ void main(void) {
   float spillBrightness = mix(spillEdgeBrightness, spillOuterBrightness, fadeProgress);
   color.rgb *= mix(1.0, spillBrightness, fringe);
 
-  gl_FragColor = color * finalSupportAlpha * alpha * clip;
+  gl_FragColor = color * finalSupportAlpha * wallAccess * alpha * clip;
 }`;
 let refreshId = 0;
 let refreshQueued = false;
@@ -233,7 +236,7 @@ function getArtworkSelection(wall) {
     console.warn(`${MODULE_ID} | Destroyed Wall ${wall.id} has no configured ${destruction.kind} artwork`);
     return null;
   }
-  return {src, scaleY};
+  return {src, scaleY, kind: destruction.kind, side: destruction.side};
 }
 
 /**
@@ -293,7 +296,7 @@ function createArtworkMesh(wall, texture, selection) {
   applyMeshGeometry(mesh, geometry, selection.scaleY);
   mesh.eventMode = "none";
   mesh.name = `${MODULE_ID}.destroyedWall.${wall.id}`;
-  return {wallId: wall.id, mesh, geometry, support: null};
+  return {wallId: wall.id, mesh, geometry, destruction: selection, support: null};
 }
 
 /**
@@ -422,13 +425,14 @@ function copyPoint(target, source) {
  * @param {PIXI.Container} supportSources
  */
 function attachSupportMask(entry, supportSources) {
-  const support = createSupportMask(entry.wallId, entry.geometry, supportSources);
+  const support = createSupportMask(entry, supportSources);
   canvas.primary.addChild(support.sprite);
   entry.mesh.filters = [support.filter];
   entry.support = support;
 }
 
-function createSupportMask(wallId, geometry, supportSources) {
+function createSupportMask(entry, supportSources) {
+  const {wallId, geometry, destruction} = entry;
   const renderer = canvas.app?.renderer;
   if (!renderer || typeof renderer.render !== "function") throw new Error("The Canvas renderer is unavailable.");
 
@@ -446,6 +450,7 @@ function createSupportMask(wallId, geometry, supportSources) {
 
   let filter;
   let spillTexture;
+  let wallAccessTexture;
   try {
     renderer.render(supportSources, {
       renderTexture: texture,
@@ -454,8 +459,10 @@ function createSupportMask(wallId, geometry, supportSources) {
     });
     const spillRadius = getSpillRadius(geometry.width);
     spillTexture = createSpillTexture(renderer, texture, geometry, resolution, spillRadius);
+    wallAccessTexture = createWallAccessTexture(wallId, geometry, destruction);
     filter = new PIXI.SpriteMaskFilter(SUPPORT_MASK_VERTEX_SHADER, SUPPORT_MASK_FRAGMENT_SHADER, {
       spillMask: spillTexture,
+      wallAccessMask: wallAccessTexture,
       supportTexelSize: new Float32Array([
         1 / Math.max(1, geometry.width * resolution),
         1 / Math.max(1, geometry.height * resolution)
@@ -467,13 +474,38 @@ function createSupportMask(wallId, geometry, supportSources) {
       spillOuterBrightness: SPILL_OUTER_BRIGHTNESS
     });
     filter.maskSprite = sprite;
-    return {filter, sprite, spillTexture, spillRadius};
+    return {filter, sprite, spillTexture, wallAccessTexture, spillRadius};
   } catch (error) {
     filter?.destroy?.();
     destroyRenderTexture(spillTexture);
+    destroyTexture(wallAccessTexture);
     sprite.destroy({children: true, texture: true, baseTexture: true});
     throw error;
   }
+}
+
+function createWallAccessTexture(wallId, geometry, destruction) {
+  const levelId = canvas.level?.id ?? canvas.level?._id;
+  const segments = getRubbleBarrierSegments(canvas.walls?.placeables, {
+    sourceWallId: wallId,
+    levelId,
+    isDestroyed: wall => getBreakableWallData(wall).destroyed
+  });
+  const mask = createRubbleAccessMask(geometry, destruction, segments);
+  const canvasElement = PIXI.DOMAdapter?.get?.().createCanvas(mask.width, mask.height)
+    ?? globalThis.document?.createElement?.("canvas");
+  if (!canvasElement) throw new Error("A Canvas source is unavailable for the Wall access mask.");
+  canvasElement.width = mask.width;
+  canvasElement.height = mask.height;
+  const context = canvasElement.getContext?.("2d");
+  if (!context) throw new Error("A 2D Canvas context is unavailable for the Wall access mask.");
+  const image = context.createImageData(mask.width, mask.height);
+  image.data.set(mask.data);
+  context.putImageData(image, 0, 0);
+  const texture = PIXI.Texture.from(canvasElement);
+  const source = texture.source ?? texture.baseTexture;
+  if (source) source.scaleMode = PIXI.SCALE_MODES.LINEAR;
+  return texture;
 }
 
 function createSupportRenderTexture(geometry, resolution) {
@@ -568,7 +600,7 @@ function refreshSupportMasks() {
     supportSources = createSupportSources();
     for (const [wallId, entry] of artwork) {
       try {
-        const support = createSupportMask(wallId, entry.geometry, supportSources);
+        const support = createSupportMask(entry, supportSources);
         canvas.primary.addChild(support.sprite);
         entry.mesh.filters = [support.filter];
         destroySupportMask(entry.support);
@@ -696,6 +728,7 @@ function destroySupportMask(support) {
     support.filter.destroy?.();
   }
   destroyRenderTexture(support.spillTexture);
+  destroyTexture(support.wallAccessTexture);
   if (support.sprite && !support.sprite.destroyed) {
     support.sprite.removeFromParent?.();
     support.sprite.destroy({children: true, texture: true, baseTexture: true});
@@ -703,6 +736,10 @@ function destroySupportMask(support) {
 }
 
 function destroyRenderTexture(texture) {
+  if (texture && !texture.destroyed) texture.destroy(true);
+}
+
+function destroyTexture(texture) {
   if (texture && !texture.destroyed) texture.destroy(true);
 }
 

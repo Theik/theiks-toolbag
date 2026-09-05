@@ -36,6 +36,27 @@ class FakeTexture {
     this.destroyed = true;
     this.baseTextureDestroyed = baseTexture;
   }
+
+  static from(source) {
+    const texture = new FakeTexture("wall-access", {width: source.width, height: source.height});
+    texture.source = {scaleMode: null};
+    texture.pixelData = source.imageData?.data;
+    return texture;
+  }
+}
+
+class FakeCanvas {
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
+  }
+
+  getContext() {
+    return {
+      createImageData: (width, height) => ({data: new Uint8ClampedArray(width * height * 4)}),
+      putImageData: image => { this.imageData = image; }
+    };
+  }
 }
 
 class FakeRenderTexture extends FakeTexture {
@@ -193,6 +214,7 @@ class FakePrimary {
 }
 
 const EMPTY_TEXTURE = new FakeTexture("empty", {valid: false, width: 1, height: 1});
+FakeTexture.EMPTY = EMPTY_TEXTURE;
 globalThis.PIXI = {
   Container: FakeContainer,
   BlurFilter: FakeBlurFilter,
@@ -200,8 +222,9 @@ globalThis.PIXI = {
   RenderTexture: FakeRenderTexture,
   Sprite: FakeSprite,
   SpriteMaskFilter: FakeSpriteMaskFilter,
+  DOMAdapter: {get: () => ({createCanvas: (width, height) => new FakeCanvas(width, height)})},
   SCALE_MODES: {LINEAR: "linear"},
-  Texture: {EMPTY: EMPTY_TEXTURE}
+  Texture: FakeTexture
 };
 
 globalThis.foundry = {
@@ -443,6 +466,8 @@ assert.match(firstFilter.fragment, /texture2D\(mask, vMaskCoord\)\.a/,
   "the filter samples support alpha rather than background color");
 assert.match(firstFilter.fragment, /texture2D\(spillMask, vMaskCoord\)\.a/,
   "the filter samples the baked spill alpha at the same wall-local coordinate");
+assert.match(firstFilter.fragment, /texture2D\(wallAccessMask, vMaskCoord\)\.a/,
+  "the filter samples the wall-access mask at the same wall-local coordinate");
 assert.doesNotMatch(firstFilter.fragment, /supportAlpha\s*=.*\.r/);
 assert.match(firstFilter.fragment, /max\(supportAlpha, featherAlpha\)/,
   "exact support remains authoritative over the feather");
@@ -450,12 +475,16 @@ assert.match(firstFilter.fragment, /max\(unsupported, edgeTransition\)/,
   "the feather bridges antialiased support edges instead of leaving an alpha valley");
 assert.match(firstFilter.fragment, /color\.rgb \*= mix\(1\.0, spillBrightness, fringe\)/,
   "darkening is restricted to the unsupported fringe");
+assert.match(firstFilter.fragment, /finalSupportAlpha \* wallAccess/,
+  "wall clipping applies after support feathering so the spill cannot cross a Wall");
 assert.equal(firstFilter.maskSprite, firstMaskSprite);
 assert.equal(firstFilter.uniforms.spillOpacityGain, 1.3);
 assert.equal(firstFilter.uniforms.spillFadeExponent, 0.65);
 assert.equal(firstFilter.uniforms.spillMaxAlpha, 0.8);
 assert.equal(firstFilter.uniforms.spillEdgeBrightness, 0.78);
 assert.equal(firstFilter.uniforms.spillOuterBrightness, 0.25);
+assert.equal(firstFilter.uniforms.wallAccessMask.src, "wall-access");
+assert.equal(firstFilter.uniforms.wallAccessMask.source.scaleMode, "linear");
 assertNear(firstFilter.uniforms.supportTexelSize[0], 0.01, 1e-8);
 assertNear(firstFilter.uniforms.supportTexelSize[1], 0.005, 1e-8);
 assert.equal(firstMaskSprite.renderable, false);
@@ -746,6 +775,22 @@ const failedSupportTextures = FakeRenderTexture.instances.slice(texturesBeforeSu
 assert.equal(failedSupportTextures.length, 1);
 assert.equal(failedSupportTextures[0].destroyed, true, "the failed exact support texture is released");
 
+hookCallbacks.get("canvasReady")();
+await flushAsyncWork();
+assert.equal(primary.children.length, 2);
+const originalAdapter = PIXI.DOMAdapter.get;
+console.error = message => { maskFailures.push(String(message)); };
+try {
+  PIXI.DOMAdapter.get = () => ({createCanvas: () => ({getContext: () => null})});
+  hookCallbacks.get("refreshTile")(supportingTile);
+  await flushAsyncWork();
+} finally {
+  PIXI.DOMAdapter.get = originalAdapter;
+  console.error = originalError;
+}
+assert.match(maskFailures.at(-1), /Failed to refresh destroyed-wall support mask/);
+assert.equal(primary.children.length, 0, "a failed Wall access mask removes debris instead of displaying unclipped artwork");
+
 console.log("wall art tests passed");
 
 async function flushAsyncWork() {
@@ -761,7 +806,13 @@ function assertNear(actual, expected, tolerance = 1e-10, message) {
 function currentMaskResources(mesh, parent) {
   const mask = parent.children.find(child => child instanceof FakeSprite);
   const filter = mesh.filters[0];
-  return {filter, mask, texture: mask.texture, spillTexture: filter.uniforms.spillMask};
+  return {
+    filter,
+    mask,
+    texture: mask.texture,
+    spillTexture: filter.uniforms.spillMask,
+    wallAccessTexture: filter.uniforms.wallAccessMask
+  };
 }
 
 function assertDestroyedMaskResources(resources) {
@@ -769,6 +820,7 @@ function assertDestroyedMaskResources(resources) {
   assert.equal(resources.mask.destroyed, true);
   assert.equal(resources.texture.destroyed, true);
   assert.equal(resources.spillTexture.destroyed, true);
+  assert.equal(resources.wallAccessTexture.destroyed, true);
 }
 
 function getSupportRenderCalls() {

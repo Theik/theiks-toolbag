@@ -3,7 +3,6 @@ import {
   TERRAIN_FIELDS,
   authorizeTerrainTransition,
   getBreakableTerrainData,
-  getTerrainKey,
   revokeTerrainTransition
 } from "./terrain-config.js";
 import {prepareTerrainTexture} from "./terrain-edges.js";
@@ -14,8 +13,8 @@ import {
   validatePlatformCollapsePlan
 } from "./platform-collapse.js";
 import {queueEventBehaviors} from "../script-events.js";
+import {acquireTileTransition} from "../tile-transition-lock.js";
 
-const inProgress = new Set();
 let transitionSequence = 0;
 
 /**
@@ -31,9 +30,8 @@ export async function advanceTerrainDestruction(tile) {
   if (!initial.states.length) throw new Error(localize("Errors.StateRequired"));
   if (!initial.canAdvance) throw new Error(localize("Errors.FullyDestroyed"));
 
-  const key = getTerrainKey(tile);
-  if (inProgress.has(key)) throw new Error(localize("Errors.InProgress"));
-  inProgress.add(key);
+  const releaseTransition = acquireTileTransition(tile);
+  if (!releaseTransition) throw new Error(localize("Errors.InProgress"));
   try {
     const initialSrc = getTextureSrc(tile);
     const targetStage = initial.stage + 1;
@@ -95,7 +93,7 @@ export async function advanceTerrainDestruction(tile) {
       revokeTerrainTransition(tile, nonce);
     }
   } finally {
-    inProgress.delete(key);
+    releaseTransition();
   }
 }
 
@@ -111,9 +109,8 @@ export async function retreatTerrainDestruction(tile) {
   if (!initial.damaged) throw new Error(localize("Errors.NotDamaged"));
   if (!initial.restoreSrc) throw new Error(localize("Errors.InvalidRestore"));
 
-  const key = getTerrainKey(tile);
-  if (inProgress.has(key)) throw new Error(localize("Errors.InProgress"));
-  inProgress.add(key);
+  const releaseTransition = acquireTileTransition(tile);
+  if (!releaseTransition) throw new Error(localize("Errors.InProgress"));
   try {
     const initialSrc = getTextureSrc(tile);
     const targetStage = initial.stage - 1;
@@ -155,7 +152,7 @@ export async function retreatTerrainDestruction(tile) {
       revokeTerrainTransition(tile, nonce);
     }
   } finally {
-    inProgress.delete(key);
+    releaseTransition();
   }
 }
 
@@ -181,9 +178,8 @@ async function restoreTerrainState(tile, {emitBehaviors}) {
   if (!initial.damaged) throw new Error(localize("Errors.NotDamaged"));
   if (!initial.restoreSrc) throw new Error(localize("Errors.InvalidRestore"));
 
-  const key = getTerrainKey(tile);
-  if (inProgress.has(key)) throw new Error(localize("Errors.InProgress"));
-  inProgress.add(key);
+  const releaseTransition = acquireTileTransition(tile);
+  if (!releaseTransition) throw new Error(localize("Errors.InProgress"));
   try {
     const initialSrc = getTextureSrc(tile);
     const targetSrc = initial.restoreSrc;
@@ -222,7 +218,7 @@ async function restoreTerrainState(tile, {emitBehaviors}) {
       revokeTerrainTransition(tile, nonce);
     }
   } finally {
-    inProgress.delete(key);
+    releaseTransition();
   }
 }
 
