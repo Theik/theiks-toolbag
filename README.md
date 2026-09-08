@@ -163,7 +163,7 @@ The lever is mirrored while the Tile is moving toward on. It returns to its norm
 
 Transparent padding, holes, and gaps between separate parts of an image do not extend its reach. On a gridded Scene, diagonal adjacency counts. On a gridless Scene, the Token must be within one grid unit of the nearest opaque part of the image.
 
-A Tile can be usable and breakable. Any Breakable Terrain damage hides the lever marker and blocks use. The damage image takes priority. Repair restores the usable image that was visible before the damage. Terrain Destruction Mode and the combined Destruction Mode also hide lever markers, so the controls do not overlap.
+A Tile can be usable and breakable. Any Breakable Terrain damage or Foundry Hidden state hides the lever marker and blocks use. The damage image takes priority. Repair restores the usable image that was visible before the damage. Terrain Destruction Mode and the combined Destruction Mode also hide lever markers, so the controls do not overlap.
 
 Usable Tiles manages the Tile's native image. Disable usability before replacing that image directly. Usable Tiles and Breakable Terrain share the Toolbag tab, but their world settings remain independent.
 

@@ -15,3 +15,7 @@ The first release of Theik's Toolbag.
 - Integrated Usable Tiles with Breakable Terrain, including shared configuration and reliable image precedence while damaged.
 - Destroyed Wall rubble now stops at physical Walls and closed doors.
 - Updated the README with clearer documentation and a Usable Tiles demo.
+
+## 1.1.1
+
+- Hidden usable Tiles no longer show a lever marker or accept use.

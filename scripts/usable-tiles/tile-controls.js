@@ -91,7 +91,8 @@ async function applyUse(tile, {user, token = null, expectedIndex, expectedDirect
     }
     const latest = getUsableTileData(tile);
     if (latest.index !== current.index || latest.direction !== current.direction
-      || !foundry.utils.equals(latest.states, current.states) || getBreakableTerrainData(tile).damaged) {
+      || !foundry.utils.equals(latest.states, current.states)
+      || getBreakableTerrainData(tile).damaged || isUsableTileHidden(tile)) {
       throw new Error(localize("Errors.StateChanged"));
     }
     const targetDirection = targetIndex === current.states.length - 1
@@ -145,7 +146,12 @@ function validateTile(tile) {
 function validateUsableState(tile, data) {
   if (!data.enabled) throw new Error(localize("Errors.NotUsable"));
   if (data.states.length < 2) throw new Error(localize("Errors.StatesRequired"));
+  if (isUsableTileHidden(tile)) throw new Error(localize("Errors.Hidden"));
   if (getBreakableTerrainData(tile).damaged) throw new Error(localize("Errors.Damaged"));
+}
+
+function isUsableTileHidden(tile) {
+  return Boolean(tile?.hidden ?? tile?._source?.hidden);
 }
 
 function validateUserAccess(tile, user, token) {
@@ -326,7 +332,8 @@ async function refreshMarkers() {
   const options = getInteractionOptions(canvas.scene);
   let candidates = (canvas.tiles?.placeables ?? []).filter(tile => {
     const data = getUsableTileData(tile.document);
-    return data.configured && !getBreakableTerrainData(tile.document).damaged;
+    return data.configured && !isUsableTileHidden(tile.document)
+      && !getBreakableTerrainData(tile.document).damaged;
   });
   const prepared = await Promise.all(candidates.map(async tile => {
     try {

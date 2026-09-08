@@ -126,6 +126,23 @@ assert.equal(
   1
 );
 
+document.hidden = true;
+for (const callback of hooks.get("updateTile") ?? []) callback(document);
+await flush();
+assert.equal(
+  controls.children.find(container => container.name === "theiks-toolbag.usableTileMarkers")?.children.length,
+  0,
+  "hidden Tiles never show lever markers"
+);
+document.hidden = false;
+for (const callback of hooks.get("updateTile") ?? []) callback(document);
+await flush();
+assert.equal(
+  controls.children.find(container => container.name === "theiks-toolbag.usableTileMarkers")?.children.length,
+  1,
+  "revealing a Tile restores its lever marker"
+);
+
 breakable.stage = 1;
 for (const callback of hooks.get("updateTile") ?? []) callback(document);
 await flush();

@@ -229,6 +229,7 @@
         "NotUsable": "That Tile is not configured as usable.",
         "StatesRequired": "A usable Tile requires at least two non-empty state images.",
         "Damaged": "That Tile is damaged and cannot be used until it is repaired.",
+        "Hidden": "That Tile is hidden and cannot be used.",
         "RepairBeforeUse": "Repair this Tile before changing its usable definition or image.",
         "ManagedState": "Usable Tile state can only be changed through its lever control or API.",
         "ManagedImage": "This Tile image is managed by Usable Tiles.",

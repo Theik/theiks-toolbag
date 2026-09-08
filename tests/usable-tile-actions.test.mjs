@@ -130,6 +130,11 @@ await restoreTerrain(tile);
 assert.equal(tile.texture.src, "new-step.webp", "repair restores the captured usable image");
 assert.equal(usable.index, 1, "damage and repair preserve the usable state");
 
+tile.hidden = true;
+await assert.rejects(() => useUsableTile(tile), /Hidden/);
+assert.equal(usable.index, 1, "a hidden Tile keeps its usable state");
+tile.hidden = false;
+
 breakable.stage = 1;
 breakable.restoreSrc = "new-off.webp";
 tile.texture.src = tile._source.texture.src = "broken.webp";
