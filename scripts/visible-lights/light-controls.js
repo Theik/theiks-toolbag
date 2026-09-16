@@ -17,6 +17,8 @@ import {queueEventBehaviors} from "../script-events.js";
 const SOCKET_CHANNEL = `module.${MODULE_ID}`;
 const SOCKET_REQUEST = "visibleLightToggleRequest";
 const SOCKET_RESULT = "visibleLightToggleResult";
+const CONTROL_NAME = "theiksToolbagLightToggle";
+const MODE_TOOL_NAME = "theiksToolbagLightToggleMode";
 const MARKER_TEXTURE = "icons/svg/light.svg";
 const REPAIR_MARKER_TEXTURE = "icons/svg/regen.svg";
 const DESTROYED_FIELD = `flags.${MODULE_ID}.${VISIBLE_LIGHT_FLAG}.destroyed`;
@@ -36,9 +38,11 @@ const pendingRequests = new Map();
 let markerContainer = null;
 let markerRefreshId = 0;
 let markerRefreshQueued = false;
+let lightToggleModeActive = false;
 
-/** Register visible-light controls, authorization, and socket hooks. */
+/** Register visible-light controls, the GM light-toggle mode, authorization, and socket hooks. */
 export function registerVisibleLightControls() {
+  Hooks.on("getSceneControlButtons", addLightToggleControl);
   Hooks.once("ready", registerSocket);
   Hooks.on("canvasReady", queueMarkerRefresh);
   Hooks.on("canvasTearDown", clearMarkers);
@@ -55,6 +59,39 @@ export function registerVisibleLightControls() {
   Hooks.on("preUpdateAmbientLight", keepDestroyedLightOff);
   Hooks.on("canvasReady", reconcileCurrentSceneDestroyedLights);
   Hooks.on(FEATURE_SETTING_CHANGED_HOOK, handleFeatureSettingChange);
+}
+
+/** Add the GM-only mode which reveals every configured light marker. */
+function addLightToggleControl(controls) {
+  if (!game.user.isGM || !isFeatureEnabled(FEATURES.visibleLights)) return;
+  controls[CONTROL_NAME] = {
+    name: CONTROL_NAME,
+    order: 101,
+    title: "THEIKS_TOOLBAG.VisibleLights.Tool.Title",
+    icon: "fa-solid fa-lightbulb",
+    visible: true,
+    activeTool: MODE_TOOL_NAME,
+    tools: {
+      [MODE_TOOL_NAME]: {
+        name: MODE_TOOL_NAME,
+        order: 1,
+        title: "THEIKS_TOOLBAG.VisibleLights.Tool.Title",
+        icon: "fa-solid fa-lightbulb",
+        visible: true,
+        interaction: false,
+        control: false,
+        onChange: (_event, isActive) => setVisibleLightToggleModeActive(isActive)
+      }
+    }
+  };
+}
+
+/** Show all configured light markers while the GM light-toggle mode is active. */
+export function setVisibleLightToggleModeActive(isActive) {
+  const next = Boolean(isActive && game.user.isGM && isFeatureEnabled(FEATURES.visibleLights));
+  if (lightToggleModeActive === next) return;
+  lightToggleModeActive = next;
+  queueMarkerRefresh();
 }
 
 /**
@@ -225,10 +262,19 @@ function getTokenInteractionOrigin(token, source, gridSize) {
  * @returns {foundry.canvas.placeables.Token|null}
  */
 export function findAdjacentOwnedToken(light, user, tokens, options) {
+  return findAdjacentToken(light, user, tokens, options, {requireOwnership: true});
+}
+
+/** Find a controlled Token next to a light. GMs do not need Token ownership. */
+function findAdjacentControlledToken(light, tokens, options) {
+  return findAdjacentToken(light, null, tokens, options, {requireOwnership: false});
+}
+
+function findAdjacentToken(light, user, tokens, options, {requireOwnership}) {
   for (const token of tokens ?? []) {
     const document = token.document ?? token;
     if (document.parent !== light.parent) continue;
-    if (!userOwnsToken(user, document)) continue;
+    if (requireOwnership && !userOwnsToken(user, document)) continue;
     if (!isTokenAdjacentToLight(document, light, options)) continue;
     if (options?.testWalls !== false && isTokenBlockedFromLight(document, light, options)) continue;
     return token;
@@ -630,18 +676,20 @@ async function refreshMarkers() {
 
   const options = getAdjacencyOptions(canvas.scene);
   const candidates = [];
+  const showAll = game.user.isGM && lightToggleModeActive;
   for (const light of canvas.lighting.placeables) {
     if (!isVisibleLightConfigured(light.document)) continue;
     const data = getVisibleLightData(light.document);
+    const adjacentToken = showAll
+      ? null
+      : game.user.isGM
+        ? findAdjacentControlledToken(light.document, canvas.tokens.controlled, options)
+        : findAdjacentOwnedToken(light.document, game.user, canvas.tokens.controlled, options);
     if (data.destroyed) {
-      if (game.user.isGM) candidates.push(light);
+      if (game.user.isGM && (showAll || adjacentToken)) candidates.push(light);
       continue;
     }
-    if (game.user.isGM) candidates.push(light);
-    else {
-      const token = findAdjacentOwnedToken(light.document, game.user, canvas.tokens.controlled, options);
-      if (token) candidates.push(light);
-    }
+    if (showAll || adjacentToken) candidates.push(light);
   }
 
   await Promise.all(candidates.map(async light => {
@@ -809,6 +857,7 @@ function handleFeatureSettingChange(feature, enabled) {
     return;
   }
 
+  lightToggleModeActive = false;
   clearMarkers();
   const error = createFeatureDisabledError(FEATURES.visibleLights);
   for (const pending of pendingRequests.values()) {

@@ -5,6 +5,7 @@ import {restoreTerrain} from "./breakable-terrain/terrain-destruction.js";
 import {getVisibleLightData} from "./visible-lights/light-config.js";
 import {repairVisibleLight} from "./visible-lights/light-controls.js";
 import {FEATURES, isFeatureEnabled} from "./settings.js";
+import {countDugCells, getUndergroundData, resetUnderground} from "./underground/underground-data.js";
 
 const MODULE_ID = "theiks-toolbag";
 const RESET_ICON = "fa-solid fa-arrow-rotate-left";
@@ -12,7 +13,8 @@ const RESET_ICON = "fa-solid fa-arrow-rotate-left";
 const DEFAULT_RESTORERS = Object.freeze({
   walls: repairWall,
   terrain: restoreTerrain,
-  lights: repairVisibleLight
+  lights: repairVisibleLight,
+  underground: resetUnderground
 });
 
 let resetInProgress = false;
@@ -88,7 +90,8 @@ export async function resetSceneDestructables(scene, {restorers = DEFAULT_RESTOR
   const operations = [
     ...targets.walls.map(document => ({kind: "Wall", document, restore: restorers.walls})),
     ...targets.terrain.map(document => ({kind: "Tile", document, restore: restorers.terrain})),
-    ...targets.lights.map(document => ({kind: "AmbientLight", document, restore: restorers.lights}))
+    ...targets.lights.map(document => ({kind: "AmbientLight", document, restore: restorers.lights})),
+    ...targets.underground.map(document => ({kind: "Scene underground", document, restore: restorers.underground}))
   ];
   const settled = await Promise.allSettled(operations.map(operation => (
     Promise.resolve().then(() => operation.restore(operation.document))
@@ -122,7 +125,8 @@ export function collectResettableDestructables(scene) {
       : [],
     lights: isFeatureEnabled(FEATURES.visibleLights)
       ? collectionContents(scene?.lights).filter(light => getVisibleLightData(light).destroyed)
-      : []
+      : [],
+    underground: isFeatureEnabled(FEATURES.breakableTerrain) && undergroundDugCount(scene) > 0 ? [scene] : []
   };
 }
 
@@ -133,7 +137,7 @@ function collectionContents(collection) {
 }
 
 function countTargets(targets) {
-  return targets.walls.length + targets.terrain.length + targets.lights.length;
+  return targets.walls.length + targets.terrain.length + targets.lights.length + targets.underground.length;
 }
 
 function getTargetCounts(targets) {
@@ -141,8 +145,17 @@ function getTargetCounts(targets) {
     walls: targets.walls.length,
     terrain: targets.terrain.length,
     lights: targets.lights.length,
+    underground: targets.underground.reduce((total, scene) => total + undergroundDugCount(scene), 0),
     total: countTargets(targets)
   };
+}
+
+function undergroundDugCount(scene) {
+  try {
+    return countDugCells(getUndergroundData(scene));
+  } catch (_error) {
+    return 0;
+  }
 }
 
 function localize(key) {

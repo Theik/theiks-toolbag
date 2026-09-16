@@ -127,7 +127,7 @@ function matches(element, selector) {
   return true;
 }
 
-globalThis.game = {i18n: {localize: key => key === "THEIKS_TOOLBAG.ConfigTabs.Toolbag" ? "Theik's Toolbag" : key}};
+globalThis.game = {i18n: {localize: key => key === "THEIKS_TOOLBAG.ConfigTabs.Toolbag" ? "Toolbag" : key}};
 
 const normalDocument = new FakeDocument();
 globalThis.document = normalDocument;
@@ -159,6 +159,7 @@ const mountedNormal = mountToolbagConfigTab({
 assert.equal(mountedNormal.panel.dataset.toolbagFeature, "visibleLights");
 assert.equal(mountedNormal.panel.innerHTML, "<fieldset>Toolbag</fieldset>");
 assert.equal(normalForm.querySelector(".theiks-toolbag-config-tab").dataset.tab, TOOLBAG_TAB_ID);
+assert.equal(nativeNavigation.children[1].children[1].textContent, "Toolbag");
 assert.equal(normalForm.children.at(-1), footer, "the form footer remains outside tab content");
 assert.equal(nativeNavigation.children.length, 2);
 assert.equal(
@@ -224,5 +225,56 @@ removeToolbagConfigTabs("breakableWalls", generatedDocument);
 assert.deepEqual(generatedForm.children, [generatedBody, generatedFooter]);
 assert.equal(generatedBody.classList.contains("tab"), false);
 assert.equal(generatedBody.dataset.tab, undefined);
+
+const sharedDocument = new FakeDocument();
+globalThis.document = sharedDocument;
+const sharedForm = sharedDocument.createElement("form");
+const sharedBody = sharedDocument.createElement("div");
+sharedBody.className = "standard-form scrollable tab active theiks-map-generation-native-tab";
+sharedBody.dataset.group = "sheet";
+sharedBody.dataset.tab = "theiks-map-generation-native";
+const sharedNav = sharedDocument.createElement("nav");
+sharedNav.className = "sheet-tabs tabs top-tabs theiks-map-generation-generated-tabs";
+const sharedWall = sharedDocument.createElement("a");
+sharedWall.className = "theiks-map-generation-tab-control active";
+sharedWall.dataset.action = "tab";
+sharedWall.dataset.group = "sheet";
+sharedWall.dataset.tab = "theiks-map-generation-native";
+const sharedGeneration = sharedDocument.createElement("a");
+sharedGeneration.className = "theiks-map-generation-tab-control";
+sharedGeneration.dataset.action = "tab";
+sharedGeneration.dataset.group = "sheet";
+sharedGeneration.dataset.tab = "theiks-map-generation";
+sharedNav.append(sharedWall, sharedGeneration);
+const sharedGenerationPanel = sharedDocument.createElement("section");
+sharedGenerationPanel.className = "tab standard-form scrollable theiks-map-generation-config-tab";
+sharedGenerationPanel.dataset.group = "sheet";
+sharedGenerationPanel.dataset.tab = "theiks-map-generation";
+const sharedFooter = sharedDocument.createElement("footer");
+sharedForm.append(sharedNav, sharedBody, sharedGenerationPanel, sharedFooter);
+sharedDocument.body.append(sharedForm);
+
+mountToolbagConfigTab({
+  application: {form: sharedForm, tabGroups: {}},
+  element: sharedForm,
+  content: "<fieldset>Wall tools</fieldset>",
+  feature: "breakableWalls",
+  nativeLabel: "Wall",
+  nativeIcon: "fa-solid fa-block-brick"
+});
+assert.equal(sharedForm.querySelectorAll("nav.sheet-tabs").length, 1, "Toolbag reuses Map Generator's Wall tab nav");
+assert.equal(sharedNav.children.length, 3);
+assert.equal(sharedNav.children[0].dataset.tab, "theiks-map-generation-native");
+assert.equal(sharedNav.children[1].dataset.tab, "theiks-map-generation");
+assert.equal(sharedNav.children[2].dataset.tab, TOOLBAG_TAB_ID);
+assert.equal(sharedNav.children[2].children[1].textContent, "Toolbag");
+assert.equal(sharedBody.dataset.tab, "theiks-map-generation-native", "shared native tab id is left unchanged");
+
+removeToolbagConfigTabs("breakableWalls", sharedDocument);
+assert.equal(sharedForm.querySelectorAll("nav.sheet-tabs").length, 1);
+assert.equal(sharedNav.children.length, 2);
+assert.equal(sharedForm.querySelector(".theiks-toolbag-config-tab"), null);
+assert.equal(sharedBody.classList.contains("theiks-map-generation-native-tab"), true);
+assert.equal(sharedGenerationPanel.dataset.tab, "theiks-map-generation");
 
 console.log("config tab tests passed");

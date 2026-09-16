@@ -5,6 +5,14 @@ import {
   FEATURE_SETTING_CHANGED_HOOK,
   isFeatureEnabled
 } from "../settings.js";
+import {
+  countViewedDestroyables,
+  getDestructionMarkerCursor,
+  getDestructionMarkerGridSize,
+  isDestroyableOnViewedLevel,
+  selectNearbyDestroyables,
+  subscribeDestructionMarkerPointer
+} from "../destruction-marker-proximity.js";
 
 const TOOL_NAME = "theiksToolbagDestroyWalls";
 const DESTROY_MARKER_TEXTURE = "icons/svg/explosion.svg";
@@ -17,6 +25,9 @@ let markerContainer = null;
 const markersByWallId = new Map();
 let refreshId = 0;
 let refreshQueued = false;
+let pendingRebuild = false;
+let visibleKey = "";
+let unsubscribePointer = null;
 let hiddenDoorContainer = null;
 let priorDoorVisibility = null;
 
@@ -55,9 +66,12 @@ export function setWallDestructionModeActive(isActive) {
   const wasActive = active;
   active = isActive && game.user.isGM && isFeatureEnabled(FEATURES.breakableWalls);
   if (active) {
+    unsubscribePointer ??= subscribeDestructionMarkerPointer(queueProximityRefresh);
     hideDoorControls({captureCurrent: !wasActive});
     queueMarkerRefresh();
   } else {
+    unsubscribePointer?.();
+    unsubscribePointer = null;
     clearMarkers();
     restoreDoorControls();
   }
@@ -108,35 +122,61 @@ function refreshForWallChange(wall) {
 
 /** Coalesce bulk Wall updates into one marker redraw. */
 function queueMarkerRefresh() {
+  pendingRebuild = true;
+  queueMarkerSync();
+}
+
+function queueProximityRefresh() {
+  queueMarkerSync();
+}
+
+function queueMarkerSync() {
   if (!active || refreshQueued) return;
   refreshQueued = true;
   queueMicrotask(() => {
     refreshQueued = false;
-    if (active) void refreshMarkers();
+    if (!active) return;
+    const rebuild = pendingRebuild;
+    pendingRebuild = false;
+    void refreshMarkers({rebuild});
   });
 }
 
 /** Draw an action marker for each intact breakable or destroyed Wall on the viewed level. */
-async function refreshMarkers() {
-  const currentRefresh = ++refreshId;
-  destroyMarkerContainer();
+async function refreshMarkers({rebuild = true} = {}) {
   if (!active || !isFeatureEnabled(FEATURES.breakableWalls)
-    || !canvas.ready || !canvas.controls || !game.user.isGM) return;
+    || !canvas.ready || !canvas.controls || !game.user.isGM) {
+    if (rebuild) destroyMarkerContainer();
+    return;
+  }
 
-  const container = new PIXI.Container();
-  container.name = `${MODULE_ID}.breakableWallMarkers`;
-  container.eventMode = "passive";
-  canvas.controls.addChild(container);
-  markerContainer = container;
+  const walls = visibleWalls();
+  const signature = walls.map(wall => wall.id).toSorted().join("\0");
+  if (!rebuild && markerContainer && signature === visibleKey) return;
 
-  const walls = canvas.walls.placeables.filter(wall => {
-    const data = getBreakableWallData(wall.document);
-    return isWallOnViewedLevel(wall.document) && (data.destroyed || data.enabled);
-  });
-  await Promise.all(walls.map(async wall => {
+  const currentRefresh = ++refreshId;
+  if (rebuild) destroyMarkerContainer();
+  const container = ensureMarkerContainer();
+  visibleKey = signature;
+
+  if (!rebuild) {
+    const visibleIds = new Set(walls.map(wall => wall.id));
+    for (const [id, marker] of [...markersByWallId]) {
+      if (visibleIds.has(id)) continue;
+      marker.destroy({children: true});
+      markersByWallId.delete(id);
+    }
+  }
+
+  const pending = rebuild ? walls : walls.filter(wall => !markersByWallId.has(wall.id));
+  await Promise.all(pending.map(async wall => {
     try {
       const marker = await createMarker(wall);
       if (currentRefresh !== refreshId || markerContainer !== container || !container.parent) {
+        marker.destroy({children: true});
+        return;
+      }
+      if (markersByWallId.has(wall.id)) {
         marker.destroy({children: true});
         return;
       }
@@ -148,14 +188,30 @@ async function refreshMarkers() {
   }));
 }
 
-/** A Wall with no assigned levels is visible everywhere; assigned Walls only belong to the viewed level. */
-function isWallOnViewedLevel(wall) {
-  const levels = wall.levels;
-  if (!levels || levels.size === 0 || levels.length === 0) return true;
+function visibleWalls() {
+  const walls = (canvas.walls?.placeables ?? []).filter(wall => {
+    const data = getBreakableWallData(wall.document);
+    return isDestroyableOnViewedLevel(wall.document) && (data.destroyed || data.enabled);
+  });
+  return selectNearbyDestroyables(walls.map(wall => {
+    const [x, y] = wall.midpoint;
+    return {target: wall, x, y};
+  }), {
+    totalCount: countViewedDestroyables(),
+    cursor: getDestructionMarkerCursor(),
+    gridSize: getDestructionMarkerGridSize()
+  }).map(item => item.target);
+}
 
-  const levelId = canvas.level?.id ?? canvas.level?._id;
-  if (!levelId) return false;
-  return levels.has?.(levelId) ?? levels.includes?.(levelId) ?? false;
+function ensureMarkerContainer() {
+  if (markerContainer?.parent === canvas.controls) return markerContainer;
+  destroyMarkerContainer();
+  const container = new PIXI.Container();
+  container.name = `${MODULE_ID}.breakableWallMarkers`;
+  container.eventMode = "passive";
+  canvas.controls.addChild(container);
+  markerContainer = container;
+  return container;
 }
 
 /**
@@ -245,6 +301,7 @@ function clearMarkers() {
 
 function destroyMarkerContainer() {
   markersByWallId.clear();
+  visibleKey = "";
   if (!markerContainer) return;
   markerContainer.removeFromParent();
   markerContainer.destroy({children: true});

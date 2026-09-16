@@ -367,6 +367,10 @@ function createSupportSources() {
       if (!(alpha > 0)) continue;
       container.addChild(cloneSupportSprite(mesh, Math.min(alpha, 1)));
     }
+    for (const child of canvas.primary?.children ?? []) {
+      if (!isDugUndergroundMesh(child) || !isUsableSupportMesh(child)) continue;
+      container.addChild(cloneSupportSprite(child, 1));
+    }
     return container;
   } catch (error) {
     destroySupportSources(container);
@@ -378,6 +382,11 @@ function createSupportSources() {
 function isUsableSupportMesh(mesh) {
   return Boolean(mesh && !mesh.destroyed && mesh.visible !== false && mesh.renderable !== false
     && mesh.texture?.valid && mesh.texture !== PIXI.Texture.EMPTY);
+}
+
+function isDugUndergroundMesh(object) {
+  return typeof object?.name === "string"
+    && object.name.startsWith(`${MODULE_ID}.undergroundTerrain.dug.`);
 }
 
 /** @param {TileDocument} document */
@@ -408,7 +417,20 @@ function cloneSupportSprite(source, alpha) {
   sprite.rotation = Number(source.rotation ?? 0);
   sprite.alpha = alpha;
   sprite.eventMode = "none";
+  const mask = cloneSupportMask(source.mask);
+  if (mask) {
+    sprite.addChild?.(mask);
+    sprite.mask = mask;
+  }
   return sprite;
+}
+
+function cloneSupportMask(mask) {
+  if (!mask || mask.destroyed) return null;
+  if (typeof mask.clone !== "function") return null;
+  const cloned = mask.clone();
+  cloned.eventMode = "none";
+  return cloned;
 }
 
 function copyPoint(target, source) {
@@ -582,7 +604,7 @@ function getSupportMaskResolution(renderer, width, height) {
 }
 
 /** Coalesce support-only changes without reloading every rubble texture. */
-function queueSupportMaskRefresh() {
+export function queueSupportMaskRefresh() {
   if (supportRefreshQueued || !artwork.size) return;
   supportRefreshQueued = true;
   const refresh = () => {

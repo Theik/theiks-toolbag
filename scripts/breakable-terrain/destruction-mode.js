@@ -10,6 +10,14 @@ import {
   FEATURE_SETTING_CHANGED_HOOK,
   isFeatureEnabled
 } from "../settings.js";
+import {
+  countViewedDestroyables,
+  getDestructionMarkerCursor,
+  getDestructionMarkerGridSize,
+  isDestroyableOnViewedLevel,
+  selectNearbyDestroyables,
+  subscribeDestructionMarkerPointer
+} from "../destruction-marker-proximity.js";
 
 const TOOL_NAME = "theiksToolbagDestroyTerrain";
 const DESTROY_MARKER_TEXTURE = "icons/svg/explosion.svg";
@@ -23,6 +31,9 @@ let markerContainer = null;
 const markersByTileId = new Map();
 let refreshId = 0;
 let refreshQueued = false;
+let pendingRebuild = false;
+let visibleKey = "";
+let unsubscribePointer = null;
 
 /** Register the GM-only Tiles toolbar destruction tool and its marker lifecycle. */
 export function registerTerrainDestructionMode() {
@@ -57,8 +68,14 @@ export function setTerrainDestructionModeActive(isActive) {
   const previous = active;
   active = isActive && game.user.isGM && isFeatureEnabled(FEATURES.breakableTerrain);
   if (active !== previous) Hooks.callAll?.(TERRAIN_DESTRUCTION_MODE_CHANGED_HOOK, active);
-  if (active) queueMarkerRefresh();
-  else clearMarkers();
+  if (active) {
+    unsubscribePointer ??= subscribeDestructionMarkerPointer(queueProximityRefresh);
+    queueMarkerRefresh();
+  } else {
+    unsubscribePointer?.();
+    unsubscribePointer = null;
+    clearMarkers();
+  }
 }
 
 export function isTerrainDestructionModeActive() {
@@ -74,34 +91,60 @@ function refreshForTileChange(tile) {
 }
 
 function queueMarkerRefresh() {
+  pendingRebuild = true;
+  queueMarkerSync();
+}
+
+function queueProximityRefresh() {
+  queueMarkerSync();
+}
+
+function queueMarkerSync() {
   if (!active || refreshQueued) return;
   refreshQueued = true;
   queueMicrotask(() => {
     refreshQueued = false;
-    if (active) void refreshMarkers();
+    if (!active) return;
+    const rebuild = pendingRebuild;
+    pendingRebuild = false;
+    void refreshMarkers({rebuild});
   });
 }
 
-async function refreshMarkers() {
-  const currentRefresh = ++refreshId;
-  destroyMarkerContainer();
+async function refreshMarkers({rebuild = true} = {}) {
   if (!active || !isFeatureEnabled(FEATURES.breakableTerrain)
-    || !canvas.ready || !canvas.controls || !game.user.isGM) return;
+    || !canvas.ready || !canvas.controls || !game.user.isGM) {
+    if (rebuild) destroyMarkerContainer();
+    return;
+  }
 
-  const container = new PIXI.Container();
-  container.name = `${MODULE_ID}.breakableTerrainMarkers`;
-  container.eventMode = "passive";
-  canvas.controls.addChild(container);
-  markerContainer = container;
+  const tiles = visibleTiles();
+  const signature = tiles.map(tile => tile.id).toSorted().join("\0");
+  if (!rebuild && markerContainer && signature === visibleKey) return;
 
-  const tiles = (canvas.tiles?.placeables ?? []).filter(tile => {
-    const data = getBreakableTerrainData(tile.document);
-    return isTileOnViewedLevel(tile.document) && (data.enabled || data.damaged);
-  });
-  await Promise.all(tiles.map(async tile => {
+  const currentRefresh = ++refreshId;
+  if (rebuild) destroyMarkerContainer();
+  const container = ensureMarkerContainer();
+  visibleKey = signature;
+
+  if (!rebuild) {
+    const visibleIds = new Set(tiles.map(tile => tile.id));
+    for (const [id, marker] of [...markersByTileId]) {
+      if (visibleIds.has(id)) continue;
+      marker.destroy({children: true});
+      markersByTileId.delete(id);
+    }
+  }
+
+  const pending = rebuild ? tiles : tiles.filter(tile => !markersByTileId.has(tile.id));
+  await Promise.all(pending.map(async tile => {
     try {
       const marker = await createMarker(tile);
       if (currentRefresh !== refreshId || markerContainer !== container || !container.parent) {
+        marker.destroy({children: true});
+        return;
+      }
+      if (markersByTileId.has(tile.id)) {
         marker.destroy({children: true});
         return;
       }
@@ -113,23 +156,30 @@ async function refreshMarkers() {
   }));
 }
 
-function isTileOnViewedLevel(tile) {
-  const levels = normalizeLevelIds(tile?.levels ?? tile?._source?.levels);
-  if (!levels.length) return true;
-  const currentLevelId = canvas.level?.id ?? canvas.level?._id;
-  return currentLevelId != null && levels.includes(String(currentLevelId));
+function visibleTiles() {
+  const tiles = (canvas.tiles?.placeables ?? []).filter(tile => {
+    const data = getBreakableTerrainData(tile.document);
+    return isDestroyableOnViewedLevel(tile.document) && (data.enabled || data.damaged);
+  });
+  return selectNearbyDestroyables(tiles.map(tile => {
+    const [x, y] = getTerrainMarkerPosition(tile.document);
+    return {target: tile, x, y};
+  }), {
+    totalCount: countViewedDestroyables(),
+    cursor: getDestructionMarkerCursor(),
+    gridSize: getDestructionMarkerGridSize()
+  }).map(item => item.target);
 }
 
-function normalizeLevelIds(levels) {
-  if (!levels) return [];
-  try {
-    return Array.from(levels)
-      .map(level => level?.id ?? level?._id ?? level)
-      .filter(value => value != null && value !== "")
-      .map(String);
-  } catch (_error) {
-    return [];
-  }
+function ensureMarkerContainer() {
+  if (markerContainer?.parent === canvas.controls) return markerContainer;
+  destroyMarkerContainer();
+  const container = new PIXI.Container();
+  container.name = `${MODULE_ID}.breakableTerrainMarkers`;
+  container.eventMode = "passive";
+  canvas.controls.addChild(container);
+  markerContainer = container;
+  return container;
 }
 
 async function createMarker(tile) {
@@ -207,6 +257,7 @@ function clearMarkers() {
 
 function destroyMarkerContainer() {
   markersByTileId.clear();
+  visibleKey = "";
   if (!markerContainer) return;
   markerContainer.removeFromParent();
   markerContainer.destroy({children: true});

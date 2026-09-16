@@ -1,0 +1,53 @@
+<fieldset class="theiks-toolbag underground-terrain">
+    <legend>{{localize "THEIKS_TOOLBAG.Underground.Config.Legend"}}</legend>
+
+    <div class="form-group">
+        <label for="{{rootId}}-enabled">{{localize "THEIKS_TOOLBAG.Underground.Config.Enabled"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-enabled" type="checkbox" name="{{fields.enabled}}" data-dtype="Boolean"
+                {{checked enabled}}>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.Underground.Config.EnabledHint"}}</p>
+    </div>
+
+    <div data-underground-appearance {{#unless enabled}}hidden{{/unless}}>
+        <div class="form-group">
+            <label for="{{rootId}}-intact">{{localize "THEIKS_TOOLBAG.Underground.Config.IntactSrc"}}</label>
+            <div class="form-fields">
+                <file-picker id="{{rootId}}-intact" name="{{fields.intactSrc}}" type="image"
+                    value="{{intactSrc}}"></file-picker>
+            </div>
+            <p class="hint">{{localize "THEIKS_TOOLBAG.Underground.Config.IntactSrcHint"}}</p>
+        </div>
+
+        <div class="form-group">
+            <label for="{{rootId}}-dug">{{localize "THEIKS_TOOLBAG.Underground.Config.DugSrc"}}</label>
+            <div class="form-fields">
+                <file-picker id="{{rootId}}-dug" name="{{fields.dugSrc}}" type="image" value="{{dugSrc}}"></file-picker>
+            </div>
+            <p class="hint">{{localize "THEIKS_TOOLBAG.Underground.Config.DugSrcHint"}}</p>
+        </div>
+
+        <div class="form-group">
+            <label for="{{rootId}}-intact-grid">{{localize "THEIKS_TOOLBAG.Underground.Config.IntactGrid"}}</label>
+            <div class="form-fields">
+                <input id="{{rootId}}-intact-grid" type="number" name="{{fields.intactGrid}}" value="{{intactGrid}}"
+                    min="1" step="1">
+            </div>
+            <p class="hint">{{localize "THEIKS_TOOLBAG.Underground.Config.IntactGridHint"}}</p>
+        </div>
+
+        <div class="form-group">
+            <label for="{{rootId}}-dug-grid">{{localize "THEIKS_TOOLBAG.Underground.Config.DugGrid"}}</label>
+            <div class="form-fields">
+                <input id="{{rootId}}-dug-grid" type="number" name="{{fields.dugGrid}}" value="{{dugGrid}}" min="1"
+                    step="1">
+            </div>
+            <p class="hint">{{localize "THEIKS_TOOLBAG.Underground.Config.DugGridHint"}}</p>
+        </div>
+    </div>
+
+    {{#if hasSource}}
+    <p class="hint">{{localize "THEIKS_TOOLBAG.Underground.Config.CellCount" count=cellCount}}</p>
+    {{/if}}
+</fieldset>

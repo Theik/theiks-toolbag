@@ -12,6 +12,7 @@ const FEATURE_CONTENT_CLASS = "theiks-toolbag-feature-content";
  *
  * Foundry's normal Light and Tile sheets already provide a `sheet` tab group. WallConfig and
  * all three Placeable Palettes do not, so those forms are progressively enhanced in-place.
+ * If another module such as Map Generator already created that nav, reuse it.
  *
  * @param {{
  *   application: foundry.applications.api.ApplicationV2,
@@ -40,12 +41,9 @@ export function mountToolbagConfigTab({
   if (!root) return null;
 
   let navigation = element.querySelector("nav.sheet-tabs");
-  let nativePanel = nativeTab
-    ? element.querySelector(`.tab[data-tab="${nativeTab}"]`)
-    : null;
-  nativePanel ??= element.querySelector(`.${NATIVE_PANEL_CLASS}`);
+  let nativePanel = findNativePanel(element, nativeTab);
 
-  if (!navigation || !nativePanel) {
+  if (!navigation) {
     navigation = createNavigation();
     nativePanel = root;
     prepareNativePanel(nativePanel);
@@ -56,6 +54,8 @@ export function mountToolbagConfigTab({
       icon: nativeIcon,
       active: true
     }));
+  } else {
+    nativePanel ??= root;
   }
 
   const group = navigation.querySelector("[data-group]")?.dataset.group
@@ -121,8 +121,13 @@ export function removeToolbagConfigTabs(feature, ownerDocument = globalThis.docu
     control?.remove();
 
     if (generatedNavigation && nativePanel) {
-      generatedNavigation.remove();
-      restoreNativePanel(nativePanel);
+      const foreignControls = generatedNavigation.querySelectorAll(
+        `[data-action="tab"]:not(.${CONTROL_CLASS})`
+      );
+      if (foreignControls.length === 0) {
+        generatedNavigation.remove();
+        restoreNativePanel(nativePanel);
+      }
       continue;
     }
 
@@ -133,6 +138,15 @@ export function removeToolbagConfigTabs(feature, ownerDocument = globalThis.docu
       if (replacement?.dataset.tab) activateTab(scope, group, replacement.dataset.tab);
     }
   }
+}
+
+function findNativePanel(element, nativeTab) {
+  if (nativeTab) {
+    const named = element.querySelector(`.tab[data-tab="${nativeTab}"]`);
+    if (named) return named;
+  }
+  return element.querySelector(`.${NATIVE_PANEL_CLASS}`)
+    ?? element.querySelector(`.tab[data-tab]:not(.${PANEL_CLASS})`);
 }
 
 function getFormRoot(application, element) {

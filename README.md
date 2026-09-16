@@ -118,7 +118,7 @@ Edit a Tile and open the **Theik's Toolbag** tab. You can make it destroyable, u
 
 Foundry v14's Tile Palette has the same settings for defaults and bulk editing. Matching image dimensions prevent the Tile from changing size between states.
 
-Choose **Terrain Destruction Mode** from the Tiles controls, or use the top-level **Destruction Mode** to show terrain and wall markers together:
+Choose **Terrain Destruction Mode** from the Tiles controls, or use the top-level **Destruction Mode** to show terrain and wall markers together. Scenes with 200 or more destroyable walls and tiles only show those markers within 20 grid spaces of the cursor, so large maps do not stall when the mode is turned on.
 
 | Marker | Action | Result |
 |:--|:--|:--|
@@ -129,6 +129,16 @@ Choose **Terrain Destruction Mode** from the Tiles controls, or use the top-leve
 The Tile's blocking shape follows the opaque pixels in each image. Movement uses those contours. Vision uses one wall envelope around the image, which keeps the Tile visible while it blocks light and sight behind it. The final state removes all movement, light, and vision blocking.
 
 Blocking uses transient Foundry canvas edges. No helper Wall or Tile documents are created, and Tile rotation, anchors, scaling, texture fit, and Scene Levels are respected.
+
+#### Virtual underground terrain
+
+The Scene Config **Toolbag** tab can fill empty space with packed earth. Enable **Diggable underground**, pick an undug texture and a dug texture, and set a grid period for each (an n×n atlas, the same fields Map Generator themes use). Place Tiles first. Opaque pixels stay visible; transparent pixels and empty cells become earth. The mask is created the first time you save with this enabled. Later saves keep the current dug state.
+
+Map Generator themes can write the same Scene flag at generate time. Toolbag draws intact earth and dug rubble as two tiled background layers clipped by a subcell mask, then derives coalesced movement and limited light, darkness, and sight edges from the intact-subcell boundary on the assigned Level. No native placeables or per-cell control markers are created.
+
+The combined **Destruction Mode** adds **Excavate** when the viewed Level contains valid underground data. Drag a 1×1 disk brush to preview a stroke, then release to save all changed subcells in one Scene update. **Repair** changes the same brush from digging to restoration. <kbd>Escape</kbd> cancels the pending stroke. Digging reveals the dug earth texture; it does not use intermediate damage states. **Reset destructables** restores every dug subcell in one Scene update.
+
+Only a GM can dig, repair, or reset virtual underground. Disabling Breakable Terrain removes its artwork, edges, and controls while preserving the Scene flag. Unsupported or corrupt data is ignored, logged once, and reported to the active GM.
 
 #### Breakable platforms
 
@@ -187,11 +197,13 @@ The **Falling Chat messages** setting controls both manual Token-fall summaries 
 
 Edit an Ambient Light and open the **Theik's Toolbag** tab to choose square images for its on, off, and destroyed states. The module centers the current image on the light and sizes it to one grid space. It follows the light when it moves or rotates. No Tile document is created.
 
-While the normal Token controls are active, a control appears over every configured fixture:
+While the normal Token controls are active, a control appears over each configured fixture next to
+a controlled Token. GMs can choose **Light Toggle Mode**, below **Destruction Mode**, to show every
+configured fixture in the Scene:
 
 | User | Action | Result |
 |:--|:--|:--|
-| GM | <kbd>Left click</kbd> | Toggles the light on or off from anywhere |
+| GM | <kbd>Left click</kbd> | Toggles the light on or off |
 | GM | <kbd>Right click</kbd> | Destroys the fixture and switches it off |
 | GM (destroyed) | <kbd>Left click</kbd> | Repairs the fixture; it remains switched off |
 | Player | <kbd>Left click</kbd> | Toggles the fixture when its grid space is the same as or adjacent to one occupied by a selected, owned Token, with no movement-blocking wall between them |
@@ -265,6 +277,22 @@ await game.modules.get("theiks-toolbag")?.api?.breakableTerrain?.advance?.(
 ```
 
 `advance` resolves to `null` when a final-stage platform confirmation is canceled.
+
+</details>
+
+<details>
+<summary><strong>Virtual underground:</strong> availability, source creation, dig, repair, and reset</summary>
+
+```js
+const underground = game.modules.get("theiks-toolbag")?.api?.undergroundTerrain;
+if (underground?.isAvailable?.()) {
+  await underground.dig(canvas.scene, [12, 13, 14]);
+  await underground.repair(canvas.scene, [13]);
+  await underground.reset(canvas.scene);
+}
+```
+
+`schemaVersion` is currently `2`. `createSource(options)` validates and encodes a row-major logical source-cell array plus a finer dug mask for integrations. Supply the grid origin and dimensions, Level ID, intact and dug texture paths, and movement and vision blocking choices. `createSourceFromScene(scene, options)` builds that same source from the Scene's playable grid and punches holes for opaque Tile pixels. The mutating calls are GM-only, ignore indexes outside the original source mask, merge against the Scene's latest dug mask, and perform at most one Scene update per call.
 
 </details>
 

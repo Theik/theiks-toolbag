@@ -100,6 +100,10 @@ const flag = {
   destroyed: true,
   images: {on: "on.webp", off: "off.webp", destroyed: "broken.webp"}
 };
+const farFlag = {
+  destroyed: false,
+  images: {on: "far-on.webp", off: "far-off.webp", destroyed: "far-broken.webp"}
+};
 const level = {id: "ground"};
 const scene = {
   id: "scene",
@@ -128,6 +132,18 @@ const document = {
 };
 scene.lights.set(document.id, document);
 const light = {id: document.id, document};
+const farDocument = {
+  documentName: "AmbientLight",
+  id: "far-light",
+  x: 750,
+  y: 750,
+  _source: {x: 750, y: 750, elevation: 0, level: level.id},
+  hidden: false,
+  parent: scene,
+  getFlag: () => farFlag
+};
+const farLight = {id: farDocument.id, document: farDocument};
+scene.lights.set(farDocument.id, farDocument);
 const tokenLayer = {controlled: []};
 const controls = new FakeContainer();
 globalThis.canvas = {
@@ -137,7 +153,7 @@ globalThis.canvas = {
   activeLayer: tokenLayer,
   tokens: tokenLayer,
   controls,
-  lighting: {placeables: [light]},
+  lighting: {placeables: [light, farLight]},
   grid: {},
   dimensions: {size: 100, uiScale: 1}
 };
@@ -145,36 +161,31 @@ globalThis.canvas = {
 const {registerVisibleLightControls} = await import("../scripts/visible-lights/light-controls.js");
 registerVisibleLightControls();
 
+const sceneControls = {};
+for (const callback of hooks.get("getSceneControlButtons") ?? []) callback(sceneControls);
+const lightToggleControl = sceneControls.theiksToolbagLightToggle;
+assert.ok(lightToggleControl, "a GM receives the light-toggle mode");
+assert.equal(lightToggleControl.order, 101, "the light-toggle mode is below destruction mode");
+assert.equal(lightToggleControl.icon, "fa-solid fa-lightbulb");
+assert.deepEqual(Object.keys(lightToggleControl.tools), ["theiksToolbagLightToggleMode"]);
+const lightToggleMode = lightToggleControl.tools.theiksToolbagLightToggleMode;
+
 for (const callback of hooks.get("canvasReady") ?? []) callback();
 await flushAsyncWork();
 
 assert.equal(controls.children.length, 1);
 let markerContainer = controls.children[0];
-assert.equal(markerContainer.children.length, 1, "a GM sees a marker for a destroyed fixture");
-const repairMarker = markerContainer.children[0];
-assert.equal(repairMarker.options.texture, "icons/svg/regen.svg");
-assert.equal(repairMarker.options.borderColor, 0x4CAF50);
-assert.equal(repairMarker.options.tint, 0x4CAF50);
-assert.deepEqual(repairMarker.positionValue, {x: 150, y: 250});
+assert.equal(markerContainer.children.length, 0, "a GM without a nearby Token does not see every fixture");
 
-let propagationStopped = false;
-repairMarker.handlers.get("pointerdown")({
-  button: 0,
-  stopPropagation: () => { propagationStopped = true; }
-});
-await flushAsyncWork();
-assert.equal(propagationStopped, true);
-assert.equal(flag.destroyed, false, "left-clicking the green marker repairs the fixture");
-assert.equal(document.hidden, true, "marker repair leaves the fixture switched off");
-
-flag.destroyed = true;
-game.user = player;
-for (const callback of hooks.get("canvasReady") ?? []) callback();
+lightToggleMode.onChange(null, true);
 await flushAsyncWork();
 markerContainer = controls.children[0];
-assert.equal(markerContainer.children.length, 0, "players do not see repair controls for destroyed fixtures");
+assert.equal(markerContainer.children.length, 2, "light-toggle mode reveals every configured fixture");
+lightToggleMode.onChange(null, false);
+await flushAsyncWork();
+markerContainer = controls.children[0];
+assert.equal(markerContainer.children.length, 0, "leaving light-toggle mode hides distant fixtures again");
 
-flag.destroyed = false;
 const tokenDocument = {
   parent: scene,
   _source: {
@@ -196,6 +207,39 @@ canvas.grid = {
   getOffset: ({x, y}) => ({i: Math.floor(y / 100), j: Math.floor(x / 100), k: 0}),
   testAdjacency: (a, b) => Math.max(Math.abs(a.i - b.i), Math.abs(a.j - b.j)) === 1
 };
+canvas.tokens.controlled = [{document: tokenDocument}];
+for (const callback of hooks.get("canvasReady") ?? []) callback();
+await flushAsyncWork();
+markerContainer = controls.children[0];
+assert.equal(markerContainer.children.length, 1, "a GM sees a nearby fixture just like players");
+
+const repairMarker = markerContainer.children[0];
+assert.equal(repairMarker.options.texture, "icons/svg/regen.svg");
+assert.equal(repairMarker.options.borderColor, 0x4CAF50);
+assert.equal(repairMarker.options.tint, 0x4CAF50);
+assert.deepEqual(repairMarker.positionValue, {x: 150, y: 250});
+
+let propagationStopped = false;
+repairMarker.handlers.get("pointerdown")({
+  button: 0,
+  stopPropagation: () => { propagationStopped = true; }
+});
+await flushAsyncWork();
+assert.equal(propagationStopped, true);
+assert.equal(flag.destroyed, false, "left-clicking the green marker repairs the fixture");
+assert.equal(document.hidden, true, "marker repair leaves the fixture switched off");
+
+flag.destroyed = true;
+game.user = player;
+const playerControls = {};
+for (const callback of hooks.get("getSceneControlButtons") ?? []) callback(playerControls);
+assert.equal(playerControls.theiksToolbagLightToggle, undefined, "players do not receive the GM-only light-toggle mode");
+for (const callback of hooks.get("canvasReady") ?? []) callback();
+await flushAsyncWork();
+markerContainer = controls.children[0];
+assert.equal(markerContainer.children.length, 0, "players do not see repair controls for destroyed fixtures");
+
+flag.destroyed = false;
 canvas.tokens.controlled = [{document: tokenDocument}];
 wallCollision = true;
 for (const callback of hooks.get("canvasReady") ?? []) callback();

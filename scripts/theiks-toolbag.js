@@ -26,6 +26,18 @@ import {
 import {registerBreakableTerrainEdges} from "./breakable-terrain/terrain-edges.js";
 import {registerTerrainDestructionMode} from "./breakable-terrain/destruction-mode.js";
 import {registerCombinedDestructionMode} from "./combined-destruction-mode.js";
+import {
+  UNDERGROUND_SCHEMA_VERSION,
+  createUndergroundSource,
+  digUnderground,
+  isUndergroundAvailable,
+  repairUnderground,
+  resetUnderground
+} from "./underground/underground-data.js";
+import {createUndergroundSourceFromScene} from "./underground/underground-occupancy.js";
+import {registerUndergroundRuntime} from "./underground/underground-runtime.js";
+import {registerUndergroundControls} from "./underground/underground-controls.js";
+import {registerUndergroundSceneConfig} from "./underground/underground-scene-config.js";
 import {registerUsableTileConfig} from "./usable-tiles/tile-config.js";
 import {registerUsableTileControls, useUsableTile} from "./usable-tiles/tile-controls.js";
 import {registerFeatureSettings} from "./settings.js";
@@ -52,6 +64,9 @@ Hooks.once("init", () => {
   registerBreakableTerrainEdges();
   registerTerrainDestructionMode();
   registerCombinedDestructionMode();
+  registerUndergroundRuntime();
+  registerUndergroundControls();
+  registerUndergroundSceneConfig();
   registerUsableTileConfig();
   registerUsableTileControls();
   registerLevelTools();
@@ -75,6 +90,15 @@ Hooks.once("init", () => {
       advance: advanceTerrainDestruction,
       retreat: retreatTerrainDestruction,
       restore: restoreTerrain
+    },
+    undergroundTerrain: {
+      schemaVersion: UNDERGROUND_SCHEMA_VERSION,
+      isAvailable: isUndergroundAvailable,
+      createSource: createUndergroundSource,
+      createSourceFromScene: createUndergroundSourceFromScene,
+      dig: digUnderground,
+      repair: repairUnderground,
+      reset: resetUnderground
     },
     usableTiles: {
       use: useUsableTile

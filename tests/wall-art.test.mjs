@@ -665,6 +665,20 @@ unrestrictedTile.document.hidden = false;
 hookCallbacks.get("refreshTile")(supportingTile);
 await flushAsyncWork();
 
+const dugEarth = supportMesh("dug-earth.webp");
+dugEarth.name = "theiks-toolbag.undergroundTerrain.dug.0";
+const intactEarth = supportMesh("intact-earth.webp");
+intactEarth.name = "theiks-toolbag.undergroundTerrain.intact.0";
+primary.addChild(dugEarth);
+primary.addChild(intactEarth);
+hookCallbacks.get("refreshTile")(supportingTile);
+await flushAsyncWork();
+assert.ok(latestSupportRenderCall().sources.some(source => source.src === "dug-earth.webp"),
+  "cleared underground earth supports destroyed-wall rubble");
+assert.ok(!latestSupportRenderCall().sources.some(source => source.src === "intact-earth.webp"),
+  "intact underground earth does not support rubble");
+primary.children = primary.children.filter(child => child !== dugEarth && child !== intactEarth);
+
 wall.visible = true;
 hookCallbacks.get("drawWall")(wall);
 await flushAsyncWork();
