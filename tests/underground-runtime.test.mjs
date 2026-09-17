@@ -73,7 +73,8 @@ globalThis.PIXI = {
   Sprite,
   Rectangle,
   Texture,
-  SCALE_MODES: {LINEAR: "linear"}
+  SCALE_MODES: {LINEAR: "linear", NEAREST: "nearest"},
+  WRAP_MODES: {REPEAT: "repeat", CLAMP: "clamp"}
 };
 globalThis.document = {
   createElement: tag => tag === "canvas" ? new MockCanvas() : {}
@@ -90,10 +91,18 @@ class Container {
   }
 }
 class Primary extends Container {
+  constructor() {
+    super();
+    this.background = {
+      elevation: 0,
+      sort: 0,
+      sortLayer: Primary.SORT_LAYERS.SCENE
+    };
+  }
   sortChildren() { this.sorted = (this.sorted ?? 0) + 1; }
   update() { this.updated = (this.updated ?? 0) + 1; }
 }
-Primary.SORT_LAYERS = {TILES: 2, DRAWINGS: 7};
+Primary.SORT_LAYERS = {SCENE: 0, TILES: 2, DRAWINGS: 7};
 class PrimarySpriteMesh {
   constructor({name, object, texture} = {}) {
     meshConstructs += 1;
@@ -105,6 +114,7 @@ class PrimarySpriteMesh {
     this.children = [];
     this.anchor = {set: (x, y) => { this.anchorValue = [x, y]; }};
     this.position = {set: (x, y) => { this.positionValue = [x, y]; }};
+    this.uvs = new Float32Array(8);
   }
   addChild(child) {
     child.parent = this;
@@ -131,9 +141,10 @@ globalThis.foundry = {
 const {
   createUndergroundSource,
   digUnderground,
+  getUndergroundData,
   subcellsForLogicalIndexes
 } = await import("../scripts/underground/underground-data.js");
-const {registerUndergroundRuntime} = await import("../scripts/underground/underground-runtime.js");
+const {registerUndergroundRuntime, visibleLogicalIndexes, rockBevelShade} = await import("../scripts/underground/underground-runtime.js");
 
 function source(overrides = {}) {
   const width = overrides.width ?? 2;
@@ -159,8 +170,11 @@ function createScene(flag, level = {id: "ground", edges: new Map()}) {
     getFlag(module, keyName) { return this.flags[module]?.[keyName]; },
     updateRegionShapeConstraints() {},
     async update(change) {
-      const dugMask = change["flags.theiks-toolbag.undergroundTerrain.dugMask"];
-      if (dugMask) this.flags["theiks-toolbag"].undergroundTerrain.dugMask = dugMask;
+      const full = change["flags.theiks-toolbag.undergroundTerrain"];
+      if (full?.dugMask) this.flags["theiks-toolbag"].undergroundTerrain = full;
+      else if (change["flags.theiks-toolbag.undergroundTerrain.dugMask"]) {
+        this.flags["theiks-toolbag"].undergroundTerrain.dugMask = change["flags.theiks-toolbag.undergroundTerrain.dugMask"];
+      }
       return this;
     }
   };
@@ -186,14 +200,18 @@ function maskAlphasFromCanvas(source) {
 }
 
 function maskAlphas(mesh) {
-  return mesh?.mask?.texture?.alphas ?? maskAlphasFromCanvas(mesh?.mask?.texture?.source) ?? null;
+  return mesh?.texture?.alphas
+    ?? maskAlphasFromCanvas(mesh?.texture?.source)
+    ?? mesh?.mask?.texture?.alphas
+    ?? maskAlphasFromCanvas(mesh?.mask?.texture?.source)
+    ?? null;
 }
 
 function alphaAt(alphas, x, y, resolution = 32) {
   return alphas[(y * resolution) + x];
 }
 
-test("runtime creates lit per-cell meshes, coalesced edges, and follows viewed Levels", async () => {
+test("runtime creates a tiled undug sheet, coalesced edges, and follows viewed Levels", async () => {
   textureFromCalls = 0;
   const scene = createScene(source());
   const primary = new Primary();
@@ -201,24 +219,29 @@ test("runtime creates lit per-cell meshes, coalesced edges, and follows viewed L
   registerUndergroundRuntime();
   hookCallbacks.get("canvasReady")[0]();
   await wait();
-  assert.equal(primary.children.length, 2);
+  assert.equal(primary.children.length, 1);
   assert.ok(primary.children.every(child => child instanceof PrimarySpriteMesh));
-  assert.deepEqual(primary.children.map(child => child.name).sort(), [
-    "theiks-toolbag.undergroundTerrain.intact.0",
-    "theiks-toolbag.undergroundTerrain.intact.1"
-  ]);
+  assert.equal(primary.children[0].name, "theiks-toolbag.undergroundTerrain.intact.sheet");
   assert.equal(primary.children[0].object, scene);
-  assert.equal(primary.children[0].sortLayer, Primary.SORT_LAYERS.DRAWINGS + 1);
-  assert.equal(primary.children[0].sort, Number.MAX_SAFE_INTEGER);
+  assert.equal(primary.children[0].sortLayer, Primary.SORT_LAYERS.SCENE);
+  assert.equal(primary.children[0].sort, -2);
+  assert.equal(primary.children[0].elevation, 0);
   assert.equal(primary.children[0].texture.src, "earth.webp");
+  assert.deepEqual(primary.children[0].tileRepeat, [2, 1]);
   assert.equal(textureFromCalls, 0, "earth color comes from loadTexture, not a baked canvas");
-  assert.deepEqual(primary.children.find(child => child.name.endsWith(".0")).positionValue, [-0.5, -0.5]);
-  assert.deepEqual(primary.children.find(child => child.name.endsWith(".1")).positionValue, [99.5, -0.5]);
+  assert.deepEqual(primary.children[0].positionValue, [-0.5, -0.5]);
   assert.deepEqual(primary.children[0].resized, {
-    width: 101, height: 101, options: {fit: "fill", scaleX: 1, scaleY: 1}
+    width: 201, height: 101, options: {fit: "fill", scaleX: 1, scaleY: 1}
   });
   assert.ok(primary.updated >= 1, "the primary canvas is rebuilt after inserting the meshes");
   assert.equal(scene.level.edges.size, 8, "four coalesced sides are installed for movement and vision");
+  const vision = [...scene.level.edges.values()].filter(edge => String(edge.id).includes(".vision."));
+  assert.equal(vision.length, 4);
+  assert.ok(vision.every(edge => (
+    edge.sight === CONST.EDGE_SENSE_TYPES.NORMAL
+    && edge.light === CONST.EDGE_SENSE_TYPES.NORMAL
+    && edge.darkness === CONST.EDGE_SENSE_TYPES.NORMAL
+  )));
 
   canvas.level = {id: "upper"};
   hookCallbacks.get("canvasPan")[0]();
@@ -228,7 +251,86 @@ test("runtime creates lit per-cell meshes, coalesced edges, and follows viewed L
   canvas.level = scene.level;
   hookCallbacks.get("canvasPan")[0]();
   await wait();
-  assert.equal(primary.children.length, 2);
+  assert.equal(primary.children.length, 1);
+});
+
+test("stored blocking flags cannot disable underground walls", async () => {
+  const flag = source();
+  flag.blocksMovement = false;
+  flag.blocksVision = false;
+  const scene = createScene(flag);
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  const vision = [...scene.level.edges.values()].filter(edge => String(edge.id).includes(".vision."));
+  assert.ok(vision.length > 0);
+  assert.ok(vision.every(edge => (
+    edge.sight === CONST.EDGE_SENSE_TYPES.NORMAL
+    && edge.light === CONST.EDGE_SENSE_TYPES.NORMAL
+  )));
+});
+
+test("earth sits behind the Level background on the same elevation", async () => {
+  const scene = createScene(source());
+  const primary = new Primary();
+  primary.background = {elevation: -10, sort: 0, sortLayer: Primary.SORT_LAYERS.SCENE};
+  globalThis.canvas = canvasFor(scene, primary);
+  canvas.level = {id: "ground", elevation: {bottom: -10, top: 0}};
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  assert.equal(primary.children[0].elevation, -10);
+  assert.equal(primary.children[0].sortLayer, Primary.SORT_LAYERS.SCENE);
+  assert.equal(primary.children[0].sort, -2);
+});
+
+test("forced earth draws above tiles", async () => {
+  const scene = createScene(source({width: 2, height: 1, logicalCells: [0]}));
+  scene.regions = {
+    contents: [{
+      hidden: false,
+      levels: ["ground"],
+      bounds: {x: 100, y: 0, width: 100, height: 100},
+      behaviors: [{type: "theiks-toolbag.forceDiggable", disabled: false}],
+      testPoint: point => point.x >= 100 && point.x < 200
+    }]
+  };
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  const natural = primary.children.find(child => child.name.endsWith(".sheet"));
+  const forced = primary.children.find(child => child.name.endsWith(".1"));
+  assert.equal(natural.sortLayer, Primary.SORT_LAYERS.SCENE);
+  assert.equal(natural.sort, -2);
+  assert.equal(forced.sortLayer, Primary.SORT_LAYERS.TILES);
+  assert.equal(forced.sort, 999998);
+  assert.equal(forced.elevation, 0);
+});
+
+test("creating a force Region rebuilds earth on top of tiles", async () => {
+  const scene = createScene(source({width: 2, height: 1, logicalCells: [0]}));
+  scene.regions = {contents: []};
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  const hole = primary.children.find(child => child.name.endsWith(".sheet"));
+  assert.equal(hole.sortLayer, Primary.SORT_LAYERS.SCENE);
+  const region = {
+    documentName: "Region",
+    parent: scene,
+    hidden: false,
+    levels: ["ground"],
+    bounds: {x: 100, y: 0, width: 100, height: 100},
+    behaviors: [{type: "theiks-toolbag.forceDiggable", disabled: false}],
+    testPoint: point => point.x >= 100 && point.x < 200
+  };
+  scene.regions.contents.push(region);
+  for (const callback of hookCallbacks.get("createRegion") ?? []) callback(region);
+  await wait();
+  const forced = primary.children.find(child => child.name.endsWith(".1"));
+  assert.equal(forced.sortLayer, Primary.SORT_LAYERS.TILES);
 });
 
 test("runtime draws when the viewed Level only exposes _id", async () => {
@@ -239,13 +341,179 @@ test("runtime draws when the viewed Level only exposes _id", async () => {
   canvas.level = {_id: "defaultLevel0000"};
   hookCallbacks.get("canvasReady")[0]();
   await wait();
-  assert.equal(primary.children.length, 2);
+  assert.equal(primary.children.length, 1);
   assert.ok(level.edges.size > 0);
 
   canvas.level = null;
   hookCallbacks.get("canvasPan")[0]();
   await wait();
-  assert.equal(primary.children.length, 2, "missing viewed Level still draws when initialLevel matches");
+  assert.equal(primary.children.length, 1, "missing viewed Level still draws when initialLevel matches");
+});
+
+test("alter Region retextures covered cells and leaves occupancy alone", async () => {
+  const loaded = [];
+  const previousLoad = foundry.canvas.loadTexture;
+  foundry.canvas.loadTexture = async src => {
+    loaded.push(src);
+    return {src, width: 100, height: 100};
+  };
+  try {
+    const scene = createScene(source({width: 2, height: 1, logicalCells: [0, 1], intactGrid: 1}));
+    scene.regions = {
+      contents: [{
+        hidden: false,
+        levels: ["ground"],
+        bounds: {x: 0, y: 0, width: 100, height: 100},
+        elevation: {bottom: 0, top: null},
+        behaviors: [{
+          type: "theiks-toolbag.alterDiggable",
+          disabled: false,
+          system: {intactSrc: "moss.webp", intactGrid: 2}
+        }],
+        testPoint(point) {
+          if (!Number.isFinite(point?.elevation)) return false;
+          return point.x >= 0 && point.x < 100 && point.y >= 0 && point.y < 100;
+        }
+      }]
+    };
+    const primary = new Primary();
+    globalThis.canvas = canvasFor(scene, primary);
+    hookCallbacks.get("canvasReady")[0]();
+    await wait();
+    const left = primary.children.find(child => child.name.endsWith(".0"));
+    const sheet = primary.children.find(child => child.name.endsWith(".sheet"));
+    assert.equal(left.texture.src, "moss.webp");
+    assert.equal(left.texture.frame.width, 50);
+    assert.equal(sheet.texture.src, "earth.webp");
+    assert.ok(sheet.holeMask?.alphas, "the sheet is punched where Alter owns the undug texture");
+    assert.equal(sheet.holeMask.alphas[0], 0);
+    assert.equal(loaded.filter(src => src === "moss.webp").length, 1);
+  } finally {
+    foundry.canvas.loadTexture = previousLoad;
+  }
+});
+
+test("alter can retexture forced earth and still cannot show suppressed meshes", async () => {
+  const scene = createScene(source({width: 2, height: 1, logicalCells: [0]}));
+  scene.regions = {
+    contents: [
+      {
+        hidden: false,
+        levels: ["ground"],
+        bounds: {x: 100, y: 0, width: 100, height: 100},
+        elevation: {bottom: 0, top: null},
+        behaviors: [
+          {type: "theiks-toolbag.forceDiggable", disabled: false},
+          {
+            type: "theiks-toolbag.alterDiggable",
+            disabled: false,
+            system: {intactSrc: "moss.webp"}
+          }
+        ],
+        testPoint(point) {
+          if (!Number.isFinite(point?.elevation)) return false;
+          return point.x >= 100 && point.x < 200;
+        }
+      },
+      {
+        hidden: false,
+        levels: ["ground"],
+        bounds: {x: 0, y: 0, width: 100, height: 100},
+        elevation: {bottom: 0, top: null},
+        behaviors: [
+          {type: "theiks-toolbag.suppressDiggable", disabled: false},
+          {
+            type: "theiks-toolbag.alterDiggable",
+            disabled: false,
+            system: {intactSrc: "ignored.webp"}
+          }
+        ],
+        testPoint(point) {
+          if (!Number.isFinite(point?.elevation)) return false;
+          return point.x >= 0 && point.x < 100;
+        }
+      }
+    ]
+  };
+  const previousLoad = foundry.canvas.loadTexture;
+  foundry.canvas.loadTexture = async src => ({src, width: 100, height: 100});
+  try {
+    const primary = new Primary();
+    globalThis.canvas = canvasFor(scene, primary);
+    hookCallbacks.get("canvasReady")[0]();
+    await wait();
+    const names = primary.children.map(child => child.name).sort();
+    assert.deepEqual(names, ["theiks-toolbag.undergroundTerrain.intact.1"]);
+    const forced = primary.children[0];
+    assert.equal(forced.texture.src, "moss.webp");
+    assert.equal(forced.sortLayer, Primary.SORT_LAYERS.TILES);
+  } finally {
+    foundry.canvas.loadTexture = previousLoad;
+  }
+});
+
+test("suppress hides earth meshes under tiles, not just occupancy", async () => {
+  const scene = createScene(source({width: 2, height: 1, logicalCells: [0]}));
+  scene.regions = {
+    contents: [{
+      hidden: false,
+      levels: [],
+      bounds: {x: 0, y: 0, width: 200, height: 100},
+      elevation: {bottom: 0, top: null},
+      behaviors: [{type: "theiks-toolbag.suppressDiggable", disabled: false}],
+      testPoint(point) {
+        if (!Number.isFinite(point?.elevation)) return false;
+        return point.x >= 0 && point.x < 200 && point.y >= 0 && point.y < 100;
+      }
+    }]
+  };
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  assert.equal(primary.children.length, 0);
+});
+
+test("suppress punches holes in the undug sheet", async () => {
+  const scene = createScene(source({width: 2, height: 1, logicalCells: [0, 1]}));
+  scene.regions = {
+    contents: [{
+      hidden: false,
+      levels: ["ground"],
+      bounds: {x: 0, y: 0, width: 100, height: 100},
+      elevation: {bottom: 0, top: null},
+      behaviors: [{type: "theiks-toolbag.suppressDiggable", disabled: false}],
+      testPoint(point) {
+        if (!Number.isFinite(point?.elevation)) return false;
+        return point.x >= 0 && point.x < 100 && point.y >= 0 && point.y < 100;
+      }
+    }]
+  };
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  const sheet = primary.children.find(child => child.name.endsWith(".sheet"));
+  assert.ok(sheet, "unsuppressed cells still have the undug sheet");
+  const alphas = sheet.holeMask.alphas;
+  assert.equal(alphas[0], 0, "suppressed subcells are punched");
+  assert.equal(alphas[4], 255, "the neighboring cell stays packed earth");
+});
+
+test("earth fills occupancy holes behind tiles instead of leaving black gaps", async () => {
+  const flag = source({width: 3, height: 1, logicalCells: [0, 2]});
+  const scene = createScene(flag);
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  assert.deepEqual(primary.children.map(child => child.name).sort(), [
+    "theiks-toolbag.undergroundTerrain.intact.sheet"
+  ]);
+  const hole = primary.children.find(child => child.name.endsWith(".sheet"));
+  assert.equal(hole.sortLayer, Primary.SORT_LAYERS.SCENE);
+  assert.equal(hole.sort, -2);
+  assert.ok(scene.level.edges.size > 0);
 });
 
 test("disabled underground sources create neither artwork nor collision edges", async () => {
@@ -269,7 +537,7 @@ test("a dotted enabled flag update rebuilds artwork", async () => {
   assert.ok(primary.children.length > 0);
 });
 
-test("a one-cell dig rebuilds the dug cell and its 4-neighbors", async () => {
+test("a one-cell dig rebuilds rubble meshes without recreating the undug sheet", async () => {
   textureFromCalls = 0;
   const flag = source({width: 3, height: 1, logicalCells: [0, 1, 2]});
   const scene = createScene(flag);
@@ -277,27 +545,25 @@ test("a one-cell dig rebuilds the dug cell and its 4-neighbors", async () => {
   globalThis.canvas = canvasFor(scene, primary);
   hookCallbacks.get("canvasReady")[0]();
   await wait();
-  assert.equal(primary.children.length, 3);
+  assert.equal(primary.children.length, 1);
   const constructedAfterReady = meshConstructs;
-  const farIntact = primary.children.find(child => child.name.endsWith(".2"));
+  const sheet = primary.children.find(child => child.name.endsWith(".sheet"));
   await digUnderground(scene, subcellsForLogicalIndexes([0], 3, 1));
   hookCallbacks.get("updateScene")[0](scene, {
     "flags.theiks-toolbag.undergroundTerrain.dugMask": scene.flags["theiks-toolbag"].undergroundTerrain.dugMask
   });
   await wait();
-  assert.equal(meshConstructs - constructedAfterReady, 4, "the dug cell and its neighbor are rebuilt");
-  assert.equal(farIntact.destroyed, false, "a cell two steps away is not rebuilt");
-  assert.equal(primary.children.includes(farIntact), true);
+  assert.equal(meshConstructs - constructedAfterReady, 2, "the dug cell and its neighbor fringe are rebuilt");
+  assert.equal(sheet.destroyed, false, "the undug sheet is not rebuilt for a dig");
+  assert.equal(primary.children.includes(sheet), true);
   assert.ok(textureFromCalls > 0, "fade masks use Texture.from of a tiny canvas");
-  assert.ok(primary.children.some(child => child.texture.src === "rubble.webp"));
+  assert.ok(primary.children.some(child => child.name.includes(".dug.")));
   const dug = primary.children.find(child => child.name.includes(".dug."));
-  const neighborIntact = primary.children.find(child => child.name.endsWith(".1"));
-  assert.equal(dug.sortLayer, Primary.SORT_LAYERS.TILES);
-  assert.equal(dug.sort, -100001);
-  assert.equal(neighborIntact.sortLayer, Primary.SORT_LAYERS.DRAWINGS + 1);
+  assert.equal(dug.sortLayer, Primary.SORT_LAYERS.SCENE);
+  assert.equal(dug.sort, -1);
 });
 
-test("a mixed cell uses a sprite mask with intermediate alpha, not hard rects", async () => {
+test("a mixed cell bakes a soft fade into a full-size mesh", async () => {
   const flag = source({width: 1, height: 1, logicalCells: [0]});
   const scene = createScene(flag);
   const primary = new Primary();
@@ -309,15 +575,17 @@ test("a mixed cell uses a sprite mask with intermediate alpha, not hard rects", 
     "flags.theiks-toolbag.undergroundTerrain.dugMask": scene.flags["theiks-toolbag"].undergroundTerrain.dugMask
   });
   await wait();
-  const intact = primary.children.find(child => child.name.includes(".intact."));
+  const intact = primary.children.find(child => child.name.endsWith(".sheet"));
   const dug = primary.children.find(child => child.name.includes(".dug."));
-  assert.ok(intact.mask instanceof Sprite);
-  assert.ok(dug.mask instanceof Sprite);
-  const intactAlphas = maskAlphas(intact);
+  assert.equal(intact.mask, undefined);
+  assert.equal(dug.mask, undefined);
+  assert.equal(intact.texture.fromCanvas, undefined);
+  assert.ok(dug.texture.fromCanvas);
+  assert.deepEqual(dug.resized, {
+    width: 101, height: 101, options: {fit: "fill", scaleX: 1, scaleY: 1}
+  }, "faded dug cells still fill the whole grid square");
   const dugAlphas = maskAlphas(dug);
-  assert.ok(intactAlphas.some(alpha => alpha > 0 && alpha < 255), "intact fade is soft");
   assert.ok(dugAlphas.some(alpha => alpha > 0 && alpha < 255), "dug fade is soft");
-  assert.equal(intact.mask.rects, undefined);
 });
 
 test("a fully intact cell beside a dug neighbor gets a dug fringe and a soft shared edge", async () => {
@@ -332,21 +600,29 @@ test("a fully intact cell beside a dug neighbor gets a dug fringe and a soft sha
     "flags.theiks-toolbag.undergroundTerrain.dugMask": scene.flags["theiks-toolbag"].undergroundTerrain.dugMask
   });
   await wait();
-  const intact = primary.children.find(child => child.name === "theiks-toolbag.undergroundTerrain.intact.1");
+  const sheet = primary.children.find(child => child.name.endsWith(".sheet"));
   const dugFringe = primary.children.find(child => child.name === "theiks-toolbag.undergroundTerrain.dug.1");
-  const intactFringe = primary.children.find(child => child.name === "theiks-toolbag.undergroundTerrain.intact.0");
   const dug = primary.children.find(child => child.name === "theiks-toolbag.undergroundTerrain.dug.0");
-  assert.ok(intact, "the intact neighbor still draws");
+  assert.ok(sheet, "packed earth stays on the undug sheet");
   assert.ok(dugFringe, "dug texture extends into the intact neighbor");
-  assert.ok(intactFringe, "intact texture extends into the dug cell");
   assert.ok(dug, "the dug cell still draws rubble");
-  const intactAlphas = maskAlphas(intact);
-  assert.ok(intact.mask instanceof Sprite);
-  assert.ok(alphaAt(intactAlphas, 0, 16) < alphaAt(intactAlphas, 31, 16),
-    "intact alpha is lower on the shared edge than on the far side");
   const fringeAlphas = maskAlphas(dugFringe);
   assert.ok(alphaAt(fringeAlphas, 0, 16) > alphaAt(fringeAlphas, 31, 16),
     "dug fringe is stronger on the shared edge");
+});
+
+test("a rounded bevel darkens the rock lip without shading gravel", async () => {
+  const scene = createScene(source({width: 2, height: 1, logicalCells: [0, 1]}));
+  await digUnderground(scene, subcellsForLogicalIndexes([0], 2, 1));
+  const data = getUndergroundData(scene);
+  const dugSide = rockBevelShade(data, 0, 101, 50, 50);
+  const mix = rockBevelShade(data, 1, 101, 2, 50);
+  const lip = rockBevelShade(data, 1, 101, 8, 50);
+  const deep = rockBevelShade(data, 1, 101, 25, 50);
+  assert.equal(dugSide, 1, "gravel stays full color");
+  assert.ok(mix < 1 && lip < mix, "the mix/rock-lip darkens toward the rounded wall");
+  assert.ok(lip < 0.7 && lip > 0.5, "the rock lip darkens in a short band");
+  assert.equal(deep, 1, "deep undug rock past the bevel is unchanged");
 });
 
 test("an interior intact cell with no dug neighbors stays fully opaque", async () => {
@@ -356,15 +632,15 @@ test("an interior intact cell with no dug neighbors stays fully opaque", async (
   globalThis.canvas = canvasFor(scene, primary);
   hookCallbacks.get("canvasReady")[0]();
   await wait();
-  const far = primary.children.find(child => child.name.endsWith(".2"));
+  const far = primary.children.find(child => child.name.endsWith(".sheet"));
   assert.equal(far.mask, undefined);
   await digUnderground(scene, subcellsForLogicalIndexes([0], 3, 1));
   hookCallbacks.get("updateScene")[0](scene, {
     "flags.theiks-toolbag.undergroundTerrain.dugMask": scene.flags["theiks-toolbag"].undergroundTerrain.dugMask
   });
   await wait();
-  const stillFar = primary.children.find(child => child.name.endsWith(".2"));
-  assert.equal(stillFar.mask, undefined, "cells away from the tunnel keep a hard outer silhouette");
+  const stillFar = primary.children.find(child => child.name.endsWith(".sheet"));
+  assert.equal(stillFar.mask, undefined, "digging does not punch the undug sheet");
   assert.equal(stillFar, far);
 });
 
@@ -389,24 +665,149 @@ test("collision edges stay on the square subcell grid after a dig", async () => 
   }
 });
 
-test("a 2x2 intact texture shows the right-hand slice on cell 1", async () => {
+test("vision edges leave a lit fringe beside dug earth", async () => {
+  const flag = source({width: 2, height: 1, logicalCells: [0, 1]});
+  const scene = createScene(flag);
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  await digUnderground(scene, subcellsForLogicalIndexes([0], 2, 1));
+  hookCallbacks.get("updateScene")[0](scene, {
+    "flags.theiks-toolbag.undergroundTerrain.dugMask": scene.flags["theiks-toolbag"].undergroundTerrain.dugMask
+  });
+  await wait();
+  const vertical = (kind) => [...scene.level.edges.values()]
+    .filter(edge => String(edge.id).includes(`.${kind}.`) && edge.a.x === edge.b.x)
+    .map(edge => edge.a.x);
+  const moveXs = vertical("move");
+  const visionXs = vertical("vision");
+  assert.ok(moveXs.includes(100), "movement still stops at the dug face");
+  assert.equal(visionXs.includes(100), false, "sight does not clip the fade at the dug face");
+  assert.ok(visionXs.includes(150), "sight and light stop half a tile into intact earth");
+});
+
+test("the undug sheet tiles a 2x2 atlas across the Level", async () => {
   textureFromCalls = 0;
   const scene = createScene(source({intactGrid: 2, dugGrid: 1}));
   const primary = new Primary();
   globalThis.canvas = canvasFor(scene, primary);
   hookCallbacks.get("canvasReady")[0]();
   await wait();
-  const left = primary.children.find(child => child.name.endsWith(".0"));
-  const right = primary.children.find(child => child.name.endsWith(".1"));
-  assert.ok(left.texture instanceof Texture);
-  assert.ok(right.texture instanceof Texture);
-  assert.equal(left.texture.frame.x, 0);
-  assert.equal(right.texture.frame.x, 50, "cell 1,0 uses the right half of a 2x2 texture");
-  assert.equal(left.texture.frame.width, 50);
-  assert.equal(right.texture.frame.width, 50);
-  assert.equal(left.texture.frame.y, 0);
-  assert.equal(right.texture.frame.y, 0);
-  assert.equal(textureFromCalls, 0, "sliced earth still uses loadTexture, not Texture.from");
+  const sheet = primary.children.find(child => child.name.endsWith(".sheet"));
+  assert.equal(sheet.texture.src, "earth.webp");
+  assert.deepEqual(sheet.tileRepeat, [1, 0.5]);
+  assert.equal(textureFromCalls, 0, "tiled earth still uses loadTexture, not Texture.from");
+});
+
+test("a 5x5 spanning texture uses 200px windows from a 1000px image", async () => {
+  const previousLoad = foundry.canvas.loadTexture;
+  foundry.canvas.loadTexture = async src => ({src, width: 1000, height: 1000});
+  try {
+    const scene = createScene(source({
+      width: 5, height: 1, gridSize: 200, intactGrid: 5, dugGrid: 5,
+      logicalCells: [0, 1, 2, 3, 4]
+    }));
+    const primary = new Primary();
+    globalThis.canvas = canvasFor(scene, primary);
+    hookCallbacks.get("canvasReady")[0]();
+    await wait();
+    const sheet = primary.children.find(child => child.name.endsWith(".sheet"));
+    assert.deepEqual(sheet.tileRepeat, [1, 1 / 5]);
+  } finally {
+    foundry.canvas.loadTexture = previousLoad;
+  }
+});
+
+test("the undug sheet covers every default cell with one mesh", async () => {
+  const scene = createScene(source({
+    width: 4, height: 1, intactGrid: 2, logicalCells: [0, 1, 2, 3]
+  }));
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  const sheets = primary.children.filter(child => child.name.endsWith(".sheet"));
+  assert.equal(sheets.length, 1);
+  assert.deepEqual(sheets[0].tileRepeat, [2, 0.5]);
+});
+
+test("visibleLogicalIndexes uses the view plus a 2-cell pad", () => {
+  const scene = createScene(source({
+    width: 8, height: 8, logicalCells: [...Array(64).keys()]
+  }));
+  const data = getUndergroundData(scene);
+  const whole = visibleLogicalIndexes(data, null);
+  assert.equal(whole.size, 64, "missing bounds keep the full grid");
+  const nearby = visibleLogicalIndexes(data, {x: 0, y: 0, width: 100, height: 100});
+  assert.deepEqual([...nearby].sort((a, b) => a - b), [0, 1, 2, 8, 9, 10, 16, 17, 18]);
+  const center = visibleLogicalIndexes(data, {x: 400, y: 400, width: 100, height: 100});
+  assert.equal(center.has(4 + (4 * 8)), true);
+  assert.equal(center.has(2 + (2 * 8)), true);
+  assert.equal(center.has(6 + (6 * 8)), true);
+  assert.equal(center.has(1 + (4 * 8)), false);
+  assert.equal(center.has(4 + (1 * 8)), false);
+});
+
+test("panning does not rebuild the undug sheet", async () => {
+  const scene = createScene(source({
+    width: 8, height: 1, intactGrid: 2, logicalCells: [0, 1, 2, 3, 4, 5, 6, 7]
+  }));
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  canvas.viewPosition = {x: 50, y: 50, scale: 1};
+  canvas.screenDimensions = [100, 100];
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  assert.deepEqual(primary.children.map(child => child.name), [
+    "theiks-toolbag.undergroundTerrain.intact.sheet"
+  ]);
+  const sheet = primary.children[0];
+  const constructed = meshConstructs;
+  canvas.viewPosition = {x: 350, y: 50, scale: 1};
+  hookCallbacks.get("canvasPan")[0]();
+  await wait();
+  assert.equal(primary.children[0], sheet);
+  assert.equal(meshConstructs, constructed, "panning does not create earth meshes");
+  canvas.viewPosition = {x: 650, y: 50, scale: 1};
+  hookCallbacks.get("canvasPan")[0]();
+  await wait();
+  assert.equal(primary.children[0], sheet);
+  assert.equal(primary.children.length, 1);
+});
+
+test("dug cells keep their meshes after they leave the view", async () => {
+  const scene = createScene(source({
+    width: 8, height: 1, logicalCells: [0, 1, 2, 3, 4, 5, 6, 7]
+  }));
+  const primary = new Primary();
+  globalThis.canvas = canvasFor(scene, primary);
+  canvas.viewPosition = {x: 50, y: 50, scale: 1};
+  canvas.screenDimensions = [100, 100];
+  hookCallbacks.get("canvasReady")[0]();
+  await wait();
+  await digUnderground(scene, subcellsForLogicalIndexes([0], 8, 1));
+  hookCallbacks.get("updateScene")[0](scene, {
+    "flags.theiks-toolbag.undergroundTerrain.dugMask": scene.flags["theiks-toolbag"].undergroundTerrain.dugMask
+  });
+  await wait();
+  const dug = primary.children.find(child => child.name === "theiks-toolbag.undergroundTerrain.dug.0");
+  const fringe = primary.children.find(child => child.name === "theiks-toolbag.undergroundTerrain.dug.1");
+  assert.ok(dug);
+  assert.ok(fringe);
+  canvas.viewPosition = {x: 650, y: 50, scale: 1};
+  hookCallbacks.get("canvasPan")[0]();
+  await wait();
+  assert.equal(primary.children.includes(dug), true, "baked dug earth is not torn down offscreen");
+  assert.equal(primary.children.includes(fringe), true, "the fade neighbor stays ready");
+  canvas.viewPosition = {x: 50, y: 50, scale: 1};
+  hookCallbacks.get("canvasPan")[0]();
+  await wait();
+  assert.equal(
+    primary.children.find(child => child.name === "theiks-toolbag.undergroundTerrain.dug.0"),
+    dug,
+    "returning to the hole does not rebake it"
+  );
 });
 
 test("invalid Scene data removes runtime objects and notifies the GM once", async () => {

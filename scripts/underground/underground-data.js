@@ -1,4 +1,5 @@
 import {FEATURES, assertFeatureEnabled, isFeatureEnabled} from "../settings.js";
+import {applyUndergroundRegionOccupancy} from "./underground-regions.js";
 
 export const MODULE_ID = "theiks-toolbag";
 export const UNDERGROUND_FLAG = "undergroundTerrain";
@@ -9,7 +10,7 @@ export const DEFAULT_EARTH_SORT = -100001;
 const ALLOWED_SUBDIVISIONS = new Set([2, 4, 8]);
 
 export function isUndergroundAvailable() {
-  return isFeatureEnabled(FEATURES.breakableTerrain);
+  return isFeatureEnabled(FEATURES.diggableTerrain);
 }
 
 /** Return the viewed Level id, preferring Foundry's public id then the document _id. */
@@ -38,9 +39,6 @@ export function createUndergroundSource(options) {
   const intactSrc = nonEmptyString(options?.intactSrc, "intactSrc");
   const dugSrc = nonEmptyString(options?.dugSrc, "dugSrc");
   const subdivision = normalizeSubdivision(options?.subdivision);
-  if (typeof options?.blocksMovement !== "boolean" || typeof options?.blocksVision !== "boolean") {
-    throw new TypeError("blocksMovement and blocksVision must be Boolean values.");
-  }
   const subWidth = width * subdivision;
   const subHeight = height * subdivision;
   const subCount = subWidth * subHeight;
@@ -70,9 +68,36 @@ export function createUndergroundSource(options) {
     dugGrid: optionalPositiveInteger(options?.dugGrid, "dugGrid"),
     elevation: finiteNumber(options?.elevation ?? 0, "elevation"),
     sort: finiteNumber(options?.sort ?? DEFAULT_EARTH_SORT, "sort"),
-    blocksMovement: options.blocksMovement === true,
-    blocksVision: options.blocksVision === true
+    blocksMovement: true,
+    blocksVision: true
   };
+}
+
+/** Copy dug bits that still sit on effective underground subcells after an occupancy rebuild. */
+export function preserveOverlappingDugMask(source, previous, {scene} = {}) {
+  if (!previous) return source;
+  let next;
+  let prev;
+  try {
+    next = parseUndergroundSource(source);
+    prev = parseUndergroundSource(previous);
+  } catch (_error) {
+    return source;
+  }
+  if (next.width !== prev.width || next.height !== prev.height || next.subdivision !== prev.subdivision) {
+    return source;
+  }
+  applyUndergroundRegionOccupancy(scene, next);
+  const dugBytes = new Uint8Array(next.dugBytes);
+  const bits = next.subWidth * next.subHeight;
+  let changed = false;
+  for (let index = 0; index < bits; index += 1) {
+    if (!isUndergroundSubcell(next, index) || !isBitSet(prev.dugBytes, index)) continue;
+    setBit(dugBytes, index, true);
+    changed = true;
+  }
+  if (!changed) return source;
+  return {...source, dugMask: encodeBytes(dugBytes)};
 }
 
 /** Expand logical cell indexes into every contained subcell index. */
@@ -92,10 +117,108 @@ export function subcellsForLogicalIndexes(logicalIndexes, width, height, subdivi
   return cells;
 }
 
-/** Read and validate one Scene's underground flag. */
-export function getUndergroundData(scene) {
-  const source = scene?.getFlag?.(MODULE_ID, UNDERGROUND_FLAG)
-    ?? scene?.flags?.[MODULE_ID]?.[UNDERGROUND_FLAG];
+/** Return the raw underground flag object from a Scene or Level, or null. */
+export function getStoredUndergroundSource(document) {
+  const source = document?.getFlag?.(MODULE_ID, UNDERGROUND_FLAG)
+    ?? document?.flags?.[MODULE_ID]?.[UNDERGROUND_FLAG];
+  return source && typeof source === "object" && !Array.isArray(source) ? source : null;
+}
+
+/** Find one Scene Level by public id or document _id. */
+export function findSceneLevel(scene, levelId) {
+  if (!scene?.levels || levelId == null || levelId === "") return null;
+  const id = String(levelId);
+  const direct = scene.levels.get?.(id);
+  if (direct) return direct;
+  return listSceneLevels(scene).find(level => (level?.id ?? level?._id) === id) ?? null;
+}
+
+/**
+ * Read and validate underground terrain for one Level.
+ *
+ * Prefers a Level document flag, then a legacy Scene flag whose levelId matches.
+ * Scenes without a `levels` collection still return the Scene flag (unit tests and older data).
+ *
+ * @param {object} scene
+ * @param {{levelId?: string, level?: object}} [options]
+ */
+export function getUndergroundData(scene, options = {}) {
+  const requested = resolveRequestedLevelId(scene, options);
+  const levelDoc = options.level && (options.level.id ?? options.level._id) === requested
+    ? options.level
+    : findSceneLevel(scene, requested);
+  const levelSource = getStoredUndergroundSource(levelDoc);
+  if (levelSource) return finishUndergroundData(parseUndergroundSource(levelSource), scene);
+  const sceneSource = getStoredUndergroundSource(scene);
+  if (!sceneSource) return null;
+  if (requested && scene?.levels && rawLevelId(sceneSource) !== requested) return null;
+  return finishUndergroundData(parseUndergroundSource(sceneSource), scene);
+}
+
+function finishUndergroundData(data, scene) {
+  if (!data) return null;
+  applyUndergroundRegionOccupancy(scene, data);
+  return data;
+}
+
+/** Return the document that stores the resolved underground flag. */
+export function getUndergroundOwner(scene, options = {}) {
+  const data = getUndergroundData(scene, options);
+  if (!data) return null;
+  const levelDoc = findSceneLevel(scene, data.levelId);
+  if (getStoredUndergroundSource(levelDoc)) return levelDoc;
+  if (getStoredUndergroundSource(scene)) return scene;
+  return levelDoc ?? scene;
+}
+
+/** Return every resolvable underground source in a Scene. */
+export function getAllUndergroundData(scene) {
+  const levels = listSceneLevels(scene);
+  if (!levels.length) {
+    const data = getUndergroundData(scene);
+    return data ? [{levelId: data.levelId, data, owner: scene}] : [];
+  }
+  const results = [];
+  for (const level of levels) {
+    const levelId = level?.id ?? level?._id;
+    try {
+      const data = getUndergroundData(scene, {levelId, level});
+      if (!data) continue;
+      results.push({
+        levelId: data.levelId,
+        data,
+        owner: getUndergroundOwner(scene, {levelId, level})
+      });
+    } catch (_error) {
+      continue;
+    }
+  }
+  return results;
+}
+
+function listSceneLevels(scene) {
+  if (!scene?.levels) return [];
+  if (Array.isArray(scene.levels.contents)) return scene.levels.contents;
+  if (typeof scene.levels.values === "function") return Array.from(scene.levels.values());
+  return Array.from(scene.levels ?? []);
+}
+
+function resolveRequestedLevelId(scene, options = {}) {
+  if (typeof options.levelId === "string" && options.levelId.trim()) return options.levelId.trim();
+  const explicitLevel = Object.hasOwn(options, "level")
+    ? options.level
+    : (scene && scene === globalThis.canvas?.scene ? globalThis.canvas?.level : null);
+  const viewed = getViewedLevelId(explicitLevel);
+  if (viewed) return viewed;
+  if (typeof scene?.initialLevel === "string" && scene.initialLevel.trim()) return scene.initialLevel.trim();
+  return null;
+}
+
+function rawLevelId(source) {
+  return typeof source?.levelId === "string" ? source.levelId.trim() : "";
+}
+
+function parseUndergroundSource(source) {
   if (source == null) return null;
   if (!source || typeof source !== "object" || Array.isArray(source)) {
     throw new TypeError("Underground terrain data must be an object.");
@@ -112,6 +235,8 @@ export function getUndergroundData(scene) {
   const dugBytes = decodeBytes(source.dugMask, maskBytes, "dugMask");
   validateUnusedBits(sourceBytes, dugBits, "sourceMask");
   validateUnusedBits(dugBytes, dugBits, "dugMask");
+  const intactSrcRaw = nonEmptyString(source.intactSrc, "intactSrc");
+  const dugSrcRaw = nonEmptyString(source.dugSrc, "dugSrc");
   const data = {
     schemaVersion: UNDERGROUND_SCHEMA_VERSION,
     enabled: source.enabled !== false,
@@ -128,20 +253,17 @@ export function getUndergroundData(scene) {
     dugMask: source.dugMask,
     sourceBytes,
     dugBytes,
-    intactSrc: nonEmptyString(source.intactSrc, "intactSrc"),
-    dugSrc: nonEmptyString(source.dugSrc, "dugSrc"),
+    intactSrc: resolveUndergroundTextureSrc(intactSrcRaw, dugSrcRaw),
+    dugSrc: resolveUndergroundTextureSrc(dugSrcRaw, intactSrcRaw),
     intactGrid: optionalPositiveInteger(source.intactGrid, "intactGrid"),
     dugGrid: optionalPositiveInteger(source.dugGrid, "dugGrid"),
     elevation: finiteNumber(source.elevation ?? 0, "elevation"),
     sort: finiteNumber(source.sort ?? 0, "sort"),
-    blocksMovement: source.blocksMovement === true,
-    blocksVision: source.blocksVision === true
+    blocksMovement: true,
+    blocksVision: true,
+    forceBytes: new Uint8Array(sourceBytes.length),
+    suppressBytes: new Uint8Array(sourceBytes.length)
   };
-  for (let index = 0; index < dugBits; index += 1) {
-    if (isBitSet(dugBytes, index) && !isUndergroundSubcell(data, index)) {
-      throw new TypeError(`dugMask contains non-underground subcell ${index}.`);
-    }
-  }
   return data;
 }
 
@@ -232,17 +354,22 @@ export async function repairUnderground(scene, cellIndexes) {
 
 export async function resetUnderground(scene) {
   assertUndergroundMutation(scene);
-  const data = getUndergroundData(scene);
-  if (!data || !countDugCells(data)) return scene;
-  const dugMask = encodeBytes(new Uint8Array(data.dugBytes.length));
-  return scene.update({[`${UNDERGROUND_FLAG_PATH}.dugMask`]: dugMask});
+  const entries = getAllUndergroundData(scene).filter(entry => countDugCells(entry.data));
+  if (!entries.length) return scene;
+  const results = await Promise.all(entries.map(entry => {
+    const dugMask = encodeBytes(new Uint8Array(entry.data.dugBytes.length));
+    return writeDugMask(entry.owner, dugMask);
+  }));
+  return results[0] ?? scene;
 }
 
 async function updateDugCells(scene, cellIndexes, dug) {
   assertUndergroundMutation(scene);
   if (!Array.isArray(cellIndexes)) throw new TypeError("cellIndexes must be an array.");
-  const data = getUndergroundData(scene);
+  const options = scene === globalThis.canvas?.scene ? {level: globalThis.canvas?.level} : {};
+  const data = getUndergroundData(scene, options);
   if (!data) throw new Error("This Scene has no underground terrain.");
+  const owner = getUndergroundOwner(scene, {levelId: data.levelId, ...options}) ?? scene;
   const bytes = new Uint8Array(data.dugBytes);
   let changed = false;
   for (const index of new Set(cellIndexes)) {
@@ -251,12 +378,21 @@ async function updateDugCells(scene, cellIndexes, dug) {
     setBit(bytes, index, dug);
     changed = true;
   }
-  if (!changed) return scene;
-  return scene.update({[`${UNDERGROUND_FLAG_PATH}.dugMask`]: encodeBytes(bytes)});
+  if (!changed) return owner;
+  return writeDugMask(owner, encodeBytes(bytes));
+}
+
+/** Write the whole flag object so Foundry persists nested dugMask changes. */
+function writeDugMask(owner, dugMask) {
+  const stored = getStoredUndergroundSource(owner);
+  if (!stored) throw new Error("This Scene has no underground terrain.");
+  const source = {...stored, dugMask, blocksMovement: true, blocksVision: true};
+  if (typeof owner.setFlag === "function") return owner.setFlag(MODULE_ID, UNDERGROUND_FLAG, source);
+  return owner.update({[UNDERGROUND_FLAG_PATH]: source});
 }
 
 function assertUndergroundMutation(scene) {
-  assertFeatureEnabled(FEATURES.breakableTerrain);
+  assertFeatureEnabled(FEATURES.diggableTerrain);
   if (!globalThis.game?.user?.isGM) throw new Error(localize("Errors.GmOnly"));
   if (scene?.documentName !== "Scene" && !scene?.update) throw new TypeError("A Scene document is required.");
 }
@@ -318,6 +454,18 @@ function positiveInteger(value, field) {
 function optionalPositiveInteger(value, field, fallback = 1) {
   if (value == null) return fallback;
   return positiveInteger(value, field);
+}
+
+/** Join a relative FilePicker path onto a companion modules/... texture. */
+export function resolveUndergroundTextureSrc(src, companionSrc = "") {
+  const path = typeof src === "string" ? src.trim() : "";
+  if (!path || isAbsoluteUndergroundTextureSrc(path)) return path;
+  const prefix = String(companionSrc).match(/^(modules\/[^/]+\/(?:assets\/)?)/)?.[1];
+  return prefix ? `${prefix}${path.replace(/^\.\//, "")}` : path;
+}
+
+function isAbsoluteUndergroundTextureSrc(path) {
+  return /^(modules\/|systems\/|worlds\/|https?:|data:|\/)/.test(path);
 }
 
 function positiveNumber(value, field) {

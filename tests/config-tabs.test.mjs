@@ -213,6 +213,9 @@ const mountedGenerated = mountToolbagConfigTab({
   nativeIcon: "fa-solid fa-block-brick"
 });
 assert.equal(generatedForm.children[0].tagName, "NAV");
+assert.equal(generatedForm.children[0].classList.contains("top-tabs"), false,
+  "generated nav does not use Foundry header watermark tabs");
+assert.equal(generatedForm.children[0].classList.contains("theiks-toolbag-generated-tabs"), true);
 assert.equal(generatedForm.children[1], generatedBody);
 assert.equal(generatedForm.children[2], generatedForm.querySelector(".theiks-toolbag-config-tab"));
 assert.equal(mountedGenerated.panel.parentElement, generatedForm.children[2]);
@@ -225,6 +228,44 @@ removeToolbagConfigTabs("breakableWalls", generatedDocument);
 assert.deepEqual(generatedForm.children, [generatedBody, generatedFooter]);
 assert.equal(generatedBody.classList.contains("tab"), false);
 assert.equal(generatedBody.dataset.tab, undefined);
+
+const framedDocument = new FakeDocument();
+globalThis.document = framedDocument;
+const framedWindow = framedDocument.createElement("div");
+framedWindow.className = "application";
+const framedHeader = framedDocument.createElement("header");
+framedHeader.className = "window-header";
+const framedContent = framedDocument.createElement("div");
+framedContent.className = "window-content";
+const framedForm = framedDocument.createElement("form");
+const framedBody = framedDocument.createElement("div");
+framedBody.className = "standard-form scrollable";
+const framedFooter = framedDocument.createElement("footer");
+framedForm.append(framedBody, framedFooter);
+framedContent.append(framedForm);
+framedWindow.append(framedHeader, framedContent);
+framedDocument.body.append(framedWindow);
+
+mountToolbagConfigTab({
+  application: {element: framedWindow, form: framedForm, tabGroups: {}},
+  element: framedWindow,
+  content: "<fieldset>Level tools</fieldset>",
+  feature: "breakableTerrain",
+  nativeLabel: "Level",
+  nativeIcon: "fa-solid fa-layer-group"
+});
+assert.equal(framedWindow.children[0], framedHeader);
+assert.equal(framedWindow.children[1], framedContent, "generated tabs stay in the form, not the window frame");
+assert.equal(framedWindow.classList.contains("tabs"), false, "LevelConfig is not a Foundry tabbed application");
+assert.equal(framedForm.children[0].tagName, "NAV");
+assert.equal(framedForm.children[0].classList.contains("top-tabs"), false);
+assert.equal(framedForm.children[1], framedBody);
+assert.equal(framedForm.querySelector("nav.sheet-tabs")?.classList.contains("theiks-toolbag-generated-tabs"), true);
+
+removeToolbagConfigTabs("breakableTerrain", framedDocument);
+assert.equal(framedWindow.children[1], framedContent);
+assert.equal(framedForm.children[0], framedBody);
+assert.equal(framedForm.querySelector("nav.sheet-tabs"), null);
 
 const sharedDocument = new FakeDocument();
 globalThis.document = sharedDocument;

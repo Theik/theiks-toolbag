@@ -64,7 +64,8 @@ globalThis.PIXI = {Container};
 globalThis.foundry = {canvas: {containers: {ControlIcon}}};
 const featureSettings = {
   enableBreakableWalls: true,
-  enableBreakableTerrain: true
+  enableBreakableTerrain: true,
+  enableDiggableTerrain: true
 };
 globalThis.game = {
   user: {isGM: true},
@@ -164,8 +165,9 @@ assert.equal(nonGmControls.theiksToolbagDestruction, undefined);
 game.user.isGM = true;
 featureSettings.enableBreakableWalls = false;
 featureSettings.enableBreakableTerrain = false;
+featureSettings.enableDiggableTerrain = false;
 const disabledControls = {};
 for (const callback of registeredHooks.get("getSceneControlButtons") ?? []) callback(disabledControls);
-assert.equal(disabledControls.theiksToolbagDestruction, undefined, "the combined mode is hidden when both features are off");
+assert.equal(disabledControls.theiksToolbagDestruction, undefined, "the combined mode is hidden when wall, terrain, and diggable features are off");
 
 console.log("combined destruction-mode tests passed");

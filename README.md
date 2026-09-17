@@ -7,7 +7,7 @@
 
   <p>
     <strong>Tools for maps players can change.</strong><br>
-    Break scenery, operate lights and tiles, and move tokens between levels in Foundry Virtual Tabletop.
+    Break scenery, dig packed earth, operate lights and tiles, and move tokens between levels in Foundry Virtual Tabletop.
   </p>
 
   <p>
@@ -39,29 +39,35 @@
 <table>
   <tr>
     <td width="50%">
+      <h3>Diggable terrain</h3>
+      Fill empty space with packed earth. GMs excavate it from Destruction Mode. Regions can force, suppress, or retexture that earth.
+    </td>
+    <td width="50%">
       <h3>Breakable walls</h3>
       Destroy and repair walls without deleting them. The module draws rubble on the canvas and keeps the wall's original settings for repair.
     </td>
+  </tr>
+  <tr>
     <td width="50%">
       <h3>Breakable terrain</h3>
       Give Tiles several damage states. Their opaque pixels can block movement, light, and vision. A Tile can also collapse as a platform.
     </td>
-  </tr>
-  <tr>
     <td width="50%">
       <h3>Visible lights</h3>
       Give Ambient Lights on, off, and destroyed artwork. GMs and nearby players can operate them from the canvas.
     </td>
+  </tr>
+  <tr>
     <td width="50%">
       <h3>Level tools</h3>
       Move selected Tokens between Scene Levels. Collapsing platforms can move creatures to the nearest Level below.
     </td>
-  </tr>
-  <tr>
     <td width="50%">
       <h3>Usable Tiles</h3>
       Add off, intermediate, and on images to doors, levers, machinery, or any other Tile. Nearby players can operate them.
     </td>
+  </tr>
+  <tr>
     <td width="50%">
       <h3>Script behaviors</h3>
       Run scripts after a Toolbag action succeeds. Each Wall, Tile, or Ambient Light stores its own behaviors.
@@ -77,7 +83,7 @@
 4. Open **Game Settings → Theik's Toolbag** and choose the features you want active.
 
 > [!TIP]
-> **Breakable Walls**, **Breakable Terrain**, **Visible Lights**, **Usable Tiles**, and **Level Tools** are enabled by default. Turning one off hides its controls and canvas elements. Saved document flags remain in place.
+> **Breakable Walls**, **Breakable Terrain**, **Diggable Terrain**, **Visible Lights**, **Usable Tiles**, and **Level Tools** are enabled by default. Turning one off hides its controls and canvas elements. Saved document flags remain in place.
 
 ## Feature guide
 
@@ -130,16 +136,6 @@ The Tile's blocking shape follows the opaque pixels in each image. Movement uses
 
 Blocking uses transient Foundry canvas edges. No helper Wall or Tile documents are created, and Tile rotation, anchors, scaling, texture fit, and Scene Levels are respected.
 
-#### Virtual underground terrain
-
-The Scene Config **Toolbag** tab can fill empty space with packed earth. Enable **Diggable underground**, pick an undug texture and a dug texture, and set a grid period for each (an n×n atlas, the same fields Map Generator themes use). Place Tiles first. Opaque pixels stay visible; transparent pixels and empty cells become earth. The mask is created the first time you save with this enabled. Later saves keep the current dug state.
-
-Map Generator themes can write the same Scene flag at generate time. Toolbag draws intact earth and dug rubble as two tiled background layers clipped by a subcell mask, then derives coalesced movement and limited light, darkness, and sight edges from the intact-subcell boundary on the assigned Level. No native placeables or per-cell control markers are created.
-
-The combined **Destruction Mode** adds **Excavate** when the viewed Level contains valid underground data. Drag a 1×1 disk brush to preview a stroke, then release to save all changed subcells in one Scene update. **Repair** changes the same brush from digging to restoration. <kbd>Escape</kbd> cancels the pending stroke. Digging reveals the dug earth texture; it does not use intermediate damage states. **Reset destructables** restores every dug subcell in one Scene update.
-
-Only a GM can dig, repair, or reset virtual underground. Disabling Breakable Terrain removes its artwork, edges, and controls while preserving the Scene flag. Unsupported or corrupt data is ignored, logged once, and reported to the active GM.
-
 #### Breakable platforms
 
 When **Level Tools** is enabled, destroyable terrain can also become a **Breakable platform** assigned to one or more Scene Levels. When it reaches its final damage state:
@@ -151,6 +147,34 @@ When **Level Tools** is enabled, destroyable terrain can also become a **Breakab
 The GM chooses which creatures fall. Each chosen creature moves from its assigned Level to the nearest Level below. The confirmation also identifies creatures already underneath, and one Chat message records the result.
 
 An optional **Destroyed message** adds text to that Chat card. Moving backward through damage states never moves Tokens back up. If Level Tools is off, the Tile behaves as regular breakable terrain. Turning Level Tools back on does not apply an earlier fall.
+
+### Diggable terrain
+
+<p align="center">
+  <img src="assets/images/demos/diggable-terrain.gif" alt="Packed earth being excavated and restored on a Foundry VTT map" width="687">
+</p>
+
+On a single-Level Scene, open Scene Config, then the **Toolbag** tab, and enable **Diggable underground**. Pick an undug texture, a dug texture, and a grid size for each. Opaque floors stay. Empty space becomes packed earth. The first save scans the artwork and can stall a large map. Later saves keep what you already dug. Turn it off and on again to rescan.
+
+Multi-level Scenes set this on each Level instead, from the **Levels** tab. Earth only draws on the Level you are viewing. Map Generator themes can write the same data when a map is generated.
+
+**Destruction Mode** adds **Excavate** on a Level that has diggable earth.
+
+| Control | Action | Result |
+|:--|:--|:--|
+| Excavate | Drag | Digs with a 1×1 disk. Release to save. |
+| Repair | Drag | Puts the earth back. |
+| Escape | <kbd>Escape</kbd> | Cancels the stroke. |
+
+**Reset destructables** fills every dug cell in the Scene.
+
+Add a Region behavior to change earth inside a shape, with no extra scan:
+
+- **Force Diggable Terrain.** Fills the Region with earth even over opaque floors, drawn on top of those floors.
+- **Suppress Diggable Terrain.** Removes earth, including in shafts and other holes. Wins if it overlaps Force.
+- **Alter Diggable Terrain.** Overrides textures or grid sizes. Leave a field blank to keep the Level setting.
+
+Only a GM can dig.
 
 ### Usable Tiles
 
@@ -281,7 +305,7 @@ await game.modules.get("theiks-toolbag")?.api?.breakableTerrain?.advance?.(
 </details>
 
 <details>
-<summary><strong>Virtual underground:</strong> availability, source creation, dig, repair, and reset</summary>
+<summary><strong>Diggable terrain:</strong> availability, source creation, dig, repair, and reset</summary>
 
 ```js
 const underground = game.modules.get("theiks-toolbag")?.api?.undergroundTerrain;
@@ -290,9 +314,13 @@ if (underground?.isAvailable?.()) {
   await underground.repair(canvas.scene, [13]);
   await underground.reset(canvas.scene);
 }
+
+// GM console: paint occupancy subcells in transparent blue
+underground?.toggleOverlay?.();
+underground?.toggleOverlay?.(true);
 ```
 
-`schemaVersion` is currently `2`. `createSource(options)` validates and encodes a row-major logical source-cell array plus a finer dug mask for integrations. Supply the grid origin and dimensions, Level ID, intact and dug texture paths, and movement and vision blocking choices. `createSourceFromScene(scene, options)` builds that same source from the Scene's playable grid and punches holes for opaque Tile pixels. The mutating calls are GM-only, ignore indexes outside the original source mask, merge against the Scene's latest dug mask, and perform at most one Scene update per call.
+`schemaVersion` is currently `2`. `createSource(options)` validates and encodes a row-major logical source-cell array plus a finer dug mask for integrations. Supply the grid origin and dimensions, Level ID, intact and dug texture paths, and movement and vision blocking choices. `createSourceFromScene(scene, options)` builds that same source from the Scene's playable grid and punches holes for opaque Tile pixels. The mutating calls are GM-only, ignore indexes outside the original source mask, merge against the latest dug mask, and perform at most one document update per call. Dig and repair target the viewed Level. Reset clears every Level in the Scene. `toggleOverlay()` is a local GM debug view of the occupancy mask; it does not change Scene data.
 
 </details>
 
@@ -364,6 +392,7 @@ Open **Game Settings → Theik's Toolbag** to enable or disable these feature gr
 
 - **Breakable Walls**
 - **Breakable Terrain**
+- **Diggable Terrain**
 - **Visible Lights**
 - **Usable Tiles**
 - **Level Tools**

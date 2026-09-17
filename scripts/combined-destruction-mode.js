@@ -15,7 +15,8 @@ export function registerCombinedDestructionMode() {
 function addCombinedDestructionControl(controls) {
   const wallsEnabled = isFeatureEnabled(FEATURES.breakableWalls);
   const terrainEnabled = isFeatureEnabled(FEATURES.breakableTerrain);
-  if (!game.user.isGM || (!wallsEnabled && !terrainEnabled)) return;
+  const diggableEnabled = isFeatureEnabled(FEATURES.diggableTerrain);
+  if (!game.user.isGM || (!wallsEnabled && !terrainEnabled && !diggableEnabled)) return;
   controls[CONTROL_NAME] = {
     name: CONTROL_NAME,
     order: 100,

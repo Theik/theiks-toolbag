@@ -4,6 +4,7 @@ import test from "node:test";
 import {createUndergroundSource, getUndergroundData, subcellsForLogicalIndexes} from "../scripts/underground/underground-data.js";
 import {
   buildUndergroundBoundarySegments,
+  buildUndergroundVisionBoundarySegments,
   cellIndexAtPoint,
   diskSubcellIndexes,
   subcellIndexAtPoint
@@ -19,13 +20,34 @@ function dataFor(cells, {width = 2, height = 2, dugMask} = {}) {
   return getUndergroundData({flags: {"theiks-toolbag": {undergroundTerrain: source}}});
 }
 
+function dugMaskFor(logicalCells, width, height) {
+  const indexes = subcellsForLogicalIndexes(logicalCells, width, height);
+  const bytes = new Uint8Array(Math.ceil(width * height * 16 / 8));
+  for (const index of indexes) bytes[index >> 3] |= 1 << (index & 7);
+  return Buffer.from(bytes).toString("base64");
+}
+
 test("coalesces a solid rectangle into four boundary segments", () => {
-  assert.deepEqual(buildUndergroundBoundarySegments(dataFor([0, 1, 2, 3])), [
+  const data = dataFor([0, 1, 2, 3]);
+  const expected = [
     [10, 20, 210, 20],
     [10, 220, 210, 220],
     [10, 20, 10, 220],
     [210, 20, 210, 220]
-  ]);
+  ];
+  assert.deepEqual(buildUndergroundBoundarySegments(data), expected);
+  assert.deepEqual(buildUndergroundVisionBoundarySegments(data), expected);
+});
+
+test("vision walls sit inside dug earth so the fade stays lit", () => {
+  const data = dataFor([0, 1], {width: 2, height: 1, dugMask: dugMaskFor([0], 2, 1)});
+  const sharedX = data.origin.x + (data.subdivision * data.subGridSize);
+  const insetX = sharedX + ((data.subdivision / 2) * data.subGridSize);
+  const moveVertical = buildUndergroundBoundarySegments(data).filter(segment => segment[0] === segment[2]);
+  const visionVertical = buildUndergroundVisionBoundarySegments(data).filter(segment => segment[0] === segment[2]);
+  assert.ok(moveVertical.some(segment => segment[0] === sharedX));
+  assert.equal(visionVertical.some(segment => segment[0] === sharedX), false);
+  assert.ok(visionVertical.some(segment => segment[0] === insetX));
 });
 
 test("point lookup and disk brushes clip to source subcells and bounds", () => {

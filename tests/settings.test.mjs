@@ -30,7 +30,7 @@ const {
 } = await import("../scripts/settings.js");
 
 registerFeatureSettings();
-assert.equal(registrations.size, 6);
+assert.equal(registrations.size, 7);
 for (const definition of registrations.values()) {
   assert.equal(definition.scope, "world");
   assert.equal(definition.config, true);
@@ -39,12 +39,18 @@ for (const definition of registrations.values()) {
 }
 assert.equal(isFeatureEnabled(FEATURES.breakableWalls), true);
 assert.equal(isFeatureEnabled(FEATURES.breakableTerrain), true);
+assert.equal(isFeatureEnabled(FEATURES.diggableTerrain), true);
 assert.equal(isFeatureEnabled(FEATURES.visibleLights), true);
 assert.equal(isFeatureEnabled(FEATURES.usableTiles), true);
 assert.equal(isFeatureEnabled(FEATURES.levelTools), true);
 assert.equal(isFeatureEnabled(FEATURES.fallingMessages), true);
 
 const settingKeys = Array.from(registrations.keys());
+assert.equal(
+  settingKeys.indexOf("theiks-toolbag.enableDiggableTerrain"),
+  settingKeys.indexOf("theiks-toolbag.enableBreakableTerrain") + 1,
+  "diggable terrain is registered directly beneath Breakable Terrain"
+);
 assert.equal(
   settingKeys.indexOf("theiks-toolbag.enableFallingMessages"),
   settingKeys.indexOf("theiks-toolbag.enableLevelTools") + 1,

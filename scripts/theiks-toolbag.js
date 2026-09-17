@@ -36,8 +36,10 @@ import {
 } from "./underground/underground-data.js";
 import {createUndergroundSourceFromScene} from "./underground/underground-occupancy.js";
 import {registerUndergroundRuntime} from "./underground/underground-runtime.js";
+import {registerUndergroundRegionBehaviors} from "./underground/underground-regions.js";
 import {registerUndergroundControls} from "./underground/underground-controls.js";
 import {registerUndergroundSceneConfig} from "./underground/underground-scene-config.js";
+import {registerUndergroundDebug, toggleUndergroundOverlay} from "./underground/underground-debug.js";
 import {registerUsableTileConfig} from "./usable-tiles/tile-config.js";
 import {registerUsableTileControls, useUsableTile} from "./usable-tiles/tile-controls.js";
 import {registerFeatureSettings} from "./settings.js";
@@ -65,6 +67,8 @@ Hooks.once("init", () => {
   registerTerrainDestructionMode();
   registerCombinedDestructionMode();
   registerUndergroundRuntime();
+  registerUndergroundRegionBehaviors();
+  registerUndergroundDebug();
   registerUndergroundControls();
   registerUndergroundSceneConfig();
   registerUsableTileConfig();
@@ -98,7 +102,8 @@ Hooks.once("init", () => {
       createSourceFromScene: createUndergroundSourceFromScene,
       dig: digUnderground,
       repair: repairUnderground,
-      reset: resetUnderground
+      reset: resetUnderground,
+      toggleOverlay: toggleUndergroundOverlay
     },
     usableTiles: {
       use: useUsableTile

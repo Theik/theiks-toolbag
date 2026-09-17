@@ -1,25 +1,26 @@
 import {isDugSubcell, isUndergroundSubcell} from "./underground-data.js";
 
+/** Sight and light reach this many subcells into intact earth. Half a logical cell. */
+export function visionOverlapSubcells(data) {
+  const subdivision = Math.max(1, Number(data?.subdivision) || 4);
+  return Math.max(1, Math.floor(subdivision / 2));
+}
+
 /** Return merged world-space boundary segments around every intact underground subcell. */
 export function buildUndergroundBoundarySegments(data) {
+  return buildBoundarySegments(data, false);
+}
+
+/** Sight and light walls sit half a logical cell inside intact earth. */
+export function buildUndergroundVisionBoundarySegments(data) {
+  return buildBoundarySegments(data, true);
+}
+
+function buildBoundarySegments(data, visionOverlap) {
   const horizontal = new Map();
   const vertical = new Map();
-  const intact = (x, y) => {
-    if (x < 0 || y < 0 || x >= data.subWidth || y >= data.subHeight) return false;
-    const index = (y * data.subWidth) + x;
-    return isUndergroundSubcell(data, index) && !isDugSubcell(data, index);
-  };
-  const addHorizontal = (y, x) => addInterval(horizontal, y, x);
-  const addVertical = (x, y) => addInterval(vertical, x, y);
-  for (let y = 0; y < data.subHeight; y += 1) {
-    for (let x = 0; x < data.subWidth; x += 1) {
-      if (!intact(x, y)) continue;
-      if (!intact(x, y - 1)) addHorizontal(y, x);
-      if (!intact(x + 1, y)) addVertical(x + 1, y);
-      if (!intact(x, y + 1)) addHorizontal(y + 1, x);
-      if (!intact(x - 1, y)) addVertical(x, y);
-    }
-  }
+  if (visionOverlap) collectVisionEdges(data, horizontal, vertical);
+  else collectMovementEdges(data, horizontal, vertical);
   const segments = [];
   for (const [y, starts] of horizontal) {
     for (const [start, end] of mergeUnitIntervals(starts)) {
@@ -42,6 +43,74 @@ export function buildUndergroundBoundarySegments(data) {
     }
   }
   return segments;
+}
+
+function isIntactSubcell(data, x, y) {
+  if (x < 0 || y < 0 || x >= data.subWidth || y >= data.subHeight) return false;
+  const index = (y * data.subWidth) + x;
+  return isUndergroundSubcell(data, index) && !isDugSubcell(data, index);
+}
+
+function collectMovementEdges(data, horizontal, vertical) {
+  const blocking = (x, y) => isIntactSubcell(data, x, y);
+  for (let y = 0; y < data.subHeight; y += 1) {
+    for (let x = 0; x < data.subWidth; x += 1) {
+      if (!blocking(x, y)) continue;
+      if (!blocking(x, y - 1)) addInterval(horizontal, y, x);
+      if (!blocking(x + 1, y)) addInterval(vertical, x + 1, y);
+      if (!blocking(x, y + 1)) addInterval(horizontal, y + 1, x);
+      if (!blocking(x - 1, y)) addInterval(vertical, x, y);
+    }
+  }
+}
+
+const VISION_OUTSIDE = 0;
+const VISION_INTACT = 1;
+const VISION_DUG = 2;
+const VISION_FRINGE = 3;
+
+function collectVisionEdges(data, horizontal, vertical) {
+  for (let y = 0; y < data.subHeight; y += 1) {
+    for (let x = 0; x < data.subWidth; x += 1) {
+      const here = visionClass(data, x, y);
+      if (visionBlocksBetween(here, visionClass(data, x, y - 1))) addInterval(horizontal, y, x);
+      if (visionBlocksBetween(here, visionClass(data, x + 1, y))) addInterval(vertical, x + 1, y);
+      if (visionBlocksBetween(here, visionClass(data, x, y + 1))) addInterval(horizontal, y + 1, x);
+      if (visionBlocksBetween(here, visionClass(data, x - 1, y))) addInterval(vertical, x, y);
+    }
+  }
+}
+
+function visionClass(data, x, y) {
+  if (x < 0 || y < 0 || x >= data.subWidth || y >= data.subHeight) return VISION_OUTSIDE;
+  const index = (y * data.subWidth) + x;
+  if (!isUndergroundSubcell(data, index)) return VISION_OUTSIDE;
+  if (isDugSubcell(data, index)) return VISION_DUG;
+  return isWithinDugOverlap(data, x, y) ? VISION_FRINGE : VISION_INTACT;
+}
+
+function visionBlocksBetween(left, right) {
+  if (left === right) return false;
+  const open = value => value === VISION_DUG || value === VISION_FRINGE;
+  if (open(left) && open(right)) return false;
+  if ((left === VISION_DUG && right === VISION_OUTSIDE) || (left === VISION_OUTSIDE && right === VISION_DUG)) {
+    return false;
+  }
+  return true;
+}
+
+function isWithinDugOverlap(data, x, y) {
+  const radius = visionOverlapSubcells(data);
+  for (let dy = -radius; dy <= radius; dy += 1) {
+    for (let dx = -radius; dx <= radius; dx += 1) {
+      if (dx === 0 && dy === 0) continue;
+      const nx = x + dx;
+      const ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= data.subWidth || ny >= data.subHeight) continue;
+      if (isDugSubcell(data, (ny * data.subWidth) + nx)) return true;
+    }
+  }
+  return false;
 }
 
 export function cellIndexAtPoint(data, point) {

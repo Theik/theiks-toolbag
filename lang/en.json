@@ -1,11 +1,15 @@
 {
+  "TYPES.RegionBehavior.theiks-toolbag.forceDiggable": "Theik's Toolbag: Force Diggable Terrain",
+  "TYPES.RegionBehavior.theiks-toolbag.suppressDiggable": "Theik's Toolbag: Suppress Diggable Terrain",
+  "TYPES.RegionBehavior.theiks-toolbag.alterDiggable": "Theik's Toolbag: Alter Diggable Terrain",
   "THEIKS_TOOLBAG": {
     "ConfigTabs": {
       "Toolbag": "Toolbag",
       "Wall": "Wall",
       "Light": "Light",
       "Tile": "Tile",
-      "Scene": "Scene"
+      "Scene": "Scene",
+      "Level": "Level"
     },
     "EventScripts": {
       "Legend": "Event scripts",
@@ -82,6 +86,10 @@
       "BreakableTerrain": {
         "Name": "Breakable Terrain",
         "Hint": "Enable terrain destruction configuration, controls, actions, and Tile blocking edges."
+      },
+      "DiggableTerrain": {
+        "Name": "Diggable Terrain",
+        "Hint": "Enable diggable underground configuration, excavation controls, and virtual earth artwork."
       },
       "VisibleLights": {
         "Name": "Visible Lights",
@@ -376,26 +384,65 @@
       "Config": {
         "Legend": "Diggable underground",
         "Enabled": "Diggable underground",
-        "EnabledHint": "Fill empty space with packed earth. Place Tiles first; opaque pixels stay visible, and later saves keep the current dug state.",
+        "EnabledHint": "Fill empty space with packed earth. Opaque pixels in this Level's background and Tiles stay visible. Transparent pixels become earth. Later saves keep the current dug state. On a Scene with several Levels, configure this on each Level instead.",
+        "ScanWarning": "Warning: the first save, or turning this back on, scans the artwork and can freeze Foundry on a large map.",
         "IntactSrc": "Undug texture",
         "IntactSrcHint": "Artwork shown for packed earth that has not been excavated.",
         "DugSrc": "Dug texture",
         "DugSrcHint": "Artwork shown after a cell is excavated.",
-        "IntactGrid": "Undug grid period",
-        "IntactGridHint": "Square cell period of the undug texture. 5 means a 5x5 grid pattern.",
-        "DugGrid": "Dug grid period",
-        "DugGridHint": "Square cell period of the dug texture. 2 means a 2x2 grid pattern.",
+        "IntactGrid": "Undug texture grid size",
+        "IntactGridHint": "How many cells the undug texture spans. 5 means a 5x5 grid pattern.",
+        "DugGrid": "Dug texture grid size",
+        "DugGridHint": "How many cells the dug texture spans. 2 means a 2x2 grid pattern.",
         "CellCount": "Virtual underground cells: {count}"
       },
       "Controls": {
         "Excavate": "Excavate underground terrain",
         "Repair": "Repair underground terrain"
       },
+      "Progress": {
+        "Title": "Scanning diggable underground",
+        "Intro": "Reading transparent pixels on {name}. This can take a while.",
+        "Untitled": "this Level",
+        "Cancel": "Cancel"
+      },
       "Errors": {
         "GmOnly": "Only a GM can change underground terrain.",
         "Invalid": "This Scene contains invalid underground terrain data. Check the console for details.",
         "UpdateFailed": "Underground terrain could not be updated. Check the console for details.",
         "TexturesRequired": "Choose both an undug texture and a dug texture before enabling diggable underground."
+      },
+      "RegionBehaviors": {
+        "Force": {
+          "Label": "Theik's Toolbag: Force Diggable Terrain",
+          "Hint": "Fill this Region with diggable earth, including over opaque floors. Earth here draws on top of the background and Tiles."
+        },
+        "Suppress": {
+          "Label": "Theik's Toolbag: Suppress Diggable Terrain",
+          "Hint": "Remove diggable earth inside this Region, including in transparent holes."
+        },
+        "Alter": {
+          "Label": "Theik's Toolbag: Alter Diggable Terrain",
+          "Hint": "Override undug and dug textures or their grid sizes inside this Region. Leave a field blank to keep the Level setting.",
+          "FIELDS": {
+            "intactSrc": {
+              "label": "Undug texture",
+              "hint": "Artwork shown for packed earth that has not been excavated. Blank keeps the Level texture."
+            },
+            "dugSrc": {
+              "label": "Dug texture",
+              "hint": "Artwork shown after a cell is excavated. Blank keeps the Level texture."
+            },
+            "intactGrid": {
+              "label": "Undug texture grid size",
+              "hint": "How many cells the undug texture spans. 5 means a 5x5 grid pattern. Blank keeps the Level size."
+            },
+            "dugGrid": {
+              "label": "Dug texture grid size",
+              "hint": "How many cells the dug texture spans. 2 means a 2x2 grid pattern. Blank keeps the Level size."
+            }
+          }
+        }
       }
     }
   }

@@ -5,7 +5,7 @@ import {restoreTerrain} from "./breakable-terrain/terrain-destruction.js";
 import {getVisibleLightData} from "./visible-lights/light-config.js";
 import {repairVisibleLight} from "./visible-lights/light-controls.js";
 import {FEATURES, isFeatureEnabled} from "./settings.js";
-import {countDugCells, getUndergroundData, resetUnderground} from "./underground/underground-data.js";
+import {countDugCells, getAllUndergroundData, resetUnderground} from "./underground/underground-data.js";
 
 const MODULE_ID = "theiks-toolbag";
 const RESET_ICON = "fa-solid fa-arrow-rotate-left";
@@ -126,7 +126,7 @@ export function collectResettableDestructables(scene) {
     lights: isFeatureEnabled(FEATURES.visibleLights)
       ? collectionContents(scene?.lights).filter(light => getVisibleLightData(light).destroyed)
       : [],
-    underground: isFeatureEnabled(FEATURES.breakableTerrain) && undergroundDugCount(scene) > 0 ? [scene] : []
+    underground: isFeatureEnabled(FEATURES.diggableTerrain) && undergroundDugCount(scene) > 0 ? [scene] : []
   };
 }
 
@@ -152,7 +152,7 @@ function getTargetCounts(targets) {
 
 function undergroundDugCount(scene) {
   try {
-    return countDugCells(getUndergroundData(scene));
+    return getAllUndergroundData(scene).reduce((total, entry) => total + countDugCells(entry.data), 0);
   } catch (_error) {
     return 0;
   }

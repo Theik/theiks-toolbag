@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 const featureSettings = {
   enableBreakableWalls: true,
   enableBreakableTerrain: true,
-  enableVisibleLights: true
+  enableVisibleLights: true,
+  enableDiggableTerrain: true
 };
 globalThis.game = {
   user: {id: "gm", isGM: true},

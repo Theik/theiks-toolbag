@@ -10,8 +10,10 @@ const FEATURE_CONTENT_CLASS = "theiks-toolbag-feature-content";
 /**
  * Mount one Toolbag configuration tab into a native tabbed sheet or create a two-tab layout.
  *
- * Foundry's normal Light and Tile sheets already provide a `sheet` tab group. WallConfig and
- * all three Placeable Palettes do not, so those forms are progressively enhanced in-place.
+ * Foundry's normal Light and Tile sheets already provide a `sheet` tab group. WallConfig,
+ * LevelConfig, and the Placeable Palettes do not, so those forms are enhanced in-place.
+ * Generated nav stays inside the form and does not use Foundry's `top-tabs` header chrome.
+ * That class paints large faded labels over LevelConfig and other small popouts.
  * If another module such as Map Generator already created that nav, reuse it.
  *
  * @param {{
@@ -44,9 +46,9 @@ export function mountToolbagConfigTab({
   let nativePanel = findNativePanel(element, nativeTab);
 
   if (!navigation) {
-    navigation = createNavigation();
     nativePanel = root;
     prepareNativePanel(nativePanel);
+    navigation = createNavigation();
     nativePanel.before(navigation);
     navigation.append(createTabControl({
       tab: nativePanel.dataset.tab,
@@ -157,7 +159,7 @@ function getFormRoot(application, element) {
 
 function createNavigation() {
   const navigation = globalThis.document.createElement("nav");
-  navigation.className = `sheet-tabs tabs top-tabs ${GENERATED_NAV_CLASS}`;
+  navigation.className = `sheet-tabs tabs ${GENERATED_NAV_CLASS}`;
   navigation.setAttribute("aria-roledescription", localize("SHEETS.FormNavLabel"));
   return navigation;
 }

@@ -32,6 +32,82 @@
   white-space: nowrap;
 }
 
+nav.theiks-toolbag-generated-tabs,
+.application nav.theiks-toolbag-generated-tabs {
+  position: static;
+  inset: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+  padding: 0 0 0.35rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-light-primary, #7a7971);
+  background: none;
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+.application nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control,
+nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control {
+  position: static;
+  flex: 1 1 0;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.35rem 0.6rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  box-shadow: none;
+  color: var(--color-text-primary, #191813);
+  font-size: var(--font-size-14, 14px);
+  font-weight: 600;
+  line-height: 1.2;
+  opacity: 1;
+  text-shadow: none;
+  writing-mode: horizontal-tb;
+}
+
+.application nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control > i,
+.application nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control > span,
+nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control > i,
+nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control > span {
+  position: static;
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  opacity: 1;
+  transform: none;
+  color: inherit;
+  text-shadow: none;
+}
+
+.application nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control.active,
+nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control.active {
+  border-bottom-color: var(--color-border-highlight, #ff9829);
+  color: var(--color-text-primary, #191813);
+  opacity: 1;
+}
+
+.application nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control:hover,
+nav.theiks-toolbag-generated-tabs .theiks-toolbag-tab-control:hover {
+  color: var(--color-text-hyperlink, #ff6400);
+  text-shadow: none;
+}
+
 .theiks-toolbag .toolbag-event-behaviors {
   margin-top: 0.75rem;
 }
@@ -224,4 +300,49 @@
   margin-left: 1rem;
   padding-left: 0.75rem;
   width: calc(100% - 1rem);
+}
+
+.theiks-toolbag.underground-progress {
+  min-width: min(26rem, calc(100vw - 6rem));
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0.5rem;
+}
+
+.theiks-underground-spinner {
+  flex: 0 0 auto;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  animation: theiks-underground-spin 4s linear infinite;
+}
+
+@keyframes theiks-underground-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theiks-underground-spinner {
+    animation: theiks-underground-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes theiks-underground-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.65; }
+  }
+}
+
+.theiks-toolbag.underground-progress p {
+  margin: 0;
+}
+
+.theiks-toolbag.underground-progress .hint {
+  margin-top: 0.35rem;
+}
+
+.theiks-toolbag.underground-terrain .theiks-underground-scan-warning {
+  color: var(--color-level-error, #b42318);
+  font-weight: 600;
 }

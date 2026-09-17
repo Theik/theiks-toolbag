@@ -3,6 +3,7 @@ export const MODULE_ID = "theiks-toolbag";
 export const FEATURES = Object.freeze({
   breakableWalls: "breakableWalls",
   breakableTerrain: "breakableTerrain",
+  diggableTerrain: "diggableTerrain",
   visibleLights: "visibleLights",
   usableTiles: "usableTiles",
   levelTools: "levelTools",
@@ -21,6 +22,11 @@ const DEFINITIONS = Object.freeze({
     key: "enableBreakableTerrain",
     name: "THEIKS_TOOLBAG.Settings.BreakableTerrain.Name",
     hint: "THEIKS_TOOLBAG.Settings.BreakableTerrain.Hint"
+  },
+  [FEATURES.diggableTerrain]: {
+    key: "enableDiggableTerrain",
+    name: "THEIKS_TOOLBAG.Settings.DiggableTerrain.Name",
+    hint: "THEIKS_TOOLBAG.Settings.DiggableTerrain.Hint"
   },
   [FEATURES.visibleLights]: {
     key: "enableVisibleLights",

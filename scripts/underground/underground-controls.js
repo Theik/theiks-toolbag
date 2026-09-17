@@ -9,12 +9,18 @@ import {
 import {diskSubcellIndexes} from "./underground-geometry.js";
 
 const CONTROL_NAME = "theiksToolbagDestruction";
+const MODE_TOOL_NAME = "theiksToolbagDestructionMode";
+const RESET_TOOL_NAME = "theiksToolbagResetDestructables";
 const TOOL_NAME = "theiksToolbagExcavate";
 const REPAIR_TOOL_NAME = "theiksToolbagExcavateRepair";
 const BRUSH_SIZE = 1;
+const DESTRUCTION_CONTROL_IDS = new Set([
+  CONTROL_NAME, MODE_TOOL_NAME, RESET_TOOL_NAME, TOOL_NAME, REPAIR_TOOL_NAME
+]);
 
 let active = false;
 let repairMode = false;
+let brush = null;
 let drawing = false;
 let stroke = new Set();
 let preview = null;
@@ -26,6 +32,8 @@ export function registerUndergroundControls() {
   Hooks.on("getSceneControlButtons", addControls);
   Hooks.on("canvasReady", onCanvasReady);
   Hooks.on("canvasTearDown", onCanvasTearDown);
+  Hooks.on("renderSceneControls", onSceneControlsRender);
+  Hooks.on("activateSceneControls", onSceneControlsRender);
 }
 
 function onCanvasReady() {
@@ -41,19 +49,25 @@ function onCanvasTearDown() {
   unbindCanvasElement();
 }
 
+let registeredTools = null;
+let syncingButtons = false;
+
 function addControls(controls) {
   const data = safelyReadCurrentData();
   const control = controls[CONTROL_NAME];
   if (!control || !game.user?.isGM || !isUndergroundAvailable() || !data) return;
+  registeredTools = control.tools;
   control.tools[TOOL_NAME] = {
     name: TOOL_NAME,
     order: 3,
     title: "THEIKS_TOOLBAG.Underground.Controls.Excavate",
     icon: "fa-solid fa-person-digging",
     visible: true,
+    toggle: true,
+    active: brush === "dig",
     interaction: false,
     control: false,
-    onChange: (_event, enabled) => setExcavationActive(enabled)
+    onChange: (_event, enabled) => setBrush(enabled ? "dig" : (brush === "dig" ? null : brush))
   };
   control.tools[REPAIR_TOOL_NAME] = {
     name: REPAIR_TOOL_NAME,
@@ -62,17 +76,54 @@ function addControls(controls) {
     icon: "fa-solid fa-fill-drip",
     visible: true,
     toggle: true,
-    active: repairMode,
-    onChange: (_event, enabled) => { repairMode = enabled; redrawPreview(); }
+    active: brush === "repair",
+    onChange: (_event, enabled) => setBrush(enabled ? "repair" : (brush === "repair" ? null : brush))
   };
 }
 
 export function setExcavationActive(enabled) {
-  const next = enabled === true && game.user?.isGM && isUndergroundAvailable() && safelyReadCurrentData();
-  if (Boolean(next) === active) return;
-  active = Boolean(next);
+  setBrush(enabled ? (brush === "repair" ? "repair" : "dig") : null);
+}
+
+function setBrush(next) {
+  if (next && !(game.user?.isGM && isUndergroundAvailable() && safelyReadCurrentData())) next = null;
+  if (next !== "dig" && next !== "repair") next = null;
+  const enabled = next !== null;
+  brush = next;
+  repairMode = next === "repair";
+  if (enabled === active) {
+    syncBrushButtons();
+    if (active) redrawPreview();
+    return;
+  }
+  active = enabled;
   if (active) attachInteraction();
   else detachInteraction();
+  syncBrushButtons();
+}
+
+function syncBrushButtons() {
+  const groups = [
+    registeredTools,
+    globalThis.ui?.controls?.controls?.[CONTROL_NAME]?.tools,
+    globalThis.ui?.controls?.control?.tools
+  ];
+  for (const tools of groups) {
+    if (!tools) continue;
+    if (tools[TOOL_NAME]) tools[TOOL_NAME].active = brush === "dig";
+    if (tools[REPAIR_TOOL_NAME]) tools[REPAIR_TOOL_NAME].active = brush === "repair";
+  }
+  const controls = globalThis.ui?.controls;
+  if (typeof controls?.render !== "function" || !isDestructionControlActive()) return;
+  if (syncingButtons) return;
+  syncingButtons = true;
+  queueMicrotask(() => {
+    try {
+      controls.render();
+    } finally {
+      syncingButtons = false;
+    }
+  });
 }
 
 function attachInteraction() {
@@ -89,6 +140,9 @@ function attachInteraction() {
   canvas.stage.on("pointerup", onPointerUp);
   canvas.stage.on("pointerupoutside", onPointerUp);
   globalThis.window?.addEventListener?.("keydown", onKeyDown);
+  globalThis.window?.addEventListener?.("pointerup", onWindowPointerUp, true);
+  globalThis.window?.addEventListener?.("pointercancel", onWindowPointerUp, true);
+  globalThis.window?.addEventListener?.("mouseup", onWindowPointerUp, true);
 }
 
 function detachInteraction() {
@@ -100,13 +154,25 @@ function detachInteraction() {
   canvas.stage?.off?.("pointerup", onPointerUp);
   canvas.stage?.off?.("pointerupoutside", onPointerUp);
   globalThis.window?.removeEventListener?.("keydown", onKeyDown);
+  globalThis.window?.removeEventListener?.("pointerup", onWindowPointerUp, true);
+  globalThis.window?.removeEventListener?.("pointercancel", onWindowPointerUp, true);
+  globalThis.window?.removeEventListener?.("mouseup", onWindowPointerUp, true);
   preview?.removeFromParent();
   preview?.destroy?.();
   preview = null;
 }
 
+function resolveCanvasElement() {
+  return canvas.app?.renderer?.canvas
+    ?? canvas.app?.canvas
+    ?? canvas.app?.view
+    ?? canvas.element
+    ?? globalThis.document?.getElementById?.("board")
+    ?? null;
+}
+
 function bindCanvasElement() {
-  const next = canvas.app?.renderer?.canvas ?? canvas.app?.view ?? null;
+  const next = resolveCanvasElement();
   if (next === canvasEl) return;
   unbindCanvasElement();
   canvasEl = next;
@@ -133,37 +199,62 @@ function onPointerMove(event) {
 }
 
 function onPointerDown(event) {
-  if (!beginStroke(event, pointerCanvasPoint(event))) return;
-  event.stopPropagation?.();
+  beginStroke(event, pointerCanvasPoint(event));
 }
 
 function onElementPointerDown(event) {
-  if (!beginStroke(event, pointerCanvasPoint(event))) return;
-  event.preventDefault?.();
-  event.stopPropagation?.();
+  beginStroke(event, pointerCanvasPoint(event));
 }
 
 function beginStroke(event, point) {
   if (!active || pointerButton(event) !== 0) return false;
-  updateHover(point);
-  if (!currentHover.length) return false;
+  if (drawing) {
+    updateHover(point);
+    return true;
+  }
   drawing = true;
-  stroke = new Set(currentHover);
-  redrawPreview();
+  stroke = new Set();
+  updateHover(point);
   return true;
 }
 
-async function onPointerUp(event) {
+async function onPointerUp(_event) {
   if (!active || !drawing) return;
-  event.stopPropagation?.();
   await commitStroke();
 }
 
-async function onElementPointerUp(event) {
+async function onElementPointerUp(_event) {
   if (!active || !drawing) return;
-  event.preventDefault?.();
-  event.stopPropagation?.();
   await commitStroke();
+}
+
+async function onWindowPointerUp(_event) {
+  if (!active || !drawing) return;
+  await commitStroke();
+}
+
+function onSceneControlsRender() {
+  if (!active || isDestructionControlActive()) return;
+  setBrush(null);
+}
+
+function isDestructionControlActive() {
+  const name = currentSceneControlName();
+  if (DESTRUCTION_CONTROL_IDS.has(name)) return true;
+  const group = globalThis.ui?.controls?.control;
+  const tools = group?.tools;
+  if (!tools) return false;
+  if (tools[TOOL_NAME] || tools[MODE_TOOL_NAME]) return true;
+  return Object.values(tools).some(tool => DESTRUCTION_CONTROL_IDS.has(tool?.name));
+}
+
+function currentSceneControlName() {
+  const controls = globalThis.ui?.controls;
+  if (!controls) return null;
+  if (typeof controls.control === "string" && controls.control) return controls.control;
+  if (controls.control?.name) return controls.control.name;
+  if (typeof controls.activeControl === "string" && controls.activeControl) return controls.activeControl;
+  return null;
 }
 
 async function commitStroke() {
@@ -198,14 +289,14 @@ function updateHover(point) {
 }
 
 function pointerCanvasPoint(event) {
+  if (Number.isFinite(canvas.mousePosition?.x) && Number.isFinite(canvas.mousePosition?.y)) {
+    return {x: canvas.mousePosition.x, y: canvas.mousePosition.y};
+  }
   const clientX = event?.clientX ?? event?.nativeEvent?.clientX;
   const clientY = event?.clientY ?? event?.nativeEvent?.clientY;
   if (Number.isFinite(clientX) && Number.isFinite(clientY)
     && typeof canvas.canvasCoordinatesFromClient === "function") {
     return canvas.canvasCoordinatesFromClient({x: clientX, y: clientY});
-  }
-  if (Number.isFinite(canvas.mousePosition?.x) && Number.isFinite(canvas.mousePosition?.y)) {
-    return {x: canvas.mousePosition.x, y: canvas.mousePosition.y};
   }
   return event?.getLocalPosition?.(canvas.stage) ?? null;
 }
@@ -248,7 +339,7 @@ function fillPreviewCell(graphics, x, y, size, color) {
 function safelyReadCurrentData() {
   if (!globalThis.canvas?.ready || !canvas.scene) return null;
   try {
-    const data = getUndergroundData(canvas.scene);
+    const data = getUndergroundData(canvas.scene, {level: canvas.level});
     if (!data?.enabled) return null;
     return isViewedUndergroundLevel(data, {scene: canvas.scene, level: canvas.level}) ? data : null;
   } catch (_error) {
