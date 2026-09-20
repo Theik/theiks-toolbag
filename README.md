@@ -440,7 +440,7 @@ Clone this repository into Foundry's `Data/modules/theiks-toolbag` directory, re
   </p>
   <p>
     <strong>Cartography:</strong> Demo maps were created with <a href="https://dungeondraft.net/">Dungeondraft</a> by Megasploot.<br>
-    <strong>Artwork:</strong> Maps were created using assets from <a href="https://www.forgotten-adventures.net/">Forgotten Adventures</a>.
+    <strong>Artwork:</strong> Maps and demo assets were created using assets from <a href="https://www.forgotten-adventures.net/">Forgotten Adventures</a>.
   </p>
   <p>
     <strong>Development:</strong> <a href="https://openai.com/chatgpt/overview/">ChatGPT</a> by OpenAI was used as a programming assistant.
