@@ -24,6 +24,11 @@
           "intactSrc": ["IMAGE"],
           "dugSrc": ["IMAGE"]
         }
+      },
+      "footprints": {
+        "filePathFields": {
+          "image": ["IMAGE"]
+        }
       }
     }
   },

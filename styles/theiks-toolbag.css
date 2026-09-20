@@ -2,7 +2,8 @@
 .theiks-toolbag.visible-light file-picker,
 .theiks-toolbag.breakable-terrain file-picker,
 .theiks-toolbag.usable-tile file-picker,
-.theiks-toolbag.underground-terrain file-picker {
+.theiks-toolbag.underground-terrain file-picker,
+.theiks-toolbag.footprints file-picker {
   flex: 1;
   min-width: 0;
 }

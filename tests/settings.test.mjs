@@ -25,13 +25,15 @@ const {
   FEATURES,
   FEATURE_SETTING_CHANGED_HOOK,
   assertFeatureEnabled,
+  getFootprintCutoff,
   isFeatureEnabled,
   registerFeatureSettings
 } = await import("../scripts/settings.js");
 
 registerFeatureSettings();
-assert.equal(registrations.size, 7);
-for (const definition of registrations.values()) {
+assert.equal(registrations.size, 10);
+for (const [key, definition] of registrations) {
+  if (!key.split(".").at(-1).startsWith("enable")) continue;
   assert.equal(definition.scope, "world");
   assert.equal(definition.config, true);
   assert.equal(definition.type, Boolean);
@@ -42,10 +44,19 @@ assert.equal(isFeatureEnabled(FEATURES.breakableTerrain), true);
 assert.equal(isFeatureEnabled(FEATURES.diggableTerrain), true);
 assert.equal(isFeatureEnabled(FEATURES.visibleLights), true);
 assert.equal(isFeatureEnabled(FEATURES.usableTiles), true);
+assert.equal(isFeatureEnabled(FEATURES.footprints), true);
 assert.equal(isFeatureEnabled(FEATURES.levelTools), true);
 assert.equal(isFeatureEnabled(FEATURES.fallingMessages), true);
 
 const settingKeys = Array.from(registrations.keys());
+assert.equal(settingKeys.indexOf("theiks-toolbag.defaultFootprintImage"),
+  settingKeys.indexOf("theiks-toolbag.enableFootprints") + 1);
+assert.equal(registrations.get("theiks-toolbag.footprintCutoff").scope, "client");
+assert.deepEqual(registrations.get("theiks-toolbag.footprintCutoff").range, {min: 0, max: 100, step: 1});
+assert.equal(registrations.get("theiks-toolbag.footprintCutoff").default, 15);
+assert.equal(getFootprintCutoff(), 15);
+values.set("theiks-toolbag.footprintCutoff", Number.NaN);
+assert.equal(getFootprintCutoff(), 15);
 assert.equal(
   settingKeys.indexOf("theiks-toolbag.enableDiggableTerrain"),
   settingKeys.indexOf("theiks-toolbag.enableBreakableTerrain") + 1,

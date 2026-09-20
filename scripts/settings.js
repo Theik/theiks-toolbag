@@ -6,6 +6,7 @@ export const FEATURES = Object.freeze({
   diggableTerrain: "diggableTerrain",
   visibleLights: "visibleLights",
   usableTiles: "usableTiles",
+  footprints: "footprints",
   levelTools: "levelTools",
   fallingMessages: "fallingMessages"
 });
@@ -38,6 +39,11 @@ const DEFINITIONS = Object.freeze({
     name: "THEIKS_TOOLBAG.Settings.UsableTiles.Name",
     hint: "THEIKS_TOOLBAG.Settings.UsableTiles.Hint"
   },
+  [FEATURES.footprints]: {
+    key: "enableFootprints",
+    name: "THEIKS_TOOLBAG.Settings.Footprints.Name",
+    hint: "THEIKS_TOOLBAG.Settings.Footprints.Hint"
+  },
   [FEATURES.levelTools]: {
     key: "enableLevelTools",
     name: "THEIKS_TOOLBAG.Settings.LevelTools.Name",
@@ -62,7 +68,43 @@ export function registerFeatureSettings() {
       default: true,
       onChange: enabled => handleFeatureSettingChange(feature, enabled === true)
     });
+    if (feature === FEATURES.footprints) registerFootprintSettings();
   }
+}
+
+export const DEFAULT_FOOTPRINT_IMAGE = `modules/${MODULE_ID}/assets/images/extras/footprint.png`;
+export const FOOTPRINT_IMAGE_SETTING_CHANGED_HOOK = `${MODULE_ID}.footprintImageChanged`;
+export const FOOTPRINT_CUTOFF_CHANGED_HOOK = `${MODULE_ID}.footprintCutoffChanged`;
+
+function registerFootprintSettings() {
+  const ImageField = globalThis.foundry?.data?.fields?.FilePathField;
+  game.settings.register(MODULE_ID, "defaultFootprintImage", {
+    name: "THEIKS_TOOLBAG.Settings.Footprints.ImageName",
+    hint: "THEIKS_TOOLBAG.Settings.Footprints.ImageHint",
+    scope: "world", config: true,
+    type: ImageField ? new ImageField({categories: ["IMAGE"]}) : String,
+    default: DEFAULT_FOOTPRINT_IMAGE,
+    onChange: () => Hooks.callAll(FOOTPRINT_IMAGE_SETTING_CHANGED_HOOK)
+  });
+  game.settings.register(MODULE_ID, "footprintCutoff", {
+    name: "THEIKS_TOOLBAG.Settings.Footprints.CutoffName",
+    hint: "THEIKS_TOOLBAG.Settings.Footprints.CutoffHint",
+    scope: "client", config: true, type: Number, range: {min: 0, max: 100, step: 1},
+    default: 15,
+    onChange: () => Hooks.callAll(FOOTPRINT_CUTOFF_CHANGED_HOOK)
+  });
+}
+
+export function getFootprintImageSetting() {
+  try { return game.settings.get(MODULE_ID, "defaultFootprintImage") || DEFAULT_FOOTPRINT_IMAGE; }
+  catch (_error) { return DEFAULT_FOOTPRINT_IMAGE; }
+}
+
+export function getFootprintCutoff() {
+  let value = 15;
+  try { value = Number(game.settings.get(MODULE_ID, "footprintCutoff")); }
+  catch (_error) { /* use the default */ }
+  return Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 15;
 }
 
 /** Feature settings fail open during early initialization and in lightweight test environments. */

@@ -293,6 +293,9 @@ test("module.json declares RegionBehavior subtypes so Foundry lists them", () =>
         intactSrc: ["IMAGE"],
         dugSrc: ["IMAGE"]
       }
+    },
+    footprints: {
+      filePathFields: {image: ["IMAGE"]}
     }
   });
 });

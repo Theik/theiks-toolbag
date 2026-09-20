@@ -2,6 +2,7 @@
   "TYPES.RegionBehavior.theiks-toolbag.forceDiggable": "Theik's Toolbag: Force Diggable Terrain",
   "TYPES.RegionBehavior.theiks-toolbag.suppressDiggable": "Theik's Toolbag: Suppress Diggable Terrain",
   "TYPES.RegionBehavior.theiks-toolbag.alterDiggable": "Theik's Toolbag: Alter Diggable Terrain",
+  "TYPES.RegionBehavior.theiks-toolbag.footprints": "Theik's Toolbox: Footprint behaviour",
   "THEIKS_TOOLBAG": {
     "ConfigTabs": {
       "Toolbag": "Toolbag",
@@ -9,7 +10,8 @@
       "Light": "Light",
       "Tile": "Tile",
       "Scene": "Scene",
-      "Level": "Level"
+      "Level": "Level",
+      "Token": "Token"
     },
     "EventScripts": {
       "Legend": "Event scripts",
@@ -98,6 +100,14 @@
       "UsableTiles": {
         "Name": "Usable Tiles",
         "Hint": "Enable usable Tile configuration, lever controls, state images, and player interactions."
+      },
+      "Footprints": {
+        "Name": "Footprints",
+        "Hint": "Enable token footprint trails, configuration, and Region behaviour.",
+        "ImageName": "Default footprint image",
+        "ImageHint": "A transparent image of one left footprint; alternate prints are mirrored.",
+        "CutoffName": "Visible footprint trail length",
+        "CutoffHint": "Show this many grid spaces of each trail. Set to 0 to hide footprints on this computer."
       },
       "LevelTools": {
         "Name": "Level Tools",
@@ -377,6 +387,38 @@
           "Failed": "Destructables could not be reset. Check the console for details.",
           "Complete": "Reset {repaired} destructables.",
           "Partial": "Reset {repaired} destructables; {failed} could not be repaired. Check the console for details."
+        }
+      }
+    },
+    "Footprints": {
+      "Config": {
+        "Legend": "Footprints",
+        "Enabled": "Enable footprints",
+        "Inherit": "Inherit map setting",
+        "On": "Enabled",
+        "Off": "Disabled",
+        "Image": "Footprint image",
+        "ImageHint": "Leave blank to use the next available image override.",
+        "Tint": "Footprint tint",
+        "OverrideTint": "Override map tint",
+        "NoFootprints": "Leaves no footprints",
+        "Clear": "Clear footprints on this map",
+        "ClearHint": "Erase every stored footprint on this map, including all Levels?"
+      },
+      "Cleared": "Footprints cleared from this map.",
+      "Region": {
+        "Label": "Theik's Toolbox: Footprint behaviour",
+        "Hint": "Suppress, enable, or carry footprints into this Region. Image and tint can override map and Level settings.",
+        "Modes": {
+          "Inherit": "No change",
+          "Suppress": "Suppress footprints",
+          "Enable": "Enable footprints",
+          "Situational": "Situational footprints"
+        },
+        "FIELDS": {
+          "mode": {"label": "Footprint rule", "hint": "Choose how this Region affects new and stored prints."},
+          "image": {"label": "Footprint image", "hint": "Overrides prints made here independently of the footprint rule. A Token image takes priority."},
+          "tint": {"label": "Tint footprints", "hint": "Leave blank to keep the Level or map tint."}
         }
       }
     },

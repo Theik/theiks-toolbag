@@ -43,6 +43,8 @@ import {registerUndergroundDebug, toggleUndergroundOverlay} from "./underground/
 import {registerUsableTileConfig} from "./usable-tiles/tile-config.js";
 import {registerUsableTileControls, useUsableTile} from "./usable-tiles/tile-controls.js";
 import {registerFeatureSettings} from "./settings.js";
+import {registerFootprintConfig} from "./footprints/footprint-config.js";
+import {registerFootprintRuntime} from "./footprints/footprint-runtime.js";
 import {
   changeTokenLevels,
   promptTokenLevelChange,
@@ -74,6 +76,8 @@ Hooks.once("init", () => {
   registerUsableTileConfig();
   registerUsableTileControls();
   registerLevelTools();
+  registerFootprintConfig();
+  registerFootprintRuntime();
 
   const module = game.modules.get(MODULE_ID);
   module.api = {

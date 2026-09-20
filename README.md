@@ -72,6 +72,10 @@
       <h3>Script behaviors</h3>
       Run scripts after a Toolbag action succeeds. Each Wall, Tile, or Ambient Light stores its own behaviors.
     </td>
+    <td width="50%">
+      <h3>Footprints</h3>
+      Leave fading tracks as Tokens move. Scenes and Regions decide where prints appear; Tokens can choose their own image or leave none.
+    </td>
   </tr>
 </table>
 
@@ -83,7 +87,7 @@
 4. Open **Game Settings → Theik's Toolbag** and choose the features you want active.
 
 > [!TIP]
-> **Breakable Walls**, **Breakable Terrain**, **Diggable Terrain**, **Visible Lights**, **Usable Tiles**, and **Level Tools** are enabled by default. Turning one off hides its controls and canvas elements. Saved document flags remain in place.
+> **Breakable Walls**, **Breakable Terrain**, **Diggable Terrain**, **Visible Lights**, **Usable Tiles**, **Footprints**, and **Level Tools** are enabled by default. Turning one off hides its controls and canvas elements. Saved document flags remain in place.
 
 ## Feature guide
 
@@ -200,6 +204,29 @@ Transparent padding, holes, and gaps between separate parts of an image do not e
 A Tile can be usable and breakable. Any Breakable Terrain damage or Foundry Hidden state hides the lever marker and blocks use. The damage image takes priority. Repair restores the usable image that was visible before the damage. Terrain Destruction Mode and the combined Destruction Mode also hide lever markers, so the controls do not overlap.
 
 Usable Tiles manages the Tile's native image. Disable usability before replacing that image directly. Usable Tiles and Breakable Terrain share the Toolbag tab, but their world settings remain independent.
+
+### Footprints
+
+<p align="center">
+  <img src="assets/images/demos/footprints.gif" alt="A Token leaving footprints that fade behind it as it moves across a path" width="874">
+</p>
+
+The world **Footprints** setting is on by default, but each Scene starts with footprints off. The bundled left-foot image is selected as the world default. In Scene Config, open the **Toolbag** tab to enable footprints and set a Scene image or tint. Each Level inherits those fields until a GM overrides them.
+
+Each step alternates the chosen left-foot image with a mirrored right foot. Print size and spacing follow the Token's size. Tokens and prototype Tokens can choose an image or enable **Leaves no footprints**. A Token image takes priority over Region, Level, Scene, and world images.
+
+Add **Theik's Toolbox: Footprint behaviour** to a Region for local rules:
+
+- **Suppress footprints** stops prints in the Region, even where another Region enables them.
+- **Enable footprints** starts a trail and can choose an image for that Region.
+- **Situational footprints** keeps a trail going only when the Token came from a space with footprints enabled.
+- **Tint footprints** sets a color independently of the enablement rule and overrides the Level or Scene tint.
+
+The Region image works with **No change** and **Situational footprints** too. It changes prints made there without enabling footprints.
+
+Each user can set **Visible footprint trail length** from 0 to 100 grid spaces, starting at 15. It changes only that user's view; 0 hides prints. Prints start fading halfway through the visible trail and become nearly transparent at the cutoff or the 100-print cap. GMs see prints on the viewed Level. Players see prints within their current vision, or everywhere on Scenes without token vision.
+
+The active GM saves trails on the Scene, so they survive reloads and Token deletion. Without a connected GM, prints still appear during play but may be lost on reload. Disabling footprints on a Scene, Level, or Region erases prints in that area. **Clear footprints on this map** in Scene Config erases every Level's trail. Turning off the world feature hides trails and stops new prints without erasing the saved ones.
 
 ### Level tools
 
@@ -395,6 +422,7 @@ Open **Game Settings → Theik's Toolbag** to enable or disable these feature gr
 - **Diggable Terrain**
 - **Visible Lights**
 - **Usable Tiles**
+- **Footprints**
 - **Level Tools**
 
 Disabling a feature hides its configuration and controls, removes its runtime canvas elements, and prevents its macro actions. Saved document flags are never deleted. The **Falling Chat messages** subsection under Level Tools separately controls manual fall summaries and platform-collapse cards.

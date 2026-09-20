@@ -1,0 +1,50 @@
+<fieldset class="theiks-toolbag footprints" data-kind="{{kind}}">
+    <legend>{{localize "THEIKS_TOOLBAG.Footprints.Config.Legend"}}</legend>
+    {{#if isScene}}
+    <div class="form-group">
+        <label for="{{rootId}}-enabled">{{localize "THEIKS_TOOLBAG.Footprints.Config.Enabled"}}</label>
+        <div class="form-fields"><input id="{{rootId}}-enabled" type="checkbox" name="{{fields.enabled}}" data-dtype="Boolean" {{checked enabled}}></div>
+    </div>
+    {{/if}}
+    {{#if isLevel}}
+    <div class="form-group">
+        <label for="{{rootId}}-enabled">{{localize "THEIKS_TOOLBAG.Footprints.Config.Enabled"}}</label>
+        <div class="form-fields">
+            <select id="{{rootId}}-enabled" name="{{fields.enabled}}">
+                <option value="inherit" {{#if (eq levelEnabled "inherit")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Inherit"}}</option>
+                <option value="true" {{#if (eq levelEnabled "true")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.On"}}</option>
+                <option value="false" {{#if (eq levelEnabled "false")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Off"}}</option>
+            </select>
+        </div>
+    </div>
+    {{/if}}
+    {{#if isToken}}
+    <div class="form-group">
+        <label for="{{rootId}}-none">{{localize "THEIKS_TOOLBAG.Footprints.Config.NoFootprints"}}</label>
+        <div class="form-fields"><input id="{{rootId}}-none" type="checkbox" name="{{fields.noFootprints}}" data-dtype="Boolean" {{checked noFootprints}}></div>
+    </div>
+    {{/if}}
+    <div class="form-group">
+        <label for="{{rootId}}-image">{{localize "THEIKS_TOOLBAG.Footprints.Config.Image"}}</label>
+        <div class="form-fields"><file-picker id="{{rootId}}-image" name="{{fields.image}}" type="image" value="{{image}}"></file-picker></div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.Footprints.Config.ImageHint"}}</p>
+    </div>
+    {{#unless isToken}}
+    {{#if isLevel}}
+    <div class="form-group">
+        <label for="{{rootId}}-tint-override">{{localize "THEIKS_TOOLBAG.Footprints.Config.OverrideTint"}}</label>
+        <div class="form-fields"><input id="{{rootId}}-tint-override" type="checkbox" name="{{fields.tintOverride}}" data-dtype="Boolean" {{checked tintOverride}}></div>
+    </div>
+    {{/if}}
+    <div class="form-group">
+        <label for="{{rootId}}-tint">{{localize "THEIKS_TOOLBAG.Footprints.Config.Tint"}}</label>
+        <div class="form-fields">
+            <input id="{{rootId}}-tint" data-tint-input type="text" name="{{fields.tint}}" value="{{tint}}">
+            <input data-tint-picker type="color" value="{{tint}}" aria-label="{{localize "THEIKS_TOOLBAG.Footprints.Config.Tint"}}">
+        </div>
+    </div>
+    {{/unless}}
+    {{#if canClear}}
+    <div class="form-group"><button type="button" data-action="clear-footprints"><i class="fa-solid fa-eraser"></i> {{localize "THEIKS_TOOLBAG.Footprints.Config.Clear"}}</button></div>
+    {{/if}}
+</fieldset>
