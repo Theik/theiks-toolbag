@@ -211,22 +211,13 @@ Usable Tiles manages the Tile's native image. Disable usability before replacing
   <img src="assets/images/demos/footprints.gif" alt="A Token leaving footprints that fade behind it as it moves across a path" width="874">
 </p>
 
-The world **Footprints** setting is on by default, but each Scene starts with footprints off. The bundled left-foot image is selected as the world default. In Scene Config, open the **Toolbag** tab to enable footprints and set a Scene image or tint. Each Level inherits those fields until a GM overrides them.
+Turn on **Footprints** for a Scene in its Toolbag tab. Scenes start with tracks off, even though the world feature is on by default. The Scene sets an image and tint; Levels inherit them unless changed. A Region's **Footprint behaviour** can enable or suppress tracks, or keep them going only when the Token came from an enabled space. Its image and tint work independently of that rule. A Token image takes priority over Region, Level, Scene, and world images.
 
-Each step alternates the chosen left-foot image with a mirrored right foot. Print size and spacing follow the Token's size. Tokens and prototype Tokens can choose an image or enable **Leaves no footprints**. A Token image takes priority over Region, Level, Scene, and world images.
+Tokens and prototype Tokens can choose a gait, their own image, or **Leaves no footprints**. **Bipedal** alternates left and mirrored right prints. **Quadruped (Hop)** uses a four-print sequence; **Quadruped (Alternating steps)** places diagonal front and hind pairs, with front prints midway between the hind prints on each side. Both can use separate front-leg images. **Slither** follows the route's center and mirrors every other stamp. For different left and right feet, choose an alternate side and image. Upload foot images as left feet; the module mirrors right prints.
 
-Add **Theik's Toolbox: Footprint behaviour** to a Region for local rules:
+Prints scale with Token size and bend through nearby doorways rather than crossing walls. They appear only at the bottom elevation of a Level. Teleports, cut and paste, undo, and Unconstrained Movement leave no tracks. The active GM saves up to 100 prints per Token on the Scene. **Clear footprints on this map** erases them; disabling footprints in an area removes prints there.
 
-- **Suppress footprints** stops prints in the Region, even where another Region enables them.
-- **Enable footprints** starts a trail and can choose an image for that Region.
-- **Situational footprints** keeps a trail going only when the Token came from a space with footprints enabled.
-- **Tint footprints** sets a color independently of the enablement rule and overrides the Level or Scene tint.
-
-The Region image works with **No change** and **Situational footprints** too. It changes prints made there without enabling footprints.
-
-Each user can set **Visible footprint trail length** from 0 to 100 grid spaces, starting at 15. It changes only that user's view; 0 hides prints. Prints start fading halfway through the visible trail and become nearly transparent at the cutoff or the 100-print cap. GMs see prints on the viewed Level. Players see prints within their current vision, or everywhere on Scenes without token vision.
-
-The active GM saves trails on the Scene, so they survive reloads and Token deletion. Without a connected GM, prints still appear during play but may be lost on reload. Disabling footprints on a Scene, Level, or Region erases prints in that area. **Clear footprints on this map** in Scene Config erases every Level's trail. Turning off the world feature hides trails and stops new prints without erasing the saved ones.
+Each player sets **Visible footprint trail length** from 0 to 100 grid spaces, starting at 15. The older half of the visible trail fades out. On Scenes with token vision, players see tracks within their current vision. To inspect routing, a GM can run `game.modules.get("theiks-toolbag").api.footprints.toggleOverlay()` in the console, then run it again to hide the overlay.
 
 ### Level tools
 

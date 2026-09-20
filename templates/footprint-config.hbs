@@ -23,12 +23,59 @@
         <label for="{{rootId}}-none">{{localize "THEIKS_TOOLBAG.Footprints.Config.NoFootprints"}}</label>
         <div class="form-fields"><input id="{{rootId}}-none" type="checkbox" name="{{fields.noFootprints}}" data-dtype="Boolean" {{checked noFootprints}}></div>
     </div>
+    <div class="form-group">
+        <label for="{{rootId}}-movement-type">{{localize "THEIKS_TOOLBAG.Footprints.Config.MovementType"}}</label>
+        <div class="form-fields">
+            <select id="{{rootId}}-movement-type" data-movement-type name="{{fields.movementType}}">
+                <option value="bipedal" {{#if (eq movementType "bipedal")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Bipedal"}}</option>
+                <option value="quadruped" {{#if (eq movementType "quadruped")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.QuadrupedHop"}}</option>
+                <option value="quadrupedAlternating" {{#if (eq movementType "quadrupedAlternating")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.QuadrupedAlternating"}}</option>
+                <option value="slither" {{#if (eq movementType "slither")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Slither"}}</option>
+            </select>
+        </div>
+    </div>
     {{/if}}
     <div class="form-group">
         <label for="{{rootId}}-image">{{localize "THEIKS_TOOLBAG.Footprints.Config.Image"}}</label>
         <div class="form-fields"><file-picker id="{{rootId}}-image" name="{{fields.image}}" type="image" value="{{image}}"></file-picker></div>
         <p class="hint">{{localize "THEIKS_TOOLBAG.Footprints.Config.ImageHint"}}</p>
     </div>
+    {{#if isToken}}
+    <div class="form-group" data-gait-field="feet">
+        <label for="{{rootId}}-alternate-side">{{localize "THEIKS_TOOLBAG.Footprints.Config.AlternateSide"}}</label>
+        <div class="form-fields">
+            <select id="{{rootId}}-alternate-side" data-alternate-side name="{{fields.alternateSide}}">
+                <option value="none" {{#if (eq alternateSide "none")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.NoAlternate"}}</option>
+                <option value="left" {{#if (eq alternateSide "left")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Left"}}</option>
+                <option value="right" {{#if (eq alternateSide "right")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Right"}}</option>
+            </select>
+        </div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.Footprints.Config.AlternateHint"}}</p>
+    </div>
+    <div class="form-group" data-gait-field="alternate-image">
+        <label for="{{rootId}}-alternate-image">{{localize "THEIKS_TOOLBAG.Footprints.Config.AlternateImage"}}</label>
+        <div class="form-fields"><file-picker id="{{rootId}}-alternate-image" name="{{fields.alternateImage}}" type="image" value="{{alternateImage}}"></file-picker></div>
+    </div>
+    <div class="form-group" data-gait-field="quadruped">
+        <label for="{{rootId}}-front-image">{{localize "THEIKS_TOOLBAG.Footprints.Config.FrontImage"}}</label>
+        <div class="form-fields"><file-picker id="{{rootId}}-front-image" name="{{fields.frontImage}}" type="image" value="{{frontImage}}"></file-picker></div>
+        <p class="hint">{{localize "THEIKS_TOOLBAG.Footprints.Config.FrontImageHint"}}</p>
+    </div>
+    <div class="form-group" data-gait-field="quadruped">
+        <label for="{{rootId}}-front-alternate-side">{{localize "THEIKS_TOOLBAG.Footprints.Config.FrontAlternateSide"}}</label>
+        <div class="form-fields">
+            <select id="{{rootId}}-front-alternate-side" data-front-alternate-side name="{{fields.frontAlternateSide}}">
+                <option value="none" {{#if (eq frontAlternateSide "none")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.NoFrontAlternate"}}</option>
+                <option value="left" {{#if (eq frontAlternateSide "left")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Left"}}</option>
+                <option value="right" {{#if (eq frontAlternateSide "right")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.Right"}}</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group" data-gait-field="front-alternate-image">
+        <label for="{{rootId}}-front-alternate-image">{{localize "THEIKS_TOOLBAG.Footprints.Config.FrontAlternateImage"}}</label>
+        <div class="form-fields"><file-picker id="{{rootId}}-front-alternate-image" name="{{fields.frontAlternateImage}}" type="image" value="{{frontAlternateImage}}"></file-picker></div>
+    </div>
+    {{/if}}
     {{#unless isToken}}
     {{#if isLevel}}
     <div class="form-group">

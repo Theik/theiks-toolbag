@@ -6,6 +6,9 @@ import {
   MODULE_ID, TRAILS_FLAG, MAX_PRINTS, appendFootprints, getStoredTrails,
   getTokenFootprintConfig, printAlpha, printStillEnabled, pruneDisabledPrints, sampleFootprints
 } from "./footprint-data.js";
+import {
+  clearFootprintDebug, isFootprintOverlayEnabled, recordFootprintDebug, refreshFootprintOverlay
+} from "./footprint-debug.js";
 
 const live = new Map();
 const movementStates = new Map();
@@ -42,16 +45,18 @@ export function registerFootprintRuntime() {
 
 function sceneKey(scene, tokenId) { return `${scene.id}:${tokenId}`; }
 
-function onMoveToken(token, movement, _operation, _user) {
+function onMoveToken(token, movement, operation, _user) {
   if (!isFeatureEnabled(FEATURES.footprints)) return;
   const scene = token?.parent;
   if (!scene?.id || !token?.id || !movement?.id) return;
   if (getTokenFootprintConfig(token).noFootprints) {
-    movementStates.delete(sceneKey(scene, token.id));
+    breakFootprintMovement(scene, token, movement);
     return;
   }
-  if (String(movement.method ?? "").toLowerCase().includes("teleport")) {
-    movementStates.delete(sceneKey(scene, token.id));
+  if (["paste", "undo", "teleport"].includes(String(movement.method ?? "").toLowerCase())
+    || operation?.isPaste === true || operation?.isUndo === true || operation?.teleport === true
+    || movement.constrainOptions?.ignoreWalls === true) {
+    breakFootprintMovement(scene, token, movement);
     return;
   }
   const passed = movement.passed?.waypoints;
@@ -68,9 +73,13 @@ function onMoveToken(token, movement, _operation, _user) {
   if (seenSections.has(section)) return;
   seenSections.add(section);
   if (seenSections.size > 5000) seenSections.clear();
-  const result = sampleFootprints(scene, token, waypoints, movement.id, previous);
+  const result = sampleFootprints(scene, token, waypoints, movement.id, previous,
+    {debug: isFootprintOverlayEnabled()});
+  if (result.debug) recordFootprintDebug(scene, section, result.debug);
   if (result.state) result.state.lastMovementId = movement.id;
   if (result.state) movementStates.set(key, result.state);
+  else if (result.broken) movementStates.set(key,
+    resetMovementState(scene, token, movement, waypoints));
   const prints = result.prints.map((print, index) => ({...print, id: `${section}:${index}`, movementKey: section}));
   if (prints.length) {
     const existing = live.get(key) ?? [];
@@ -87,15 +96,41 @@ function onMoveToken(token, movement, _operation, _user) {
     const current = getStoredTrails(scene);
     const ids = new Set(current.trails[token.id]?.prints?.map(print => print.id));
     const unique = prints.filter(print => !ids.has(print.id)).map(({movementKey, progress, ...print}) => print);
-    if (!unique.length && !result.state) return;
+    if (!unique.length && !result.state
+      && (!result.broken || !current.trails[token.id]?.state)) return;
     await scene.setFlag(MODULE_ID, TRAILS_FLAG, appendFootprints(current, token.id, unique, result.state));
+  });
+}
+
+function resetMovementState(scene, token, movement, waypoints) {
+  const point = waypoints?.at(-1) ?? movement.passed?.waypoints?.at(-1) ?? movement.destination;
+  const grid = Number(scene.grid?.size);
+  if (!point || !(grid > 0)) return {reset: true};
+  return {
+    reset: true, lastMovementId: movement.id,
+    lastX: Number(point.x) + Number(point.width ?? token.width ?? 1) * grid / 2,
+    lastY: Number(point.y) + Number(point.height ?? token.height ?? 1) * grid / 2,
+    lastElevation: Number(point.elevation ?? token.elevation ?? 0)
+  };
+}
+
+function breakFootprintMovement(scene, token, movement) {
+  const tokenId = token.id;
+  movementStates.set(sceneKey(scene, tokenId), resetMovementState(scene, token, movement));
+  if (game.users?.activeGM?.id !== game.user?.id) return;
+  const epoch = epochs.get(scene.id) ?? 0;
+  enqueueSceneWrite(scene, async () => {
+    if ((epochs.get(scene.id) ?? 0) !== epoch) return;
+    const current = getStoredTrails(scene);
+    if (!current.trails[tokenId]?.state) return;
+    await scene.setFlag(MODULE_ID, TRAILS_FLAG, appendFootprints(current, tokenId, [], null));
   });
 }
 
 function pathHash(waypoints) {
   let hash = 2166136261;
   for (const waypoint of waypoints) {
-    for (const char of `${waypoint.x},${waypoint.y},${waypoint.level};`) {
+    for (const char of `${waypoint.x},${waypoint.y},${waypoint.level},${waypoint.elevation};`) {
       hash ^= char.charCodeAt(0);
       hash = Math.imul(hash, 16777619);
     }
@@ -110,7 +145,8 @@ function unprocessedWaypoints(waypoints, state, grid) {
     const point = waypoints[i];
     const x = Number(point.x) + Number(point.width ?? 1) * grid / 2;
     const y = Number(point.y) + Number(point.height ?? 1) * grid / 2;
-    if (Math.hypot(x - state.lastX, y - state.lastY) <= grid / 20) index = i;
+    if (Math.hypot(x - state.lastX, y - state.lastY) <= grid / 20
+      && Number(point.elevation ?? state.lastElevation) === state.lastElevation) index = i;
   }
   return index > 0 ? waypoints.slice(index) : waypoints;
 }
@@ -190,6 +226,7 @@ export async function clearSceneFootprints(scene) {
   for (const key of [...live.keys()]) if (key.startsWith(`${scene.id}:`)) live.delete(key);
   for (const key of [...movementStates.keys()]) if (key.startsWith(`${scene.id}:`)) movementStates.delete(key);
   if (scene.id === canvas.scene?.id) clearMeshes();
+  clearFootprintDebug(scene);
   await enqueueSceneWrite(scene, () => scene.unsetFlag(MODULE_ID, TRAILS_FLAG));
   if (scene.id === canvas.scene?.id) queueRender();
 }
@@ -273,6 +310,7 @@ function queueRender() {
 async function renderCurrent() {
   const revision = ++renderRevision;
   const scene = globalThis.canvas?.scene;
+  refreshFootprintOverlay();
   if (!isFeatureEnabled(FEATURES.footprints) || !canvas?.ready || !canvas.primary || !scene) {
     clearMeshes();
     return;

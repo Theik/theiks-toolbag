@@ -7,7 +7,12 @@ const TEMPLATE = `modules/${MODULE_ID}/templates/footprint-config.hbs`;
 const PREFIX = `flags.${MODULE_ID}.${CONFIG_FLAG}`;
 const FIELDS = Object.freeze({
   enabled: `${PREFIX}.enabled`, image: `${PREFIX}.image`, tint: `${PREFIX}.tint`,
-  tintOverride: `${PREFIX}.tintOverride`, noFootprints: `${PREFIX}.noFootprints`
+  tintOverride: `${PREFIX}.tintOverride`, noFootprints: `${PREFIX}.noFootprints`,
+  movementType: `${PREFIX}.movementType`,
+  alternateSide: `${PREFIX}.alternateSide`, alternateImage: `${PREFIX}.alternateImage`,
+  frontImage: `${PREFIX}.frontImage`,
+  frontAlternateSide: `${PREFIX}.frontAlternateSide`,
+  frontAlternateImage: `${PREFIX}.frontAlternateImage`
 });
 
 export function registerFootprintConfig() {
@@ -40,6 +45,12 @@ async function renderConfig(application, element, context, kind) {
     image: stored.image ?? "", tint: stored.tint ?? "#ffffff",
     tintOverride: stored.tintOverride === true,
     noFootprints: tokenConfig?.noFootprints,
+    movementType: tokenConfig?.movementType,
+    alternateSide: tokenConfig?.alternateSide,
+    alternateImage: tokenConfig?.alternateImage,
+    frontImage: tokenConfig?.frontImage,
+    frontAlternateSide: tokenConfig?.frontAlternateSide,
+    frontAlternateImage: tokenConfig?.frontAlternateImage,
     canClear: kind === "scene" && Boolean(document?.id)
   });
   if (!isFeatureEnabled(FEATURES.footprints) || !application.rendered || !root.isConnected) return;
@@ -69,6 +80,27 @@ async function renderConfig(application, element, context, kind) {
   tintInput?.addEventListener("change", () => {
     if (/^#[\da-f]{6}$/i.test(tintInput.value)) picker.value = tintInput.value;
   });
+  const movementType = fieldset?.querySelector("[data-movement-type]");
+  const alternateSide = fieldset?.querySelector("[data-alternate-side]");
+  const frontAlternateSide = fieldset?.querySelector("[data-front-alternate-side]");
+  function updateGaitFields() {
+    const feet = movementType?.value !== "slither";
+    const quadruped = movementType?.value === "quadruped"
+      || movementType?.value === "quadrupedAlternating";
+    for (const row of fieldset?.querySelectorAll("[data-gait-field]") ?? []) {
+      const kind = row.dataset.gaitField;
+      const visible = kind === "feet" ? feet : kind === "quadruped" ? quadruped
+        : kind === "alternate-image" ? feet && alternateSide?.value !== "none"
+          : quadruped && frontAlternateSide?.value !== "none";
+      row.hidden = !visible;
+      row.style.display = visible ? "" : "none";
+    }
+    application.setPosition?.({height: "auto"});
+  }
+  for (const select of [movementType, alternateSide, frontAlternateSide]) {
+    select?.addEventListener("change", updateGaitFields);
+  }
+  if (movementType) updateGaitFields();
   application.setPosition?.({height: "auto"});
 }
 

@@ -9,7 +9,7 @@ import {buildPacks, verifyPacks} from "./compendium-packs.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = path.join(ROOT, "dist");
-const RELEASE_DIRECTORIES = ["assets", "lang", "packs", "scripts", "styles", "templates"];
+const RELEASE_DIRECTORIES = ["assets", "lang", "scripts", "styles", "templates"];
 const RELEASE_FILES = [
   "module.json",
   "README.md",
@@ -116,6 +116,7 @@ async function createZip(archivePath) {
     if (!(await exists(source))) throw new Error(`Required release directory is missing: ${directory}`);
     archive.directory(source, directory);
   }
+  archive.directory(path.join(DIST, "packs"), "packs");
 
   await archive.finalize();
   await completed;
@@ -126,11 +127,10 @@ async function main() {
   validateManifest(manifest, requestedTag());
   await validateCompendiumAssets(manifest);
 
-  await buildPacks();
-  await verifyPacks();
-
   await rm(DIST, {force: true, recursive: true, maxRetries: 10});
   await mkdir(DIST, {recursive: true});
+  await buildPacks({destinationRoot: DIST});
+  await verifyPacks();
 
   const archivePath = path.join(DIST, `${manifest.id}.zip`);
   await createZip(archivePath);

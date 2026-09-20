@@ -37,7 +37,7 @@ globalThis.foundry = {
   canvas: {primary: {PrimarySpriteMesh: Mesh}, loadTexture: async src => ({src, valid: true})}
 };
 
-const level = {id: "ground"};
+const level = {id: "ground", elevation: {bottom: 0, top: 10}};
 function mergeFlag(existing, value) {
   if (Array.isArray(value)) return value;
   if (!value || typeof value !== "object") return value;
@@ -69,7 +69,10 @@ globalThis.canvas = {
 };
 
 const {registerFootprintRuntime, clearSceneFootprints} = await import("../scripts/footprints/footprint-runtime.js");
+const {sampleFootprints} = await import("../scripts/footprints/footprint-data.js");
+const {registerFootprintDebug, toggleFootprintOverlay} = await import("../scripts/footprints/footprint-debug.js");
 registerFootprintRuntime();
+registerFootprintDebug();
 const fire = (name, ...args) => Hooks.callAll(name, ...args);
 const settle = async () => { await new Promise(resolve => setTimeout(resolve, 0)); };
 const token = id => ({id, parent: scene, width: 1, height: 1, level: "ground"});
@@ -270,6 +273,101 @@ test("a remote clear removes unsaved live prints on a player client", async () =
   game.user = gm;
 });
 
+test("doorway prints reveal as the Token moves and save their bent path", async () => {
+  await clearSceneFootprints(scene);
+  game.user = gm;
+  game.users.activeGM = gm;
+  scene.walls = [
+    {c: [150, -1000, 150, 100], move: 20, includedInLevel: () => true},
+    {c: [150, 200, 150, 1000], move: 20, includedInLevel: () => true}
+  ];
+  scene.initializeEdges = () => {};
+  const originalConfig = globalThis.CONFIG;
+  const originalFrame = globalThis.requestAnimationFrame;
+  const crosses = (a, b, c) => {
+    const t = (c[0] - a.x) / (b.x - a.x);
+    if (!(t > 0 && t < 1)) return false;
+    const y = a.y + t * (b.y - a.y);
+    return y >= Math.min(c[1], c[3]) && y <= Math.max(c[1], c[3]);
+  };
+  globalThis.CONFIG = {Canvas: {polygonBackends: {move: {testCollision(a, b) {
+    return scene.walls.some(wall => crosses(a, b, wall.c));
+  }}}}};
+  const frames = [];
+  globalThis.requestAnimationFrame = callback => { frames.push(callback); return frames.length; };
+  try {
+    const walker = {...token("doorway-live"), object: {center: {x: 50, y: 60}}};
+    const origin = waypoint(0, 10);
+    const destination = waypoint(200, 70);
+    const expected = sampleFootprints(scene, walker, [origin, destination], "expected").prints;
+    assert.ok(expected.length > 0);
+    let finish;
+    const ended = new Promise(resolve => { finish = resolve; });
+    fire("moveToken", walker, {id: "doorway-live", method: "dragging",
+      animation: {duration: 1000, started: Promise.resolve(), ended},
+      origin, passed: {waypoints: [destination]}});
+    await settle();
+    assert.equal(primary.children.length, 0);
+    walker.object.center = {x: 150, y: 90};
+    frames.shift()?.();
+    await settle();
+    assert.ok(primary.children.length > 0 && primary.children.length < expected.length);
+    walker.object.center = {x: 250, y: 120};
+    frames.shift()?.();
+    await settle();
+    assert.equal(primary.children.length, expected.length);
+    finish();
+    await settle();
+    await settle();
+    const stored = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id].prints;
+    assert.equal(stored.length, expected.length);
+    assert.ok(stored.some(print => print.groundY > 60 + (print.groundX - 50) * 0.3 + 10),
+      "the saved trail must bend away from the recorded straight line");
+    assert.ok(stored.some(print => print.groundX < 150));
+    assert.ok(stored.some(print => print.groundX > 150));
+  } finally {
+    globalThis.requestAnimationFrame = originalFrame;
+    globalThis.CONFIG = originalConfig;
+    scene.walls = undefined;
+    delete scene.initializeEdges;
+  }
+});
+
+test("a blocked segment breaks an existing trail before the next move", async () => {
+  await clearSceneFootprints(scene);
+  game.user = gm;
+  game.users.activeGM = gm;
+  scene.walls = [{c: [150, -1000, 150, 1000], move: 20, includedInLevel: () => true}];
+  scene.initializeEdges = () => {};
+  const originalConfig = globalThis.CONFIG;
+  globalThis.CONFIG = {Canvas: {polygonBackends: {move: {testCollision(a, b) {
+    return a.x < 150 && b.x > 150;
+  }}}}};
+  try {
+    fire("moveToken", token("blocked"), movement("before-wall", -100, 0));
+    await settle();
+    await settle();
+    const earlier = scene.getFlag("theiks-toolbag", "footprintTrails").trails.blocked.prints;
+    assert.ok(earlier.length > 0);
+    fire("moveToken", token("blocked"), movement("blocked-crossing", 0, 200));
+    await settle();
+    await settle();
+    const trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails.blocked;
+    assert.equal(trail.prints.length, earlier.length);
+    assert.equal(trail.state, null);
+    fire("moveToken", token("blocked"), movement("after-wall", 200, 300));
+    await settle();
+    await settle();
+    const resumed = scene.getFlag("theiks-toolbag", "footprintTrails").trails.blocked.prints;
+    assert.ok(resumed.length > earlier.length);
+    assert.notEqual(resumed.at(-1).segmentId, earlier.at(-1).segmentId);
+  } finally {
+    globalThis.CONFIG = originalConfig;
+    scene.walls = undefined;
+    delete scene.initializeEdges;
+  }
+});
+
 test("without a GM, connected clients see live prints but nothing persists", async () => {
   await clearSceneFootprints(scene);
   game.user = player;
@@ -282,4 +380,249 @@ test("without a GM, connected clients see live prints but nothing persists", asy
   fire("canvasReady");
   await settle();
   assert.equal(primary.children.length, 0);
+});
+
+test("the movement hook feeds the local path overlay and clearing removes its traces", async () => {
+  game.user = gm;
+  game.users.activeGM = gm;
+  const originalPixi = globalThis.PIXI;
+  const originalInterface = canvas.interface;
+  class Graphics {
+    operations = [];
+    clear() { this.operations = []; }
+    moveTo() { return this; }
+    lineTo() { return this; }
+    stroke(style) { this.operations.push(style); return this; }
+    circle() { return this; }
+    fill() { return this; }
+    removeFromParent() { this.parent.children.splice(this.parent.children.indexOf(this), 1); }
+    destroy() { this.destroyed = true; }
+  }
+  const layer = {children: [], addChild(child) { child.parent = this; this.children.push(child); }};
+  globalThis.PIXI = {Graphics};
+  canvas.interface = layer;
+  try {
+    assert.equal(toggleFootprintOverlay(true), true);
+    fire("moveToken", token("debug-walker"), movement("debug-move", 0, 200));
+    await settle();
+    assert.ok(layer.children[0].operations.some(style => style.color === 0xffb347));
+    assert.ok(layer.children[0].operations.some(style => style.color === 0x00e5e5));
+    await clearSceneFootprints(scene);
+    await settle();
+    assert.ok(!layer.children[0].operations.some(style => style.color === 0xffb347));
+  } finally {
+    toggleFootprintOverlay(false);
+    globalThis.PIXI = originalPixi;
+    canvas.interface = originalInterface;
+  }
+});
+
+test("paste, teleport, and unconstrained movement leave no connecting prints", async () => {
+  await clearSceneFootprints(scene);
+  game.user = gm;
+  game.users.activeGM = gm;
+  const walker = token("skip-modes");
+  fire("moveToken", walker, {...movement("walk-before", 0, 100), constrained: false});
+  await settle();
+  await settle();
+  const original = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id].prints.length;
+  assert.ok(original > 0);
+
+  fire("moveToken", walker, {...movement("cut-paste", 100, 1000), method: "paste"});
+  await settle();
+  await settle();
+  let trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id];
+  assert.equal(trail.prints.length, original);
+  assert.equal(trail.state, null);
+
+  fire("moveToken", walker, movement("walk-after-paste", 1000, 1100));
+  await settle();
+  await settle();
+  trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id];
+  assert.ok(trail.prints.length > original);
+  assert.ok(trail.prints.slice(original).every(print => print.groundX > 1000));
+  const afterPaste = trail.prints.length;
+
+  fire("moveToken", walker, {...movement("ghost", 1100, 2000),
+    constrainOptions: {ignoreWalls: true, ignoreCost: true}});
+  await settle();
+  await settle();
+  trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id];
+  assert.equal(trail.prints.length, afterPaste);
+  assert.equal(trail.state, null);
+
+  const blink = movement("blink", 2000, 3000);
+  blink.passed.waypoints[0].action = "blink";
+  fire("moveToken", walker, blink);
+  await settle();
+  await settle();
+  trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id];
+  assert.equal(trail.prints.length, afterPaste);
+  assert.equal(trail.state, null);
+});
+
+test("teleporting a token without a trail does not write an empty trail", async () => {
+  await clearSceneFootprints(scene);
+  game.user = gm;
+  game.users.activeGM = gm;
+  const blink = movement("fresh-blink", 0, 1000);
+  blink.passed.waypoints[0].action = "blink";
+  fire("moveToken", token("fresh-teleport"), blink);
+  await settle();
+  await settle();
+  assert.equal(scene.getFlag("theiks-toolbag", "footprintTrails"), undefined);
+});
+
+test("a cumulative movement resumes after teleport without duplicating earlier prints", async () => {
+  await clearSceneFootprints(scene);
+  game.user = gm;
+  game.users.activeGM = gm;
+  const walker = token("mixed-teleport");
+  const start = waypoint(0);
+  const before = waypoint(100);
+  const landing = {...waypoint(1000), action: "displace"};
+  const after = waypoint(1100);
+  const move = passed => ({
+    id: "mixed-teleport-move", method: "dragging",
+    animation: {duration: 0, started: Promise.resolve(), ended: Promise.resolve()},
+    origin: start, passed: {waypoints: passed}
+  });
+  fire("moveToken", walker, move([before, landing]));
+  await settle();
+  await settle();
+  const earlier = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id].prints;
+  assert.ok(earlier.length > 0);
+  fire("moveToken", walker, move([before, landing, after]));
+  await settle();
+  await settle();
+  const prints = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id].prints;
+  assert.ok(prints.length > earlier.length);
+  assert.equal(prints.filter(print => print.groundX < 200).length, earlier.length);
+  assert.ok(prints.slice(earlier.length).every(print => print.groundX > 1000));
+});
+
+test("an elevation-only cumulative update breaks the trail until surface movement resumes", async () => {
+  await clearSceneFootprints(scene);
+  game.user = gm;
+  game.users.activeGM = gm;
+  const walker = token("surface-walker");
+  const send = (id, origin, passed) => fire("moveToken", walker, {
+    id, method: "dragging",
+    animation: {duration: 0, started: Promise.resolve(), ended: Promise.resolve()},
+    origin, passed: {waypoints: passed}
+  });
+  send("surface-and-ascent", waypoint(0), [waypoint(100)]);
+  await settle();
+  await settle();
+  const original = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id].prints;
+  assert.ok(original.length > 0);
+
+  send("surface-and-ascent", waypoint(0), [waypoint(100), {...waypoint(100), elevation: 5}]);
+  await settle();
+  await settle();
+  let trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id];
+  assert.equal(trail.prints.length, original.length);
+  assert.equal(trail.state, null);
+
+  send("airborne", {...waypoint(100), elevation: 5}, [{...waypoint(200), elevation: 5}]);
+  send("descent", {...waypoint(200), elevation: 5}, [waypoint(200)]);
+  await settle();
+  await settle();
+  trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id];
+  assert.equal(trail.prints.length, original.length);
+
+  send("ground-again", waypoint(200), [waypoint(300)]);
+  await settle();
+  await settle();
+  trail = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id];
+  assert.ok(trail.prints.length > original.length);
+  assert.ok(trail.prints.slice(original.length).every(print => print.elevation === 0));
+  assert.notEqual(trail.prints.at(-1).segmentId, original.at(-1).segmentId);
+});
+
+test("quadruped and Slither images persist and right stamps render mirrored after reload", async () => {
+  await clearSceneFootprints(scene);
+  game.user = gm;
+  game.users.activeGM = gm;
+  const quadruped = {...token("four-legs"), flags: {"theiks-toolbag": {footprintConfig: {
+    movementType: "quadruped", image: "back.png",
+    alternateSide: "right", alternateImage: "back-right.png",
+    frontImage: "front.png", frontAlternateSide: "left", frontAlternateImage: "front-left.png"
+  }}}};
+  fire("moveToken", quadruped, movement("four-legs-move", 0, 200));
+  await settle();
+  await settle();
+  const saved = scene.getFlag("theiks-toolbag", "footprintTrails").trails[quadruped.id].prints;
+  assert.deepEqual(saved.slice(0, 4).map(print => print.image), [
+    "back.png", "front.png", "front-left.png", "back-right.png"
+  ]);
+  assert.deepEqual(saved.slice(0, 4).map(print => print.leg), ["hind", "front", "front", "hind"]);
+  fire("canvasTearDown");
+  fire("canvasReady");
+  await settle();
+  const quadMeshes = new Map(primary.children.map(mesh => [mesh.options.name, mesh]));
+  for (const print of saved) {
+    const mesh = quadMeshes.get(`theiks-toolbag.footprint.${print.id}`);
+    assert.ok(mesh);
+    assert.equal(mesh.options.texture.src, print.image);
+    assert.equal(mesh.scale.x < 0, print.side === 1);
+  }
+
+  await clearSceneFootprints(scene);
+  const alternating = {...token("alternating-legs"), flags: {"theiks-toolbag": {footprintConfig: {
+    movementType: "quadrupedAlternating", image: "hind.png", frontImage: "front.png"
+  }}}};
+  fire("moveToken", alternating, movement("alternating-move", 0, 200));
+  await settle();
+  await settle();
+  const alternatingSaved = scene.getFlag("theiks-toolbag", "footprintTrails")
+    .trails[alternating.id].prints;
+  assert.deepEqual(alternatingSaved.slice(0, 4).map(print => print.leg),
+    ["hind", "front", "hind", "front"]);
+  fire("canvasTearDown");
+  fire("canvasReady");
+  await settle();
+  const alternatingMeshes = new Map(primary.children.map(mesh => [mesh.options.name, mesh]));
+  for (const print of alternatingSaved) {
+    const mesh = alternatingMeshes.get(`theiks-toolbag.footprint.${print.id}`);
+    assert.ok(mesh);
+    assert.equal(mesh.options.texture.src, print.image);
+    assert.equal(mesh.scale.x < 0, print.side === 1);
+  }
+
+  await clearSceneFootprints(scene);
+  const slither = {...token("slither"), flags: {"theiks-toolbag": {footprintConfig: {
+    movementType: "slither", image: "sinuous.png"
+  }}}};
+  fire("moveToken", slither, movement("slither-move", 0, 200));
+  await settle();
+  await settle();
+  const body = scene.getFlag("theiks-toolbag", "footprintTrails").trails[slither.id].prints;
+  assert.ok(body.length > 0);
+  assert.ok(body.every(print => print.leg === "body" && print.image === "sinuous.png"));
+  assert.ok(body.every(print => print.x === print.groundX && print.y === print.groundY));
+  const bodyMeshes = new Map(primary.children.map(mesh => [mesh.options.name, mesh]));
+  for (const print of body) {
+    const mesh = bodyMeshes.get(`theiks-toolbag.footprint.${print.id}`);
+    assert.ok(mesh);
+    assert.equal(mesh.scale.x < 0, print.side === 1);
+  }
+});
+
+test("saved biped prints from the earlier trail format still render", async () => {
+  await clearSceneFootprints(scene);
+  scene.flags["theiks-toolbag"].footprintTrails = {version: 1, trails: {legacy: {
+    prints: [{id: "legacy-foot", x: 50, y: 38, groundX: 50, groundY: 50,
+      elevation: 0, levelId: "ground", rotation: 90, side: 1, scale: 1,
+      image: "old-foot.png", tint: "#ffffff", segmentId: "old:0", distance: 0,
+      cameFromEnabled: true}],
+    state: null
+  }}};
+  fire("canvasReady");
+  await settle();
+  const mesh = primary.children.find(child =>
+    child.options.name === "theiks-toolbag.footprint.legacy-foot");
+  assert.ok(mesh);
+  assert.equal(mesh.options.texture.src, "old-foot.png");
+  assert.ok(mesh.scale.x < 0);
 });

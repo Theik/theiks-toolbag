@@ -1,5 +1,10 @@
 # Patch notes
 
+## 1.3.0
+
+- Added Footprints with bipedal, quadruped, and slither trails. Scenes, Levels, Regions, and Tokens control where tracks appear and which images they use.
+- Tracks bend through nearby doorways, fade at each player's chosen distance, and survive reloads when a GM is connected.
+
 ## 1.2.0
 
 - Added Diggable Terrain. Empty space on a Scene or Level fills with packed earth. GMs excavate it from Destruction Mode. Regions can force earth over floors, keep holes empty, or change the textures.
