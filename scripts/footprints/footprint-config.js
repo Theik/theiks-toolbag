@@ -12,7 +12,9 @@ const FIELDS = Object.freeze({
   alternateSide: `${PREFIX}.alternateSide`, alternateImage: `${PREFIX}.alternateImage`,
   frontImage: `${PREFIX}.frontImage`,
   frontAlternateSide: `${PREFIX}.frontAlternateSide`,
-  frontAlternateImage: `${PREFIX}.frontAlternateImage`
+  frontAlternateImage: `${PREFIX}.frontAlternateImage`,
+  fadeMode: `${PREFIX}.fadeMode`, fadeSeconds: `${PREFIX}.fadeSeconds`,
+  fadeUseWorldTime: `${PREFIX}.fadeUseWorldTime`
 });
 
 export function registerFootprintConfig() {
@@ -51,6 +53,13 @@ async function renderConfig(application, element, context, kind) {
     frontImage: tokenConfig?.frontImage,
     frontAlternateSide: tokenConfig?.frontAlternateSide,
     frontAlternateImage: tokenConfig?.frontAlternateImage,
+    fadeMode: ["distance", "time", "both"].includes(stored.fadeMode) ? stored.fadeMode : "inherit",
+    fadeInheritLabel: game.i18n.localize(`THEIKS_TOOLBAG.Footprints.Config.${
+      kind === "scene" ? "InheritWorld" : kind === "level" ? "Inherit" : "InheritToken"
+    }`),
+    fadeSeconds: Number.isSafeInteger(Number(stored.fadeSeconds)) && Number(stored.fadeSeconds) > 0
+      ? Number(stored.fadeSeconds) : 60,
+    fadeUseWorldTime: stored.fadeUseWorldTime === true,
     canClear: kind === "scene" && Boolean(document?.id)
   });
   if (!isFeatureEnabled(FEATURES.footprints) || !application.rendered || !root.isConnected) return;
@@ -101,6 +110,17 @@ async function renderConfig(application, element, context, kind) {
     select?.addEventListener("change", updateGaitFields);
   }
   if (movementType) updateGaitFields();
+  const fadeMode = fieldset?.querySelector("[data-fade-mode]");
+  function updateFadeFields() {
+    const visible = fadeMode?.value === "time" || fadeMode?.value === "both";
+    for (const row of fieldset?.querySelectorAll("[data-fade-detail]") ?? []) {
+      row.hidden = !visible;
+      row.style.display = visible ? "" : "none";
+    }
+    application.setPosition?.({height: "auto"});
+  }
+  fadeMode?.addEventListener("change", updateFadeFields);
+  if (fadeMode) updateFadeFields();
   application.setPosition?.({height: "auto"});
 }
 

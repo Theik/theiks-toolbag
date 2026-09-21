@@ -626,3 +626,117 @@ test("saved biped prints from the earlier trail format still render", async () =
   assert.equal(mesh.options.texture.src, "old-foot.png");
   assert.ok(mesh.scale.x < 0);
 });
+
+test("real-time prints stamp at reveal, ignore positive distance cutoff, and fade after half their lifetime", async () => {
+  await clearSceneFootprints(scene);
+  game.time = {serverTime: 100_000, worldTime: 1000};
+  scene.flags["theiks-toolbag"].footprintConfig.fadeMode = "time";
+  scene.flags["theiks-toolbag"].footprintConfig.fadeSeconds = 60;
+  scene.flags["theiks-toolbag"].footprintConfig.fadeUseWorldTime = false;
+  cutoff = 1;
+  fire("moveToken", token("timed"), movement("timed-move", 0, 500));
+  await settle();
+  await settle();
+  const prints = scene.getFlag("theiks-toolbag", "footprintTrails").trails.timed.prints;
+  assert.ok(prints.length > 8 && prints.every(print => print.placedAt === 100));
+  assert.equal(primary.children.length, prints.length);
+  game.time.serverTime = 130_000;
+  fire("sightRefresh");
+  await settle();
+  assert.ok(primary.children.every(mesh => mesh.alpha === 1));
+  game.time.serverTime = 145_000;
+  fire("sightRefresh");
+  await settle();
+  assert.ok(primary.children.every(mesh => Math.abs(mesh.alpha - 0.25) < 1e-9));
+  cutoff = 0;
+  fire("theiks-toolbag.footprintCutoffChanged");
+  await settle();
+  assert.equal(primary.children.length, 0);
+  cutoff = 5;
+  game.time.serverTime = 160_000;
+  fire("theiks-toolbag.footprintCutoffChanged");
+  await settle();
+  assert.equal(primary.children.length, 0);
+  delete scene.flags["theiks-toolbag"].footprintConfig.fadeMode;
+  delete scene.flags["theiks-toolbag"].footprintConfig.fadeSeconds;
+  delete scene.flags["theiks-toolbag"].footprintConfig.fadeUseWorldTime;
+  delete game.time;
+});
+
+test("animated prints receive timestamps as the Token reaches them", async () => {
+  await clearSceneFootprints(scene);
+  game.time = {serverTime: 100_000, worldTime: 1000};
+  const frames = [];
+  const originalFrame = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = callback => { frames.push(callback); return frames.length; };
+  let finish;
+  const ended = new Promise(resolve => { finish = resolve; });
+  const walker = {...token("timed-animation"), flags: {"theiks-toolbag": {footprintConfig: {
+    fadeMode: "time", fadeSeconds: 60, fadeUseWorldTime: false
+  }}}, object: {center: {x: 50, y: 50}}};
+  fire("moveToken", walker, {
+    id: "timed-animation-move", method: "dragging",
+    animation: {duration: 1000, started: Promise.resolve(), ended},
+    origin: waypoint(0), passed: {waypoints: [waypoint(300)]}
+  });
+  await settle();
+  game.time.serverTime = 110_000;
+  walker.object.center = {x: 150, y: 50};
+  frames.shift()?.();
+  await settle();
+  game.time.serverTime = 120_000;
+  walker.object.center = {x: 250, y: 50};
+  frames.shift()?.();
+  await settle();
+  game.time.serverTime = 130_000;
+  finish();
+  await settle();
+  await settle();
+  const stamps = scene.getFlag("theiks-toolbag", "footprintTrails")
+    .trails[walker.id].prints.map(print => print.placedAt);
+  assert.ok(stamps.includes(110) && stamps.includes(120) && stamps.includes(130));
+  globalThis.requestAnimationFrame = originalFrame;
+  delete game.time;
+});
+
+test("world-time prints follow the world clock, including a rewind", async () => {
+  await clearSceneFootprints(scene);
+  game.time = {serverTime: 100_000, worldTime: 1000};
+  const walker = {...token("world-timed"), flags: {"theiks-toolbag": {footprintConfig: {
+    fadeMode: "time", fadeSeconds: 60, fadeUseWorldTime: true
+  }}}};
+  fire("moveToken", walker, movement("world-clock-move", 0, 200));
+  await settle();
+  await settle();
+  const prints = scene.getFlag("theiks-toolbag", "footprintTrails").trails[walker.id].prints;
+  assert.ok(prints.every(print => print.placedAt === 1000 && print.fadeUseWorldTime));
+  game.time.worldTime = 1045;
+  fire("updateWorldTime", 1045);
+  await settle();
+  assert.ok(primary.children.every(mesh => Math.abs(mesh.alpha - 0.25) < 1e-9));
+  game.time.worldTime = 1000;
+  fire("updateWorldTime", 1000);
+  await settle();
+  assert.ok(primary.children.every(mesh => mesh.alpha === 1));
+  delete game.time;
+});
+
+test("an expired newer time print does not hide an older distance print", async () => {
+  await clearSceneFootprints(scene);
+  game.time = {serverTime: 100_000, worldTime: 1000};
+  const base = {elevation: 0, levelId: "ground", rotation: 90, side: 0,
+    scale: 1, image: "foot.png", tint: "#ffffff", cameFromEnabled: true};
+  scene.flags["theiks-toolbag"].footprintTrails = {version: 1, trails: {mixed: {
+    prints: [
+      {...base, id: "older-distance", x: 50, y: 50, groundX: 50, groundY: 50,
+        fadeMode: "distance"},
+      {...base, id: "newer-expired", x: 85, y: 50, groundX: 85, groundY: 50,
+        fadeMode: "time", fadeSeconds: 60, fadeUseWorldTime: false, placedAt: 0}
+    ], state: null
+  }}};
+  fire("canvasReady");
+  await settle();
+  assert.ok(primary.children.some(mesh => mesh.options.name.endsWith("older-distance")));
+  assert.ok(!primary.children.some(mesh => mesh.options.name.endsWith("newer-expired")));
+  delete game.time;
+});

@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-globalThis.game = {settings: {get: (_id, key) => key === "defaultFootprintImage" ? "default.png" : 5}};
+globalThis.game = {settings: {get: (_id, key) => ({
+  defaultFootprintImage: "default.png", footprintFadeMode: "distance",
+  footprintFadeSeconds: 60, footprintFadeUseWorldTime: false
+})[key] ?? 5}};
 
 const {
   CONFIG_FLAG, MAX_PRINTS, REGION_TYPE, appendFootprints, getLevelFootprintConfig,
-  getSceneFootprintConfig, getTokenFootprintConfig, printAlpha, pruneDisabledPrints,
+  getSceneFootprintConfig, getTokenFootprintConfig, getFootprintFadePolicy, printAlpha, pruneDisabledPrints,
   resolveFootprintPoint, sampleFootprints
 } = await import("../scripts/footprints/footprint-data.js");
 
@@ -51,6 +54,25 @@ test("scene, level, and token configuration inherit individual fields", () => {
     {noFootprints: true, image: "hero.png", movementType: "bipedal",
       alternateSide: "none", alternateImage: "", frontImage: "",
       frontAlternateSide: "none", frontAlternateImage: ""});
+});
+
+test("fade policy inherits as a whole from Token, Level, Scene, or world", () => {
+  const {map, level} = scene();
+  const walker = token();
+  assert.deepEqual(getFootprintFadePolicy(map, "ground", walker),
+    {mode: "distance", seconds: 60, useWorldTime: false});
+  map.flags["theiks-toolbag"][CONFIG_FLAG].fadeMode = "time";
+  map.flags["theiks-toolbag"][CONFIG_FLAG].fadeSeconds = 30;
+  map.flags["theiks-toolbag"][CONFIG_FLAG].fadeUseWorldTime = true;
+  assert.deepEqual(getFootprintFadePolicy(map, "ground", walker),
+    {mode: "time", seconds: 30, useWorldTime: true});
+  level.flags["theiks-toolbag"][CONFIG_FLAG].fadeMode = "both";
+  assert.deepEqual(getFootprintFadePolicy(map, "ground", walker),
+    {mode: "both", seconds: 60, useWorldTime: false});
+  walker.flags["theiks-toolbag"][CONFIG_FLAG].fadeMode = "distance";
+  assert.equal(getFootprintFadePolicy(map, "ground", walker).mode, "distance");
+  const prints = sampleFootprints(map, walker, waypoints(200), "policy").prints;
+  assert.ok(prints.length > 0 && prints.every(print => print.fadeMode === "distance"));
 });
 
 test("suppress wins; enable and tint override map; token image wins", () => {

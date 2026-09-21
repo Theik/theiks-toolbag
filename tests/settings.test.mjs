@@ -25,13 +25,14 @@ const {
   FEATURES,
   FEATURE_SETTING_CHANGED_HOOK,
   assertFeatureEnabled,
+  getFootprintFadeSettings,
   getFootprintCutoff,
   isFeatureEnabled,
   registerFeatureSettings
 } = await import("../scripts/settings.js");
 
 registerFeatureSettings();
-assert.equal(registrations.size, 10);
+assert.equal(registrations.size, 13);
 for (const [key, definition] of registrations) {
   if (!key.split(".").at(-1).startsWith("enable")) continue;
   assert.equal(definition.scope, "world");
@@ -54,6 +55,16 @@ assert.equal(settingKeys.indexOf("theiks-toolbag.defaultFootprintImage"),
 assert.equal(registrations.get("theiks-toolbag.footprintCutoff").scope, "client");
 assert.deepEqual(registrations.get("theiks-toolbag.footprintCutoff").range, {min: 0, max: 100, step: 1});
 assert.equal(registrations.get("theiks-toolbag.footprintCutoff").default, 15);
+assert.deepEqual(getFootprintFadeSettings(), {mode: "distance", seconds: 60, useWorldTime: false});
+for (const key of ["footprintFadeMode", "footprintFadeSeconds", "footprintFadeUseWorldTime"]) {
+  assert.equal(registrations.get(`theiks-toolbag.${key}`).scope, "world");
+}
+values.set("theiks-toolbag.footprintFadeMode", "both");
+values.set("theiks-toolbag.footprintFadeSeconds", 30);
+values.set("theiks-toolbag.footprintFadeUseWorldTime", true);
+assert.deepEqual(getFootprintFadeSettings(), {mode: "both", seconds: 30, useWorldTime: true});
+values.set("theiks-toolbag.footprintFadeSeconds", 0);
+assert.equal(getFootprintFadeSettings().seconds, 60);
 assert.equal(getFootprintCutoff(), 15);
 values.set("theiks-toolbag.footprintCutoff", Number.NaN);
 assert.equal(getFootprintCutoff(), 15);

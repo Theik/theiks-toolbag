@@ -54,3 +54,19 @@ test("Token gait controls and their labels are present in the shared config form
   assert.ok(template.includes('value="quadruped"'));
   assert.ok(template.includes('value="quadrupedAlternating"'));
 });
+
+test("the shared config form exposes inheritable timed fade fields", () => {
+  const template = readFileSync(new URL("../templates/footprint-config.hbs", import.meta.url), "utf8");
+  const language = JSON.parse(readFileSync(new URL("../lang/en.json", import.meta.url), "utf8"));
+  for (const field of ["fadeMode", "fadeSeconds", "fadeUseWorldTime"]) {
+    assert.ok(template.includes(`{{fields.${field}}}`));
+  }
+  for (const key of ["FadeMode", "FadeDistance", "FadeTime", "FadeBoth", "FadeSeconds", "FadeUseWorldTime"]) {
+    assert.equal(typeof language.THEIKS_TOOLBAG.Footprints.Config[key], "string");
+  }
+  assert.ok(template.includes("{{fadeInheritLabel}}"));
+  assert.equal(language.THEIKS_TOOLBAG.Footprints.Config.InheritWorld, "Inherit world setting");
+  assert.equal(language.THEIKS_TOOLBAG.Footprints.Config.Inherit, "Inherit map setting");
+  assert.equal(typeof language.THEIKS_TOOLBAG.Footprints.Config.InheritToken, "string");
+  assert.ok(template.includes("data-fade-detail"));
+});

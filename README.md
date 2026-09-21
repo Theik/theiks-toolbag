@@ -219,6 +219,8 @@ Prints scale with Token size and bend through nearby doorways rather than crossi
 
 Each player sets **Visible footprint trail length** from 0 to 100 grid spaces, starting at 15. The older half of the visible trail fades out. On Scenes with token vision, players see tracks within their current vision. To inspect routing, a GM can run `game.modules.get("theiks-toolbag").api.footprints.toggleOverlay()` in the console, then run it again to hide the overlay.
 
+Footprints fade by **Distance moved** by default. A GM can choose **Time** or **Both** in world, Scene, Level, or Token settings; the closest override supplies the whole policy. Set a lifetime in seconds and choose real time or world time. Timed prints stay solid for half their lifetime, then fade away. **Both** uses whichever fade is further along. Each print keeps the policy it had when placed. The player's trail length setting still hides all prints at 0; positive values do not limit **Time** trails.
+
 ### Level tools
 
 <p align="center">

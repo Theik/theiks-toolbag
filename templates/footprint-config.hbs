@@ -91,6 +91,25 @@
         </div>
     </div>
     {{/unless}}
+    <div class="form-group">
+        <label for="{{rootId}}-fade-mode">{{localize "THEIKS_TOOLBAG.Footprints.Config.FadeMode"}}</label>
+        <div class="form-fields">
+            <select id="{{rootId}}-fade-mode" data-fade-mode name="{{fields.fadeMode}}">
+                <option value="inherit" {{#if (eq fadeMode "inherit")}}selected{{/if}}>{{fadeInheritLabel}}</option>
+                <option value="distance" {{#if (eq fadeMode "distance")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.FadeDistance"}}</option>
+                <option value="time" {{#if (eq fadeMode "time")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.FadeTime"}}</option>
+                <option value="both" {{#if (eq fadeMode "both")}}selected{{/if}}>{{localize "THEIKS_TOOLBAG.Footprints.Config.FadeBoth"}}</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group" data-fade-detail>
+        <label for="{{rootId}}-fade-seconds">{{localize "THEIKS_TOOLBAG.Footprints.Config.FadeSeconds"}}</label>
+        <div class="form-fields"><input id="{{rootId}}-fade-seconds" type="number" min="1" step="1" name="{{fields.fadeSeconds}}" value="{{fadeSeconds}}" data-dtype="Number"></div>
+    </div>
+    <div class="form-group" data-fade-detail>
+        <label for="{{rootId}}-fade-world-time">{{localize "THEIKS_TOOLBAG.Footprints.Config.FadeUseWorldTime"}}</label>
+        <div class="form-fields"><input id="{{rootId}}-fade-world-time" type="checkbox" name="{{fields.fadeUseWorldTime}}" data-dtype="Boolean" {{checked fadeUseWorldTime}}></div>
+    </div>
     {{#if canClear}}
     <div class="form-group"><button type="button" data-action="clear-footprints"><i class="fa-solid fa-eraser"></i> {{localize "THEIKS_TOOLBAG.Footprints.Config.Clear"}}</button></div>
     {{/if}}

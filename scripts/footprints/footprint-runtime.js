@@ -20,6 +20,7 @@ const epochs = new Map();
 const missingImages = new Set();
 let renderQueued = false;
 let renderRevision = 0;
+let fadeTimer = null;
 
 export function registerFootprintRuntime() {
   Hooks.on("moveToken", onMoveToken);
@@ -35,6 +36,7 @@ export function registerFootprintRuntime() {
   }
   Hooks.on("sightRefresh", queueRender);
   Hooks.on("visibilityRefresh", queueRender);
+  Hooks.on("updateWorldTime", queueRender);
   Hooks.on(FOOTPRINT_CUTOFF_CHANGED_HOOK, queueRender);
   Hooks.on(FEATURE_SETTING_CHANGED_HOOK, (feature, enabled) => {
     if (feature !== FEATURES.footprints) return;
@@ -92,6 +94,7 @@ function onMoveToken(token, movement, operation, _user) {
   enqueueSceneWrite(scene, async () => {
     try { await movement.animation?.ended; }
     catch (_error) { /* save the passed section even if its animation stops */ }
+    for (const print of prints) stampPrint(print);
     if ((epochs.get(scene.id) ?? 0) !== epoch) return;
     const current = getStoredTrails(scene);
     const ids = new Set(current.trails[token.id]?.prints?.map(print => print.id));
@@ -157,11 +160,13 @@ function beginLiveReveal(scene, token, movement, waypoints, key, prints) {
   let revealed = 0;
   const duration = Number(movement.animation?.duration ?? 0);
   if (!token.object || !duration || typeof globalThis.requestAnimationFrame !== "function") {
+    for (const print of prints) stampPrint(print);
     return;
   }
   liveProgress.set(key, status);
   let stopped = false;
   Promise.resolve(movement.animation?.ended).finally(() => {
+    for (const print of prints) stampPrint(print);
     stopped = true;
     liveProgress.delete(key);
     queueRender();
@@ -173,6 +178,7 @@ function beginLiveReveal(scene, token, movement, waypoints, key, prints) {
       if (center) status.value = Math.max(status.value, pathProgress(waypoints, center, scene.grid.size));
       while (revealed < thresholds.length && thresholds[revealed] <= status.value) revealed += 1;
       if (revealed > 0 && revealed !== status.revealed) {
+        for (const print of prints) if (print.progress <= status.value) stampPrint(print);
         status.revealed = revealed;
         queueRender();
       }
@@ -183,6 +189,16 @@ function beginLiveReveal(scene, token, movement, waypoints, key, prints) {
 }
 
 const liveProgress = new Map();
+
+function clockSeconds(useWorldTime) {
+  const value = Number(useWorldTime ? game.time?.worldTime : game.time?.serverTime);
+  return Number.isFinite(value) ? (useWorldTime ? value : value / 1000) : Date.now() / 1000;
+}
+
+function stampPrint(print) {
+  if (print.fadeMode !== "time" && print.fadeMode !== "both") return;
+  if (!Number.isFinite(print.placedAt)) print.placedAt = clockSeconds(print.fadeUseWorldTime === true);
+}
 
 function pathProgress(waypoints, point, grid) {
   let distance = 0;
@@ -309,6 +325,7 @@ function queueRender() {
 
 async function renderCurrent() {
   const revision = ++renderRevision;
+  stopFadeTimer();
   const scene = globalThis.canvas?.scene;
   refreshFootprintOverlay();
   if (!isFeatureEnabled(FEATURES.footprints) || !canvas?.ready || !canvas.primary || !scene) {
@@ -318,6 +335,9 @@ async function renderCurrent() {
   const cutoff = getFootprintCutoff();
   if (!cutoff) { clearMeshes(); return; }
   const levelId = String(canvas.level?.id ?? scene.initialLevel ?? "");
+  const nowReal = clockSeconds(false);
+  const nowWorld = clockSeconds(true);
+  let nextRealRefreshMs = Infinity;
   const selected = new Map();
   const stored = getStoredTrails(scene).trails;
   const ids = new Set([...Object.keys(stored), ...[...live.keys()]
@@ -346,10 +366,20 @@ async function renderCurrent() {
         (newer.groundY ?? newer.y) - (print.groundY ?? print.y)
       ) / scene.grid.size;
       newer = print;
-      const alpha = printAlpha(age, visibleCutoff);
-      if (!alpha) break;
+      const mode = print.fadeMode === "time" || print.fadeMode === "both" ? print.fadeMode : "distance";
+      const distanceAlpha = mode === "time" ? 1 : printAlpha(age, visibleCutoff);
+      const elapsed = (print.fadeUseWorldTime === true ? nowWorld : nowReal) - Number(print.placedAt);
+      const timed = mode !== "distance" && Number.isFinite(elapsed) && Number(print.fadeSeconds) > 0;
+      const timeAlpha = timed ? printAlpha(Math.max(0, elapsed), Number(print.fadeSeconds)) : 1;
+      const alpha = mode === "distance" ? distanceAlpha
+        : mode === "time" ? timeAlpha : Math.min(distanceAlpha, timeAlpha);
       if (String(print.levelId) !== levelId) continue;
       if (!printStillEnabled(scene, print)) continue;
+      if (timed && print.fadeUseWorldTime !== true && timeAlpha > 0) {
+        const untilFade = Number(print.fadeSeconds) / 2 - Math.max(0, elapsed);
+        nextRealRefreshMs = Math.min(nextRealRefreshMs,
+          untilFade > 0 ? Math.max(50, Math.ceil(untilFade * 1000) + 10) : 250);
+      }
       if (!alpha || !isVisibleToViewer(print, scene)) continue;
       selected.set(print.id, {...print, alpha});
     }
@@ -376,6 +406,10 @@ async function renderCurrent() {
   canvas.primary.sortChildren();
   canvas.primary.renderDirty = true;
   canvas.primary.update?.();
+  if (Number.isFinite(nextRealRefreshMs) && isFeatureEnabled(FEATURES.footprints)) {
+    fadeTimer = setTimeout(queueRender, Math.min(nextRealRefreshMs, 2_147_483_647));
+    fadeTimer.unref?.();
+  }
 }
 
 function isVisibleToViewer(print, scene) {
@@ -414,6 +448,7 @@ async function loadTexture(src) {
 }
 
 function clearCanvas() {
+  stopFadeTimer();
   ++renderRevision;
   renderQueued = false;
   clearMeshes();
@@ -425,10 +460,16 @@ function clearCanvas() {
 }
 
 function clearMeshes() {
+  stopFadeTimer();
   ++renderRevision;
   for (const mesh of renderMeshes.values()) destroyMesh(mesh);
   renderMeshes.clear();
   if (globalThis.canvas?.primary) canvas.primary.renderDirty = true;
+}
+
+function stopFadeTimer() {
+  if (fadeTimer != null) clearTimeout(fadeTimer);
+  fadeTimer = null;
 }
 
 function destroyMesh(mesh) {

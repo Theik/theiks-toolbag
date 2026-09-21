@@ -1,5 +1,9 @@
 # Patch notes
 
+## 1.3.1
+
+- Added footprint fading by time or by both time and distance.
+
 ## 1.3.0
 
 - Added Footprints with bipedal, quadruped, and slither trails. Scenes, Levels, Regions, and Tokens control where tracks appear and which images they use.

@@ -1,4 +1,6 @@
-import {getFootprintImageSetting} from "../settings.js";
+import {
+  getFootprintFadeSettings, getFootprintImageSetting, normalizeFootprintFadeSeconds
+} from "../settings.js";
 import {createFootprintRouter} from "./footprint-routing.js";
 
 export const MODULE_ID = "theiks-toolbag";
@@ -9,6 +11,7 @@ export const MAX_PRINTS = 100;
 export const TRAILS_VERSION = 1;
 
 const MODES = new Set(["inherit", "suppress", "enable", "situational"]);
+const FADE_MODES = new Set(["distance", "time", "both"]);
 const MOVEMENT_TYPES = new Set(["bipedal", "quadruped", "quadrupedAlternating", "slither"]);
 const ALTERNATE_SIDES = new Set(["none", "left", "right"]);
 const GAITS = Object.freeze({
@@ -95,6 +98,21 @@ function levelFor(scene, id) {
   return scene?.levels?.get?.(String(id))
     ?? scene?.levels?.contents?.find?.(level => String(level.id) === String(id))
     ?? null;
+}
+
+/** A fade override is one policy: mode, duration, and clock inherit together. */
+export function getFootprintFadePolicy(scene, levelId, token = null) {
+  for (const document of [token, levelFor(scene, levelId), scene]) {
+    if (!document) continue;
+    const stored = flag(document, CONFIG_FLAG);
+    if (!FADE_MODES.has(stored.fadeMode)) continue;
+    return {
+      mode: stored.fadeMode,
+      seconds: normalizeFootprintFadeSeconds(stored.fadeSeconds),
+      useWorldTime: stored.fadeUseWorldTime === true
+    };
+  }
+  return getFootprintFadeSettings();
 }
 
 function isOnLevelSurface(scene, levelId, elevation) {
@@ -303,12 +321,15 @@ export function sampleFootprints(scene, token, waypoints, movementId, previousSt
             state.next = 0.1 * scale;
             break;
           }
+          const fade = getFootprintFadePolicy(scene, levelId, token);
           prints.push({
             x: foot.x, y: foot.y, groundX, groundY, elevation, levelId,
             rotation: (Math.atan2(pieceY, pieceX) * 180 / Math.PI) + 90,
             side: step.side, leg: step.leg, movementType, scale,
             image: imageForStep(appearance.image, tokenConfig, step.leg, step.side),
             tint: appearance.tint,
+            fadeMode: fade.mode, fadeSeconds: fade.seconds,
+            fadeUseWorldTime: fade.useWorldTime,
             segmentId: state.segmentId, distance: state.distance,
             cameFromEnabled: before,
             progress: routeDistance + length * ((distanceOnPath + traveled) / pathLength)

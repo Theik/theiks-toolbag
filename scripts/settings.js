@@ -75,6 +75,12 @@ export function registerFeatureSettings() {
 export const DEFAULT_FOOTPRINT_IMAGE = `modules/${MODULE_ID}/assets/images/extras/footprint.png`;
 export const FOOTPRINT_IMAGE_SETTING_CHANGED_HOOK = `${MODULE_ID}.footprintImageChanged`;
 export const FOOTPRINT_CUTOFF_CHANGED_HOOK = `${MODULE_ID}.footprintCutoffChanged`;
+const FOOTPRINT_FADE_MODES = new Set(["distance", "time", "both"]);
+
+export function normalizeFootprintFadeSeconds(value) {
+  const seconds = Number(value);
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : 60;
+}
 
 function registerFootprintSettings() {
   const ImageField = globalThis.foundry?.data?.fields?.FilePathField;
@@ -86,6 +92,27 @@ function registerFootprintSettings() {
     default: DEFAULT_FOOTPRINT_IMAGE,
     onChange: () => Hooks.callAll(FOOTPRINT_IMAGE_SETTING_CHANGED_HOOK)
   });
+  game.settings.register(MODULE_ID, "footprintFadeMode", {
+    name: "THEIKS_TOOLBAG.Settings.Footprints.FadeModeName",
+    hint: "THEIKS_TOOLBAG.Settings.Footprints.FadeModeHint",
+    scope: "world", config: true, type: String, default: "distance",
+    choices: {
+      distance: "THEIKS_TOOLBAG.Footprints.Config.FadeDistance",
+      time: "THEIKS_TOOLBAG.Footprints.Config.FadeTime",
+      both: "THEIKS_TOOLBAG.Footprints.Config.FadeBoth"
+    }
+  });
+  game.settings.register(MODULE_ID, "footprintFadeSeconds", {
+    name: "THEIKS_TOOLBAG.Settings.Footprints.FadeSecondsName",
+    hint: "THEIKS_TOOLBAG.Settings.Footprints.FadeSecondsHint",
+    scope: "world", config: true, type: Number, default: 60,
+    range: {min: 1, step: 1}
+  });
+  game.settings.register(MODULE_ID, "footprintFadeUseWorldTime", {
+    name: "THEIKS_TOOLBAG.Settings.Footprints.FadeClockName",
+    hint: "THEIKS_TOOLBAG.Settings.Footprints.FadeClockHint",
+    scope: "world", config: true, type: Boolean, default: false
+  });
   game.settings.register(MODULE_ID, "footprintCutoff", {
     name: "THEIKS_TOOLBAG.Settings.Footprints.CutoffName",
     hint: "THEIKS_TOOLBAG.Settings.Footprints.CutoffHint",
@@ -93,6 +120,39 @@ function registerFootprintSettings() {
     default: 15,
     onChange: () => Hooks.callAll(FOOTPRINT_CUTOFF_CHANGED_HOOK)
   });
+  Hooks.on?.("renderSettingsConfig", (_app, element) => {
+    const root = element?.querySelector ? element : element?.[0];
+    const mode = root?.querySelector(`[name="${MODULE_ID}.footprintFadeMode"]`);
+    if (!mode) return;
+    const seconds = root.querySelector(`[name="${MODULE_ID}.footprintFadeSeconds"]`)?.closest(".form-group");
+    const clock = root.querySelector(`[name="${MODULE_ID}.footprintFadeUseWorldTime"]`)?.closest(".form-group");
+    const update = () => {
+      const visible = mode.value === "time" || mode.value === "both";
+      for (const row of [seconds, clock]) {
+        if (!row) continue;
+        row.hidden = !visible;
+        row.style.display = visible ? "" : "none";
+      }
+    };
+    mode.addEventListener("change", update);
+    update();
+  });
+}
+
+export function getFootprintFadeSettings() {
+  let mode = "distance";
+  let seconds = 60;
+  let useWorldTime = false;
+  try {
+    mode = game.settings.get(MODULE_ID, "footprintFadeMode");
+    seconds = game.settings.get(MODULE_ID, "footprintFadeSeconds");
+    useWorldTime = game.settings.get(MODULE_ID, "footprintFadeUseWorldTime");
+  } catch (_error) { /* use defaults during initialization */ }
+  return {
+    mode: FOOTPRINT_FADE_MODES.has(mode) ? mode : "distance",
+    seconds: normalizeFootprintFadeSeconds(seconds),
+    useWorldTime: useWorldTime === true
+  };
 }
 
 export function getFootprintImageSetting() {
